@@ -66,9 +66,9 @@ type Step struct {
 type Meta struct {
 	// Name is the human-readable test name (required).
 	Name string
-	// Id is the stable snake_case identifier used in Depends references
+	// ID is the stable snake_case identifier used in Depends references
 	// (required).
-	Id string
+	ID string
 	// SpecRef is the OCPP specification section reference. It is nil for
 	// helper stories (tagged "helper") and required for conformance stories.
 	SpecRef *string
