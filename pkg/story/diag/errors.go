@@ -8,7 +8,6 @@ package diag
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 )
 
@@ -120,13 +119,55 @@ type ErrUnboundParameter struct {
 }
 
 // Error returns a formatted diagnostic string.
+// Parameters is guaranteed sorted-and-deduplicated at construction time
+// (by validateParameters), so no re-sort is needed here.
 func (e *ErrUnboundParameter) Error() string {
-	sorted := make([]string, len(e.Parameters))
-	copy(sorted, e.Parameters)
-	sort.Strings(sorted)
-
 	return fmt.Sprintf("%s:%d:%d: unbound parameter(s) {%s} in step %q; %s",
 		e.File, e.Line, e.Column,
-		strings.Join(sorted, "}, {"),
+		strings.Join(e.Parameters, "}, {"),
 		e.StepText, e.Suggestion)
+}
+
+// ErrMissingSection indicates that a required top-level section is absent.
+// Currently used when no Scenario section is present.
+type ErrMissingSection struct {
+	// File is the filesystem path of the .story file.
+	File string
+	// Line is the 1-based line number where the error was detected.
+	Line int
+	// Column is the 1-based column number where the error was detected.
+	Column int
+	// Section is the name of the missing section (e.g. "Scenario").
+	Section string
+	// Suggestion is a human-readable hint for fixing the problem.
+	Suggestion string
+}
+
+// Error returns a formatted diagnostic string.
+func (e *ErrMissingSection) Error() string {
+	return fmt.Sprintf("%s:%d:%d: at least one %s section is required; %s",
+		e.File, e.Line, e.Column, e.Section, e.Suggestion)
+}
+
+// ErrUnexpectedToken indicates that the parser encountered a token it did
+// not expect at that position in the grammar.
+type ErrUnexpectedToken struct {
+	// File is the filesystem path of the .story file.
+	File string
+	// Line is the 1-based line number where the error was detected.
+	Line int
+	// Column is the 1-based column number where the error was detected.
+	Column int
+	// Got is the string representation of the token that was found.
+	Got string
+	// Expected describes what the parser was expecting at this position.
+	Expected string
+	// Suggestion is a human-readable hint for fixing the problem.
+	Suggestion string
+}
+
+// Error returns a formatted diagnostic string.
+func (e *ErrUnexpectedToken) Error() string {
+	return fmt.Sprintf("%s:%d:%d: unexpected %s, expected %s; %s",
+		e.File, e.Line, e.Column, e.Got, e.Expected, e.Suggestion)
 }

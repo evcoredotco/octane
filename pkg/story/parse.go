@@ -10,9 +10,8 @@
 package story
 
 import (
-	"fmt"
-
 	"github.com/octane-project/octane/pkg/story/ast"
+	"github.com/octane-project/octane/pkg/story/diag"
 	"github.com/octane-project/octane/pkg/story/lex"
 )
 
@@ -92,10 +91,13 @@ func (p *parser) parseStory() (*ast.Story, error) {
 	if len(scenarios) == 0 {
 		tok := p.lex.Peek()
 
-		return nil, fmt.Errorf(
-			"%s:%d:%d: at least one Scenario section is required",
-			p.file, tok.Line, tok.Column,
-		)
+		return nil, &diag.ErrMissingSection{
+			File:       p.file,
+			Line:       tok.Line,
+			Column:     tok.Column,
+			Section:    "Scenario",
+			Suggestion: "add at least one 'Scenario: <title>' block",
+		}
 	}
 
 	var teardown []ast.Step
@@ -109,10 +111,15 @@ func (p *parser) parseStory() (*ast.Story, error) {
 
 	tok := p.lex.Next()
 	if tok.Kind != lex.TokenEOF {
-		return nil, fmt.Errorf(
-			"%s:%d:%d: unexpected token %s after final section, expected EOF",
-			p.file, tok.Line, tok.Column, tok.Kind,
-		)
+		return nil, &diag.ErrUnexpectedToken{
+			File:     p.file,
+			Line:     tok.Line,
+			Column:   tok.Column,
+			Got:      tok.Kind.String(),
+			Expected: "EOF",
+			Suggestion: "remove or relocate content after the final section " +
+				"(Background, Scenario, Teardown)",
+		}
 	}
 
 	if err = validateParameters(
