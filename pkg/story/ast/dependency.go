@@ -34,9 +34,9 @@ func (s Scope) String() string {
 // Dependency declares a prerequisite story that must run (and pass) before
 // the current story executes. Declared in the Depends: Meta block.
 type Dependency struct {
-	// Id is the stable snake_case identifier of the prerequisite story.
-	// It must match the Id Meta key of the target story exactly.
-	Id string
+	// ID is the stable snake_case identifier of the prerequisite story.
+	// It must match the ID Meta key of the target story exactly.
+	ID string
 	// Scope controls how many times the prerequisite is executed relative
 	// to the dependent story. Defaults to ScopePerStation when absent.
 	Scope Scope
