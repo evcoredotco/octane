@@ -9,6 +9,13 @@ This project adheres to [Keep a Changelog 1.1.0][kac] and
 
 ## [Unreleased]
 
+### Added
+- **Story DSL parser** (`pkg/story`): recursive-descent parser for `.story`
+  files implementing the grammar from ADR 0006. Produces a typed AST
+  (`pkg/story/ast`), typed diagnostic errors (`pkg/story/diag`), and
+  validates Spec-Ref/helper constraints, parameter bindings, and Depends
+  block integrity. Covers spec 001 tasks T-001-00 through T-001-52.
+
 ### Changed
 - **Spec set decomposed from 2 specs to 7 specs.** The previous
   `001-bootstrap-engine` and `002-story-framework` specs were
