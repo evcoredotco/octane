@@ -1,0 +1,93 @@
+name: ci
+
+# STATUS: The Go-related jobs in this workflow are preserved as the
+# contract for when implementation begins. They fail cleanly today
+# (pkg/ is empty, go.mod does not exist) — this is expected.
+# Once spec 001 (bootstrap engine) starts landing, the jobs activate
+# automatically. The spec-check job below works today and gates PRs
+# touching specs/.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.62.0
+          args: --timeout=5m
+
+      - name: actionlint
+        uses: raven-actions/actionlint@v2
+
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+
+      - name: Run unit tests
+        run: make test
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+
+      - name: Build CLI
+        run: make build
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: octane-${{ github.sha }}
+          path: bin/octane
+          retention-days: 7
+
+  spec-check:
+    name: Spec structural check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate specs
+        run: make spec-check

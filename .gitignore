@@ -1,0 +1,49 @@
+# Build artifacts
+/bin/
+/build/
+/dist/
+*.exe
+*.test
+*.out
+*.prof
+
+# Generated man pages and completions (built fresh by CI/packaging)
+/build/man/
+/build/completions/
+
+# Docusaurus
+/website/.docusaurus/
+/website/build/
+/website/node_modules/
+
+# Coverage
+coverage.out
+coverage.html
+profile.cov
+
+# Reports produced by local runs
+/report.json
+/reports/
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Docker / docker-compose state
+.docker-state/
+**/docker-compose.override.yaml
+
+# Spec scripts intermediate state
+*.bak
+
+# Action local test artifacts
+/action/_work/

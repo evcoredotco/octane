@@ -1,0 +1,173 @@
+# .goreleaser.yaml — orchestrates OCTANE release builds.
+#
+# Produces (per ADR 0020):
+#   - Static binaries for linux/{amd64,arm64}, darwin/{amd64,arm64}, windows/amd64
+#   - .deb and .rpm packages via nfpm using packaging/nfpm.yaml
+#   - Homebrew formula update in the octane-project/homebrew-octane tap
+#   - SBOMs and cosign signatures
+#
+# Invoked by .github/workflows/release.yml on tag push.
+
+version: 2
+
+project_name: octane
+
+before:
+  hooks:
+    - go mod tidy
+    - go mod download
+    - bash ./scripts/gen-manpages.sh
+    - bash ./scripts/gen-completions.sh
+
+builds:
+  - id: octane
+    main: ./cmd/octane
+    binary: octane
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - "-s -w"
+      - "-X main.version={{.Version}}"
+      - "-X main.commit={{.Commit}}"
+      - "-X main.date={{.CommitDate}}"
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+
+archives:
+  - id: default
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+      - src: build/man/**/*
+        dst: man/
+      - src: build/completions/*
+        dst: completions/
+
+nfpms:
+  - id: octane-deb-rpm
+    package_name: octane
+    file_name_template: >-
+      {{ .ConventionalFileName }}
+    builds:
+      - octane
+    formats:
+      - deb
+      - rpm
+    vendor: "The OCTANE Authors"
+    homepage: "https://octane.dev"
+    maintainer: "OCTANE Authors <maintainers@octane.dev>"
+    description: |
+      OCPP Conformance Testing & Network Evaluation.
+      Wire-only conformance harness for OCPP 1.6J / 2.0.1 / 2.1.
+    license: "Apache-2.0"
+    section: net
+    priority: optional
+    contents:
+      - src: ./build/man/man1/
+        dst: /usr/share/man/man1/
+        file_info: { mode: 0644 }
+      - src: ./build/man/man5/octane.yml.5
+        dst: /usr/share/man/man5/octane.yml.5
+        file_info: { mode: 0644 }
+      - src: ./build/man/man5/octane.story.5
+        dst: /usr/share/man/man5/octane.story.5
+        file_info: { mode: 0644 }
+      - src: ./build/man/man7/octane.7
+        dst: /usr/share/man/man7/octane.7
+        file_info: { mode: 0644 }
+      - src: ./build/completions/octane.bash
+        dst: /usr/share/bash-completion/completions/octane
+        file_info: { mode: 0644 }
+      - src: ./build/completions/_octane
+        dst: /usr/share/zsh/vendor-completions/_octane
+        file_info: { mode: 0644 }
+
+brews:
+  - name: octane
+    repository:
+      owner: octane-project
+      name: homebrew-octane
+      branch: main
+    homepage: "https://octane.dev"
+    description: "OCPP Conformance Testing & Network Evaluation"
+    license: "Apache-2.0"
+    install: |
+      bin.install "octane"
+      man1.install Dir["man/man1/*.1"]
+      man5.install Dir["man/man5/*.5"]
+      man7.install Dir["man/man7/*.7"]
+      bash_completion.install "completions/octane.bash" => "octane"
+      zsh_completion.install  "completions/_octane" => "_octane"
+    test: |
+      system "#{bin}/octane", "--version"
+
+sboms:
+  - artifacts: archive
+
+signs:
+  - cmd: cosign
+    artifacts: checksum
+    args:
+      - "sign-blob"
+      - "--yes"
+      - "--key=env://COSIGN_PRIVATE_KEY"
+      - "--output-signature=${signature}"
+      - "${artifact}"
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  use: github
+  sort: asc
+  groups:
+    - title: Features
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: Fixes
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: Other
+      order: 999
+
+release:
+  github:
+    owner: octane-project
+    name: octane
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## OCTANE {{ .Tag }}
+
+    Wire-only OCPP conformance harness. See
+    [CHANGELOG.md](./CHANGELOG.md) for the full change list.
+  footer: |
+    Verify release artifacts:
+    ```
+    cosign verify-blob \
+      --certificate-identity-regexp 'https://github.com/octane-project/' \
+      --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+      --signature checksums.txt.sig \
+      checksums.txt
+    ```

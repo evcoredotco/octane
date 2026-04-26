@@ -1,0 +1,95 @@
+# golangci-lint configuration for OCTANE.
+#
+# Aligned with the golang-master skill:
+#   - 80-character line limit
+#   - cognitive complexity ≤ 7
+#   - varnamelen, exhaustruct, wsl enforced
+#   - revive allowlist for `Id` (not `ID`)
+
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - errorlint
+    - exhaustruct
+    - forbidigo
+    - gocognit
+    - goconst
+    - gocritic
+    - gosec
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - nolintlint
+    - revive
+    - staticcheck
+    - unparam
+    - unused
+    - varnamelen
+    - wsl
+
+linters-settings:
+  gocognit:
+    min-complexity: 7
+
+  varnamelen:
+    min-name-length: 3
+    ignore-names:
+      - i
+      - ok
+      - tt
+      - tc
+    ignore-decls:
+      - t *testing.T
+      - f *testing.F
+      - r *http.Request
+      - w http.ResponseWriter
+
+  revive:
+    rules:
+      - name: line-length-limit
+        arguments: [80]
+      - name: var-naming
+        arguments:
+          - ["Id"]   # allow Id, do not force ID
+          - []
+      - name: exported
+      - name: package-comments
+      - name: unused-parameter
+      - name: confusing-naming
+      - name: cognitive-complexity
+        arguments: [7]
+
+  forbidigo:
+    forbid:
+      - p: '^time\.Now$'
+        msg: "use engine.Clock instead of time.Now in engine code"
+      - p: '^math/rand\.'
+        msg: "use engine.Rand (seeded) instead of math/rand"
+      - p: '^fmt\.Print(ln|f)?$'
+        msg: "use log/slog instead of fmt.Print*"
+
+  gosec:
+    excludes:
+      - G104  # already covered by errcheck
+    severity: medium
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - varnamelen
+        - exhaustruct
+        - gocognit
+    - path: testdata/
+      linters:
+        - all
