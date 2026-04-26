@@ -1,0 +1,147 @@
+{
+  "Path": "../../scenarios/v201/authorize_concurrent_rejected.story",
+  "Meta": {
+    "Name": "Authorize concurrent transaction rejection",
+    "ID": "authorize_concurrent_rejected",
+    "SpecRef": "OCPP 2.0.1 §C01 Authorize",
+    "Tags": [
+      "core",
+      "authorization",
+      "multi-station"
+    ],
+    "Stations": 2,
+    "Timeout": 30000000000,
+    "Parameters": null,
+    "CacheTTL": null,
+    "Depends": [
+      {
+        "ID": "station_boot_accepted",
+        "Scope": 1,
+        "Position": {
+          "Line": 20,
+          "Column": 7
+        }
+      }
+    ],
+    "Position": {
+      "Line": 12,
+      "Column": 1
+    }
+  },
+  "Background": [
+    {
+      "Kind": 1,
+      "Text": "the CSMS is reachable",
+      "Position": {
+        "Line": 24,
+        "Column": 5
+      }
+    },
+    {
+      "Kind": 4,
+      "Text": "the operator has provisioned id token \"VID:0001\" with status \"Accepted\"",
+      "Position": {
+        "Line": 25,
+        "Column": 5
+      }
+    }
+  ],
+  "Setup": null,
+  "Scenarios": [
+    {
+      "Name": "Same id token authorized at two stations concurrently",
+      "Steps": [
+        {
+          "Kind": 2,
+          "Text": "station \"CP01\" starts a transaction with id token \"VID:0001\"",
+          "Position": {
+            "Line": 28,
+            "Column": 5
+          }
+        },
+        {
+          "Kind": 4,
+          "Text": "the CSMS authorizes id token \"VID:0001\" for station \"CP01\"",
+          "Position": {
+            "Line": 29,
+            "Column": 5
+          }
+        },
+        {
+          "Kind": 6,
+          "Text": "Parallel",
+          "Position": {
+            "Line": 30,
+            "Column": 5
+          }
+        },
+        {
+          "Kind": 2,
+          "Text": "station \"CP02\" sends Authorize with id token \"VID:0001\"",
+          "Position": {
+            "Line": 31,
+            "Column": 9
+          }
+        },
+        {
+          "Kind": 6,
+          "Text": "End-Parallel",
+          "Position": {
+            "Line": 32,
+            "Column": 5
+          }
+        },
+        {
+          "Kind": 3,
+          "Text": "the CSMS rejects \"CP02\" with status \"ConcurrentTx\"",
+          "Position": {
+            "Line": 33,
+            "Column": 5
+          }
+        },
+        {
+          "Kind": 4,
+          "Text": "station \"CP01\"'s transaction remains active",
+          "Position": {
+            "Line": 34,
+            "Column": 5
+          }
+        }
+      ],
+      "Position": {
+        "Line": 27,
+        "Column": 1
+      }
+    }
+  ],
+  "Teardown": [
+    {
+      "Kind": 6,
+      "Text": "Disconnect station \"CP02\"",
+      "Position": {
+        "Line": 37,
+        "Column": 5
+      }
+    },
+    {
+      "Kind": 6,
+      "Text": "Stop transaction at station \"CP01\"",
+      "Position": {
+        "Line": 38,
+        "Column": 5
+      }
+    },
+    {
+      "Kind": 6,
+      "Text": "Disconnect station \"CP01\"",
+      "Position": {
+        "Line": 39,
+        "Column": 5
+      }
+    }
+  ],
+  "Position": {
+    "Line": 12,
+    "Column": 1
+  }
+}

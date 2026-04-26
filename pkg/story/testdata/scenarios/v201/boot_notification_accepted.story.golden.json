@@ -1,0 +1,107 @@
+{
+  "Path": "../../scenarios/v201/boot_notification_accepted.story",
+  "Meta": {
+    "Name": "Boot notification with accepted registration",
+    "ID": "boot_notification_accepted",
+    "SpecRef": "OCPP 2.0.1 §B01 BootNotification",
+    "Tags": [
+      "core",
+      "boot",
+      "wire-only"
+    ],
+    "Stations": 1,
+    "Timeout": 30000000000,
+    "Parameters": null,
+    "CacheTTL": null,
+    "Depends": [
+      {
+        "ID": "station_connection_established",
+        "Scope": 1,
+        "Position": {
+          "Line": 20,
+          "Column": 7
+        }
+      }
+    ],
+    "Position": {
+      "Line": 12,
+      "Column": 1
+    }
+  },
+  "Background": [
+    {
+      "Kind": 1,
+      "Text": "the CSMS is reachable",
+      "Position": {
+        "Line": 24,
+        "Column": 5
+      }
+    }
+  ],
+  "Setup": null,
+  "Scenarios": [
+    {
+      "Name": "Accepted registration on first boot",
+      "Steps": [
+        {
+          "Kind": 2,
+          "Text": "station \"CP01\" sends BootNotification with reason \"PowerUp\"",
+          "Position": {
+            "Line": 27,
+            "Column": 5
+          }
+        },
+        {
+          "Kind": 3,
+          "Text": "the CSMS responds with status \"Accepted\" within 30 seconds",
+          "Position": {
+            "Line": 28,
+            "Column": 5
+          }
+        },
+        {
+          "Kind": 4,
+          "Text": "the response includes a heartbeatInterval between 30 and 86400",
+          "Position": {
+            "Line": 29,
+            "Column": 5
+          }
+        },
+        {
+          "Kind": 4,
+          "Text": "the response interval is a positive integer",
+          "Position": {
+            "Line": 30,
+            "Column": 5
+          }
+        },
+        {
+          "Kind": 4,
+          "Text": "the response includes a currentTime in ISO-8601 format",
+          "Position": {
+            "Line": 31,
+            "Column": 5
+          }
+        }
+      ],
+      "Position": {
+        "Line": 26,
+        "Column": 1
+      }
+    }
+  ],
+  "Teardown": [
+    {
+      "Kind": 6,
+      "Text": "Disconnect station \"CP01\"",
+      "Position": {
+        "Line": 34,
+        "Column": 5
+      }
+    }
+  ],
+  "Position": {
+    "Line": 12,
+    "Column": 1
+  }
+}

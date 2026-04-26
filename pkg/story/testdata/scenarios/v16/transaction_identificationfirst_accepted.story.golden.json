@@ -1,0 +1,151 @@
+{
+  "Path": "../../scenarios/v16/transaction_identificationfirst_accepted.story",
+  "Meta": {
+    "Name": "Transaction start identification-first accepted",
+    "ID": "transaction_identificationfirst_accepted",
+    "SpecRef": "OCPP-J 1.6 §6.13 StatusNotification, §6.2 Authorize, §6.16 StartTransaction",
+    "Tags": [
+      "transaction",
+      "charging",
+      "wire-only"
+    ],
+    "Stations": 1,
+    "Timeout": 60000000000,
+    "Parameters": [
+      "connectorId",
+      "idTag",
+      "meterStart"
+    ],
+    "CacheTTL": null,
+    "Depends": [
+      {
+        "ID": "connector_status_available",
+        "Scope": 1,
+        "Position": {
+          "Line": 47,
+          "Column": 7
+        }
+      }
+    ],
+    "Position": {
+      "Line": 38,
+      "Column": 1
+    }
+  },
+  "Background": [
+    {
+      "Kind": 1,
+      "Text": "the CSMS is reachable",
+      "Position": {
+        "Line": 51,
+        "Column": 5
+      }
+    },
+    {
+      "Kind": 4,
+      "Text": "the operator has provisioned id token \"{idTag}\" with status \"Accepted\"",
+      "Position": {
+        "Line": 52,
+        "Column": 5
+      }
+    }
+  ],
+  "Setup": null,
+  "Scenarios": [
+    {
+      "Name": "Authorization precedes plug-in; transaction starts cleanly",
+      "Steps": [
+        {
+          "Kind": 2,
+          "Text": "station \"CP01\" sends Authorize with idTag \"{idTag}\"",
+          "Position": {
+            "Line": 55,
+            "Column": 5
+          }
+        },
+        {
+          "Kind": 3,
+          "Text": "the CSMS responds to Authorize with idTagInfo.status \"Accepted\" within 30 seconds",
+          "Position": {
+            "Line": 56,
+            "Column": 5
+          }
+        },
+        {
+          "Kind": 2,
+          "Text": "station \"CP01\" sends StatusNotification for connector {connectorId} with status \"Preparing\"",
+          "Position": {
+            "Line": 58,
+            "Column": 5
+          }
+        },
+        {
+          "Kind": 3,
+          "Text": "the CSMS acknowledges the status within 10 seconds",
+          "Position": {
+            "Line": 59,
+            "Column": 5
+          }
+        },
+        {
+          "Kind": 2,
+          "Text": "station \"CP01\" starts a transaction on connector {connectorId} with idTag \"{idTag}\" and meterStart {meterStart}",
+          "Position": {
+            "Line": 61,
+            "Column": 5
+          }
+        },
+        {
+          "Kind": 3,
+          "Text": "the CSMS responds to StartTransaction with idTagInfo.status \"Accepted\" within 30 seconds",
+          "Position": {
+            "Line": 62,
+            "Column": 5
+          }
+        },
+        {
+          "Kind": 4,
+          "Text": "the StartTransaction response assigns a positive transactionId",
+          "Position": {
+            "Line": 63,
+            "Column": 5
+          }
+        },
+        {
+          "Kind": 2,
+          "Text": "station \"CP01\" sends StatusNotification for connector {connectorId} with status \"Charging\"",
+          "Position": {
+            "Line": 65,
+            "Column": 5
+          }
+        },
+        {
+          "Kind": 3,
+          "Text": "the CSMS acknowledges the status within 10 seconds",
+          "Position": {
+            "Line": 66,
+            "Column": 5
+          }
+        }
+      ],
+      "Position": {
+        "Line": 54,
+        "Column": 1
+      }
+    }
+  ],
+  "Teardown": [
+    {
+      "Kind": 6,
+      "Text": "Disconnect station \"CP01\"",
+      "Position": {
+        "Line": 69,
+        "Column": 5
+      }
+    }
+  ],
+  "Position": {
+    "Line": 38,
+    "Column": 1
+  }
+}

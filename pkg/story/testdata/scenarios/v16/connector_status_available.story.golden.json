@@ -1,0 +1,73 @@
+{
+  "Path": "../../scenarios/v16/connector_status_available.story",
+  "Meta": {
+    "Name": "Connector reported as Available",
+    "ID": "connector_status_available",
+    "SpecRef": null,
+    "Tags": [
+      "helper",
+      "lifecycle",
+      "wire-only"
+    ],
+    "Stations": 1,
+    "Timeout": 10000000000,
+    "Parameters": null,
+    "CacheTTL": null,
+    "Depends": [
+      {
+        "ID": "station_boot_accepted",
+        "Scope": 1,
+        "Position": {
+          "Line": 18,
+          "Column": 7
+        }
+      }
+    ],
+    "Position": {
+      "Line": 11,
+      "Column": 1
+    }
+  },
+  "Background": null,
+  "Setup": null,
+  "Scenarios": [
+    {
+      "Name": "Station declares its connector available to the CSMS",
+      "Steps": [
+        {
+          "Kind": 2,
+          "Text": "station \"CP01\" sends StatusNotification for connector 1 with status \"Available\"",
+          "Position": {
+            "Line": 22,
+            "Column": 5
+          }
+        },
+        {
+          "Kind": 3,
+          "Text": "the CSMS acknowledges the status within 10 seconds",
+          "Position": {
+            "Line": 23,
+            "Column": 5
+          }
+        },
+        {
+          "Kind": 4,
+          "Text": "connector 1 of station \"CP01\" is in state \"Available\"",
+          "Position": {
+            "Line": 24,
+            "Column": 5
+          }
+        }
+      ],
+      "Position": {
+        "Line": 21,
+        "Column": 1
+      }
+    }
+  ],
+  "Teardown": null,
+  "Position": {
+    "Line": 11,
+    "Column": 1
+  }
+}

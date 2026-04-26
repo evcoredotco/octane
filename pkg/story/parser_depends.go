@@ -56,8 +56,8 @@ func (p *parser) parseDepends() ([]ast.Dependency, error) {
 
 	entryIndex = -1
 
-	for p.lex.Peek().Kind == lex.TokenIndent {
-		_ = p.lex.Next() // consume the indent token
+	for p.lex.Peek().Kind == lex.TokenIndent && len(p.lex.Peek().Literal) > len("    ") {
+		_ = p.lex.Next() // consume the sub-indent token
 
 		keyTok := p.lex.Peek()
 		if keyTok.Kind != lex.TokenMetaKey {
