@@ -35,6 +35,15 @@ func Parse(file string, src []byte) (*ast.Story, error) {
 	return p.parseStory()
 }
 
+// skipLeadingComments discards any TokenComment tokens at the start of
+// the file so that story files may begin with a file-level comment block.
+// This is called once at the top of parseStory before parseMeta.
+func (p *parser) skipLeadingComments() {
+	for p.lex.Peek().Kind == lex.TokenComment {
+		_ = p.lex.Next()
+	}
+}
+
 // parseStory is the root production. It drives the top-level grammar:
 //
 //	story = meta_section background? setup? scenario+ teardown?
@@ -42,6 +51,8 @@ func Parse(file string, src []byte) (*ast.Story, error) {
 // After all sections are collected it calls validateParameters to check
 // that every {placeholder} in step text is declared in Meta.Parameters.
 func (p *parser) parseStory() (*ast.Story, error) {
+	p.skipLeadingComments()
+
 	startTok := p.lex.Peek()
 
 	meta, err := p.parseMeta()

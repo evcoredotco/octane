@@ -304,15 +304,18 @@ func (l *lexer) scanComment() Token {
 const indentWidth = 4
 
 // scanIndentedLine handles a line whose first character is a space.
-// Valid indentation is exactly 4 spaces; anything else is TokenIllegal.
-// After the indent the line is classified as a step keyword line or a
-// meta-entry line.
+// The minimum valid indentation is exactly 4 spaces (one indent level);
+// lines with more spaces are sub-indented continuation lines (e.g. Depends
+// sub-entries). Lines with fewer than 4 leading spaces are TokenIllegal.
+//
+// The TokenIndent literal carries all leading spaces so callers can
+// determine the indentation depth (len(tok.Literal) / indentWidth).
 func (l *lexer) scanIndentedLine() Token {
 	startLine, startCol := l.line, l.col
 
 	count := l.countLeadingSpaces()
 
-	if count != indentWidth {
+	if count < indentWidth {
 		raw := l.src[l.pos : l.pos+count]
 
 		for range count {
@@ -338,14 +341,16 @@ func (l *lexer) scanIndentedLine() Token {
 		}
 	}
 
-	// Consume exactly indentWidth spaces.
-	for range indentWidth {
+	// Consume ALL leading spaces; the literal records the full depth.
+	indentLiteral := strings.Repeat(" ", count)
+
+	for range count {
 		l.advance()
 	}
 
 	indentTok := Token{
 		Kind:    TokenIndent,
-		Literal: "    ",
+		Literal: indentLiteral,
 		Line:    startLine,
 		Column:  startCol,
 	}
@@ -356,7 +361,7 @@ func (l *lexer) scanIndentedLine() Token {
 
 		return Token{
 			Kind:    TokenIllegal,
-			Literal: "    ",
+			Literal: indentLiteral,
 			Line:    startLine,
 			Column:  startCol,
 		}

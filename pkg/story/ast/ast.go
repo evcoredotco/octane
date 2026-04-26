@@ -27,6 +27,10 @@ const (
 	StepAnd
 	// StepBut introduces a negative continuation of the preceding step kind.
 	StepBut
+	// StepAction represents a bare action line with no Gherkin keyword
+	// prefix. Used in Teardown sections and Parallel blocks where bare
+	// command verbs are conventional (e.g. "Disconnect station X").
+	StepAction
 )
 
 // String returns the keyword text for a StepKind.
@@ -42,6 +46,8 @@ func (k StepKind) String() string {
 		return "And"
 	case StepBut:
 		return "But"
+	case StepAction:
+		return "Action"
 	default:
 		return "Unknown"
 	}

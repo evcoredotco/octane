@@ -68,7 +68,7 @@ func (p *parser) parseMeta() (ast.Meta, error) {
 		specRefColumn: 0,
 	}
 
-	for p.lex.Peek().Kind == lex.TokenIndent {
+	for p.lex.Peek().Kind == lex.TokenIndent && p.lex.Peek().Literal == "    " {
 		_ = p.lex.Next() // consume indent
 
 		entry, err := p.parseMetaEntry()

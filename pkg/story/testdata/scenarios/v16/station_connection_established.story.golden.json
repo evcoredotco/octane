@@ -1,0 +1,64 @@
+{
+  "Path": "../../scenarios/v16/station_connection_established.story",
+  "Meta": {
+    "Name": "Station connection established",
+    "ID": "station_connection_established",
+    "SpecRef": null,
+    "Tags": [
+      "helper",
+      "lifecycle",
+      "wire-only"
+    ],
+    "Stations": 1,
+    "Timeout": 10000000000,
+    "Parameters": null,
+    "CacheTTL": null,
+    "Depends": null,
+    "Position": {
+      "Line": 13,
+      "Column": 1
+    }
+  },
+  "Background": null,
+  "Setup": null,
+  "Scenarios": [
+    {
+      "Name": "Station opens an OCPP-J WebSocket to the CSMS",
+      "Steps": [
+        {
+          "Kind": 2,
+          "Text": "station \"CP01\" connects to the CSMS",
+          "Position": {
+            "Line": 21,
+            "Column": 5
+          }
+        },
+        {
+          "Kind": 3,
+          "Text": "the OCPP-J handshake completes within 5 seconds",
+          "Position": {
+            "Line": 22,
+            "Column": 5
+          }
+        },
+        {
+          "Kind": 4,
+          "Text": "station \"CP01\" is in the connected state",
+          "Position": {
+            "Line": 23,
+            "Column": 5
+          }
+        }
+      ],
+      "Position": {
+        "Line": 20,
+        "Column": 1
+      }
+    }
+  ],
+  "Teardown": null,
+  "Position": {
+    "Line": 13,
+    "Column": 1
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "Path": "../../scenarios/v16/connector_reservation_faulted.story",
+  "Meta": {
+    "Name": "Connector reservation faulted",
+    "ID": "connector_reservation_faulted",
+    "SpecRef": "OCPP-J 1.6 §6.40 ReserveNow",
+    "Tags": [
+      "reservation",
+      "csms-initiated",
+      "wire-only"
+    ],
+    "Stations": 1,
+    "Timeout": 30000000000,
+    "Parameters": [
+      "connectorId",
+      "idTag"
+    ],
+    "CacheTTL": null,
+    "Depends": [
+      {
+        "ID": "connector_status_available",
+        "Scope": 1,
+        "Position": {
+          "Line": 25,
+          "Column": 7
+        }
+      }
+    ],
+    "Position": {
+      "Line": 16,
+      "Column": 1
+    }
+  },
+  "Background": [
+    {
+      "Kind": 1,
+      "Text": "the CSMS is reachable",
+      "Position": {
+        "Line": 29,
+        "Column": 5
+      }
+    },
+    {
+      "Kind": 4,
+      "Text": "station \"CP01\" is registered to the CSMS",
+      "Position": {
+        "Line": 30,
+        "Column": 5
+      }
+    }
+  ],
+  "Setup": null,
+  "Scenarios": [
+    {
+      "Name": "CSMS handles a Faulted reservation response",
+      "Steps": [
+        {
+          "Kind": 2,
+          "Text": "the CSMS sends ReserveNow with connectorId {connectorId}",
+          "Position": {
+            "Line": 33,
+            "Column": 5
+          }
+        },
+        {
+          "Kind": 6,
+          "Text": "and idTag \"{idTag}\" to station \"CP01\" within 30 seconds",
+          "Position": {
+            "Line": 34,
+            "Column": 11
+          }
+        },
+        {
+          "Kind": 3,
+          "Text": "station \"CP01\" responds with ReserveNow.conf status \"Faulted\"",
+          "Position": {
+            "Line": 35,
+            "Column": 5
+          }
+        },
+        {
+          "Kind": 4,
+          "Text": "the CSMS accepts the response without error within 10 seconds",
+          "Position": {
+            "Line": 36,
+            "Column": 5
+          }
+        }
+      ],
+      "Position": {
+        "Line": 32,
+        "Column": 1
+      }
+    }
+  ],
+  "Teardown": [
+    {
+      "Kind": 6,
+      "Text": "Disconnect station \"CP01\"",
+      "Position": {
+        "Line": 39,
+        "Column": 5
+      }
+    }
+  ],
+  "Position": {
+    "Line": 16,
+    "Column": 1
+  }
+}

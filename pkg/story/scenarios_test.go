@@ -1,0 +1,174 @@
+// Package story_test — black-box validation suite for the story parser
+// (T-001-40, T-001-41).
+//
+// TestScenariosParseClean covers AC8: every story under scenarios/ must parse
+// without error. TestScenariosGolden compares serialized ASTs against golden
+// JSON fixtures, catching unintended AST structure changes.
+package story_test
+
+import (
+	"encoding/json"
+	"flag"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/octane-project/octane/pkg/story"
+)
+
+// update is set by passing -update on the test command line. When true,
+// TestScenariosGolden regenerates golden fixture files instead of comparing.
+var update = flag.Bool("update", false, "regenerate golden fixture files")
+
+// TestScenariosParseClean asserts that every .story file under scenarios/
+// parses without error (AC8). Failures here are blockers: they indicate
+// either a broken story file or a parser regression.
+func TestScenariosParseClean(t *testing.T) {
+	t.Parallel()
+
+	paths := collectStoryPaths(t, filepath.Join("..", "..", "scenarios"))
+
+	for _, path := range paths {
+		path := path // capture
+
+		t.Run(filepath.ToSlash(path), func(t *testing.T) {
+			t.Parallel()
+
+			src, err := os.ReadFile(path) //nolint:gosec // test fixture path from WalkDir
+			if err != nil {
+				t.Fatalf("read %s: %v", path, err)
+			}
+
+			if _, err = story.Parse(path, src); err != nil {
+				t.Errorf("parse %s: %v", path, err)
+			}
+		})
+	}
+}
+
+// TestScenariosGolden parses each .story file under scenarios/ and compares
+// the indented JSON serialization of the resulting AST against a golden file
+// stored at pkg/story/testdata/scenarios/<rel-path>.golden.json.
+//
+// On the first run (no golden file present) the fixture is written
+// automatically. Pass -update to force-regenerate all goldens.
+func TestScenariosGolden(t *testing.T) {
+	t.Parallel()
+
+	scenariosRoot := filepath.Join("..", "..", "scenarios")
+	goldenRoot := filepath.Join("testdata", "scenarios")
+
+	paths := collectStoryPaths(t, scenariosRoot)
+
+	for _, path := range paths {
+		path := path // capture
+
+		t.Run(filepath.ToSlash(path), func(t *testing.T) {
+			t.Parallel()
+			runGoldenCheck(t, path, scenariosRoot, goldenRoot)
+		})
+	}
+}
+
+// runGoldenCheck performs the golden fixture comparison for a single story
+// file. It is extracted to keep TestScenariosGolden's cognitive complexity
+// within the configured limit.
+func runGoldenCheck(
+	t *testing.T,
+	path string,
+	scenariosRoot string,
+	goldenRoot string,
+) {
+	t.Helper()
+
+	src, err := os.ReadFile(path) //nolint:gosec // test fixture path from WalkDir
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+
+	parsed, err := story.Parse(path, src)
+	if err != nil {
+		t.Fatalf("parse %s: %v (run TestScenariosParseClean first)", path, err)
+	}
+
+	got, err := json.MarshalIndent(parsed, "", "  ")
+	if err != nil {
+		t.Fatalf("marshal %s: %v", path, err)
+	}
+
+	rel, err := filepath.Rel(scenariosRoot, path)
+	if err != nil {
+		t.Fatalf("rel path for %s: %v", path, err)
+	}
+
+	goldenPath := filepath.Join(goldenRoot, rel+".golden.json")
+
+	if *update {
+		writeGolden(t, goldenPath, got)
+		return
+	}
+
+	existing, readErr := os.ReadFile(goldenPath) //nolint:gosec // known test data path
+	if os.IsNotExist(readErr) {
+		// First-run bootstrap: write the golden file.
+		writeGolden(t, goldenPath, got)
+		return
+	}
+
+	if readErr != nil {
+		t.Fatalf("read golden %s: %v", goldenPath, readErr)
+	}
+
+	if string(existing) != string(got) {
+		t.Errorf(
+			"golden mismatch for %s:\n"+
+				"  golden file: %s\n"+
+				"  want: %s\n"+
+				"  got:  %s",
+			path, goldenPath, existing, got,
+		)
+	}
+}
+
+// collectStoryPaths walks root and returns the paths of all .story files.
+// It calls t.Fatal if the walk fails or yields no files.
+func collectStoryPaths(t *testing.T, root string) []string {
+	t.Helper()
+
+	var paths []string
+
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !d.IsDir() && filepath.Ext(path) == ".story" {
+			paths = append(paths, path)
+		}
+
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walk %s: %v", root, err)
+	}
+
+	if len(paths) == 0 {
+		t.Fatalf("no .story files found under %s", root)
+	}
+
+	return paths
+}
+
+// writeGolden writes data to path, creating parent directories as needed.
+// Permissions 0750/0600 are used for directory/file to satisfy gosec G301/G306.
+func writeGolden(t *testing.T, path string, data []byte) {
+	t.Helper()
+
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
+		t.Fatalf("mkdir %s: %v", filepath.Dir(path), err)
+	}
+
+	if err := os.WriteFile(path, data, 0o600); err != nil { //nolint:gosec // test golden file path
+		t.Fatalf("write golden %s: %v", path, err)
+	}
+}
