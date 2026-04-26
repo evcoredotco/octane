@@ -44,7 +44,7 @@ func TestDeterminism(t *testing.T) {
 	for _, p := range storyPaths {
 		p := p // capture for sub-test
 
-		t.Run(filepath.Base(p), func(t *testing.T) {
+		t.Run(filepath.ToSlash(p), func(t *testing.T) {
 			t.Parallel()
 			runDeterminismCheck(t, p)
 		})

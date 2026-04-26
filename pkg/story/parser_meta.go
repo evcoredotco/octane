@@ -171,6 +171,13 @@ func (p *parser) applyMetaEntry(
 			)
 		}
 
+		if count < 1 || count > 10000 {
+			return fmt.Errorf(
+				"%s:%d:%d: Stations value %d is out of range; must be between 1 and 10000",
+				p.file, entry.line, entry.column, count,
+			)
+		}
+
 		meta.Stations = count
 		tracker.hasStations = true
 
