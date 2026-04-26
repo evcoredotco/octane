@@ -1,0 +1,117 @@
+# Example GitHub Actions workflow for running OCTANE conformance tests
+# in a CSMS project's CI pipeline.
+#
+# Drop this file at .github/workflows/ocpp-conformance.yml in the
+# project being tested. Adjust the CSMS startup step to match how
+# your CSMS is deployed (docker compose, helm chart, in-cluster
+# deployment, or against a remote endpoint).
+#
+# This workflow demonstrates:
+#   - OCTANE cache restoration across runs (per ADR 0016)
+#   - Partial cache hits via restore-keys
+#   - Report artifact upload for both passing and failing runs
+#   - Fan-out across OCPP versions via matrix strategy
+
+name: ocpp-conformance
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Avoid stacking conformance runs against the same branch.
+concurrency:
+  group: octane-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  conformance:
+    name: OCPP ${{ matrix.ocpp-version }} conformance
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        ocpp-version: ["1.6", "2.0.1"]
+
+    env:
+      OCTANE_CACHE_DIR: ${{ github.workspace }}/.octane-cache
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Bring up the CSMS under test. Adapt this step to your stack:
+      # for a Helm-deployed CSMS, replace with `helm install ...`;
+      # for an external endpoint, skip and configure octane.yml to
+      # point at it.
+      - name: Start CSMS
+        run: |
+          cd test/reference
+          docker compose up -d --wait
+
+      # Restore the OCTANE result cache from the most recent matching
+      # run. The key changes when scenarios, connection profiles,
+      # or octane.yml change. The restore-keys clause enables
+      # partial cache hits: a new commit that touches one scenario
+      # invalidates that scenario's cached result but reuses every
+      # other.
+      - name: Restore OCTANE cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.OCTANE_CACHE_DIR }}
+          key: >-
+            octane-${{ runner.os }}-${{ matrix.ocpp-version }}-${{
+              hashFiles('scenarios/**', 'connections/**', 'octane.yml')
+            }}
+          restore-keys: |
+            octane-${{ runner.os }}-${{ matrix.ocpp-version }}-
+
+      # Run OCTANE against the CSMS. The action wraps the binary;
+      # use either this or `octane run` directly via the CLI step
+      # below.
+      - name: Run OCTANE
+        uses: octane-project/octane-action@v0
+        with:
+          stories: scenarios/v${{ matrix.ocpp-version }}/
+          fail-on: major
+          report-dir: reports/
+
+      # Upload reports as artifacts so they're inspectable from the
+      # Actions UI. `if: always()` ensures upload even when the
+      # conformance run fails.
+      - name: Upload conformance reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: octane-reports-${{ matrix.ocpp-version }}
+          path: reports/
+          retention-days: 14
+
+      # Optional: tear the CSMS down. omitted in many setups since
+      # the runner is ephemeral.
+      - name: Stop CSMS
+        if: always()
+        run: |
+          cd test/reference
+          docker compose down -v
+
+  # Aggregate gate. Useful when this workflow is required for a
+  # branch protection rule and you want one job to depend on.
+  conformance-gate:
+    name: OCPP conformance gate
+    needs: [conformance]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check conformance results
+        run: |
+          if [ "${{ needs.conformance.result }}" != "success" ]; then
+            echo "Conformance jobs failed"
+            exit 1
+          fi
+          echo "All conformance jobs passed"

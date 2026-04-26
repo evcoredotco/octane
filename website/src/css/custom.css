@@ -1,0 +1,10 @@
+/* OCTANE website custom styles. Brand decisions deferred per ADR 0023. */
+
+:root {
+  --ifm-color-primary: #2e8555;
+  --ifm-code-font-size: 95%;
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #25c2a0;
+}

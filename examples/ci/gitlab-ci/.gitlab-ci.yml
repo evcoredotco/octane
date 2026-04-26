@@ -1,0 +1,82 @@
+# Example .gitlab-ci.yml for running OCTANE conformance tests in a
+# CSMS project's CI pipeline.
+#
+# Drop this file at .gitlab-ci.yml (or include it from your existing
+# pipeline). Adjust the CSMS service definition to match how your
+# CSMS is deployed.
+#
+# This pipeline demonstrates:
+#   - OCTANE cache restoration across runs (per ADR 0016)
+#   - Partial cache hits via key prefixing
+#   - Report artifact upload for both passing and failing runs
+#   - Parallel fan-out per OCPP version
+
+stages:
+  - conformance
+
+variables:
+  OCTANE_CACHE_DIR: "${CI_PROJECT_DIR}/.octane-cache"
+  # Pin the OCTANE image tag explicitly; "latest" defeats cache
+  # invalidation by version because the binary identity changes
+  # silently.
+  OCTANE_IMAGE: "ghcr.io/octane-project/octane:0.1.0"
+
+# Reusable cache fragment. The key includes:
+#   - the GitLab runner tags (so caches don't collide across
+#     differently-shaped runners)
+#   - the SHA of every scenario, connection profile, and
+#     octane.yml file (so any edit invalidates the whole cache;
+#     individual entries are then validated by their own SHA)
+.octane-cache: &octane-cache
+  cache:
+    key:
+      files:
+        - scenarios/**/*
+        - connections/**/*
+        - octane.yml
+      prefix: "octane-${CI_RUNNER_TAGS}"
+    paths:
+      - .octane-cache/
+    policy: pull-push
+
+# Reusable script for the conformance run.
+.octane-run: &octane-run
+  - octane run "scenarios/v${OCPP_VERSION}/" --fail-on major --report-dir reports/
+
+conformance:1.6:
+  stage: conformance
+  image: ${OCTANE_IMAGE}
+  variables:
+    OCPP_VERSION: "1.6"
+  services:
+    # Adjust to your CSMS deployment. This example assumes a
+    # docker image with the CSMS exposing port 8081.
+    - name: ghcr.io/citrineos/citrineos:1.6.0
+      alias: csms
+  <<: *octane-cache
+  script:
+    - *octane-run
+  artifacts:
+    when: always
+    name: "octane-reports-1.6-${CI_COMMIT_SHORT_SHA}"
+    paths:
+      - reports/
+    expire_in: 14 days
+
+conformance:2.0.1:
+  stage: conformance
+  image: ${OCTANE_IMAGE}
+  variables:
+    OCPP_VERSION: "2.0.1"
+  services:
+    - name: ghcr.io/citrineos/citrineos:2.0.1
+      alias: csms
+  <<: *octane-cache
+  script:
+    - *octane-run
+  artifacts:
+    when: always
+    name: "octane-reports-2.0.1-${CI_COMMIT_SHORT_SHA}"
+    paths:
+      - reports/
+    expire_in: 14 days

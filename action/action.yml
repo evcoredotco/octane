@@ -1,0 +1,81 @@
+name: "OCTANE — OCPP Conformance Check"
+description: >
+  Run OCTANE against a CSMS endpoint and produce a deterministic OCPP
+  conformance report. Supports OCPP 1.6J, 2.0.1, and 2.1.
+author: "The OCTANE Authors"
+branding:
+  icon: zap
+  color: green
+
+inputs:
+  csms:
+    description: "WSS endpoint of the target CSMS (e.g. wss://csms.example/ocpp/CP01)."
+    required: true
+  ocpp-version:
+    description: "OCPP version: 1.6, 2.0.1, or 2.1."
+    required: true
+    default: "2.0.1"
+  scenario:
+    description: >
+      Scenario set to run. Either a single scenario id (e.g.
+      'boot_notification') or a comma-separated list, or 'all' for the
+      full suite for the selected OCPP version.
+    required: true
+    default: "all"
+  config:
+    description: "Path to an OCTANE config YAML file. Optional."
+    required: false
+    default: ""
+  seed:
+    description: "Deterministic seed for reproducible runs. Default: 0."
+    required: false
+    default: "0"
+  insecure:
+    description: >
+      Disable TLS verification (NOT for production). Setting this to
+      'true' adds an explicit banner to the report.
+    required: false
+    default: "false"
+  report-path:
+    description: "Where to write the JSON report inside the workspace."
+    required: false
+    default: "report.json"
+  fail-on:
+    description: >
+      Severity threshold that fails the action: 'block', 'major',
+      'minor', or 'never'.
+    required: false
+    default: "major"
+
+outputs:
+  report-path:
+    description: "Path to the produced JSON report."
+    value: ${{ steps.run.outputs.report-path }}
+  passed:
+    description: "true if no findings exceeded the fail-on threshold."
+    value: ${{ steps.run.outputs.passed }}
+  summary:
+    description: "Short text summary of findings."
+    value: ${{ steps.run.outputs.summary }}
+
+runs:
+  using: "docker"
+  image: "Dockerfile"
+  args:
+    - "run"
+    - "--csms"
+    - "${{ inputs.csms }}"
+    - "--ocpp-version"
+    - "${{ inputs.ocpp-version }}"
+    - "--scenario"
+    - "${{ inputs.scenario }}"
+    - "--seed"
+    - "${{ inputs.seed }}"
+    - "--insecure"
+    - "${{ inputs.insecure }}"
+    - "--report"
+    - "${{ inputs.report-path }}"
+    - "--fail-on"
+    - "${{ inputs.fail-on }}"
+    - "--config"
+    - "${{ inputs.config }}"

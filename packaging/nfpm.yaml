@@ -1,0 +1,104 @@
+# nfpm.yaml — packaging manifest for .deb and .rpm.
+#
+# Invoked by goreleaser via the `nfpm` integration. Produces:
+#   - dist/octane_<version>_<arch>.deb
+#   - dist/octane-<version>-<release>.<arch>.rpm
+#
+# Per ADR 0020 (distribution channels), ADR 0011 (man pages), and
+# ADR 0012 (shell completion). FHS-compliant install paths.
+
+name: octane
+arch: amd64
+platform: linux
+version: "${OCTANE_VERSION}"
+section: net
+priority: optional
+maintainer: "OCTANE Authors <maintainers@octane.dev>"
+description: |
+  OCPP Conformance Testing & Network Evaluation.
+  A wire-only conformance harness for OCPP 1.6J / 2.0.1 / 2.1
+  Charging Station Management Systems. Drives an unmodified CSMS
+  by impersonating one or more charging stations and matching wire
+  responses against the OCPP specification.
+vendor: "The OCTANE Authors"
+homepage: "https://octane.dev"
+license: "Apache-2.0"
+
+contents:
+  # Binary
+  - src: ./bin/octane
+    dst: /usr/bin/octane
+    file_info:
+      mode: 0755
+
+  # Section 1 man pages — one per cobra subcommand, generated.
+  - src: ./build/man/man1/
+    dst: /usr/share/man/man1/
+    file_info:
+      mode: 0644
+
+  # Section 5 man pages (file formats)
+  - src: ./build/man/man5/octane.yml.5
+    dst: /usr/share/man/man5/octane.yml.5
+    file_info:
+      mode: 0644
+  - src: ./build/man/man5/octane.story.5
+    dst: /usr/share/man/man5/octane.story.5
+    file_info:
+      mode: 0644
+
+  # Section 7 man page (concepts)
+  - src: ./build/man/man7/octane.7
+    dst: /usr/share/man/man7/octane.7
+    file_info:
+      mode: 0644
+
+  # Shell completions — bash and zsh per ADR 0012.
+  - src: ./build/completions/octane.bash
+    dst: /usr/share/bash-completion/completions/octane
+    file_info:
+      mode: 0644
+  - src: ./build/completions/_octane
+    dst: /usr/share/zsh/vendor-completions/_octane
+    file_info:
+      mode: 0644
+
+  # Documentation
+  - src: ./README.md
+    dst: /usr/share/doc/octane/README.md
+    file_info:
+      mode: 0644
+  - src: ./CHANGELOG.md
+    dst: /usr/share/doc/octane/CHANGELOG.md
+    file_info:
+      mode: 0644
+  - src: ./LICENSE
+    dst: /usr/share/doc/octane/copyright
+    file_info:
+      mode: 0644
+
+# Compress man pages on installation. nfpm gzips automatically when
+# the destination ends in /man{1..9}/ on Debian-style installs.
+deb:
+  compression: xz
+  fields:
+    Bugs: https://github.com/octane-project/octane/issues
+
+rpm:
+  group: Development/Tools
+  compression: xz
+  signature:
+    key_file: "${RPM_GPG_KEY_FILE:-}"
+
+# Conflicts and recommendations
+overrides:
+  deb:
+    recommends:
+      - bash-completion
+      - zsh-completions
+    suggests:
+      - docker.io
+  rpm:
+    recommends:
+      - bash-completion
+      - zsh-autosuggestions

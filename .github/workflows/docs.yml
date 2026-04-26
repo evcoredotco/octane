@@ -1,0 +1,124 @@
+name: docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/man/**"
+      - "website/**"
+      - "scripts/gen-manpages.sh"
+      - "scripts/gen-completions.sh"
+      - ".github/workflows/docs.yml"
+      - "Makefile"
+  pull_request:
+    branches: [main]
+    paths:
+      - "docs/man/**"
+      - "website/**"
+      - "cmd/octane/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  man-pages:
+    name: Build man pages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+
+      - name: Install scdoc
+        run: sudo apt-get update && sudo apt-get install -y scdoc
+
+      - name: Build OCTANE binary
+        run: make build
+
+      - name: Generate man pages
+        run: make man
+
+      - name: Sanity-check man output
+        run: |
+          set -e
+          test -d build/man/man1
+          test -f build/man/man5/octane.yml.5
+          test -f build/man/man5/octane.story.5
+          test -f build/man/man7/octane.7
+          # Each generated section-1 page should at least mention SYNOPSIS.
+          for f in build/man/man1/*.1; do
+            grep -q "SYNOPSIS" "$f" || { echo "no SYNOPSIS in $f"; exit 1; }
+          done
+
+      - name: Upload man pages
+        uses: actions/upload-artifact@v4
+        with:
+          name: man-pages-${{ github.sha }}
+          path: build/man/
+          retention-days: 7
+
+  completions:
+    name: Build shell completions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+
+      - name: Build OCTANE binary
+        run: make build
+
+      - name: Generate completions
+        run: make completions
+
+      - name: Lint bash completion
+        run: bash -n build/completions/octane.bash
+
+      - name: Lint zsh completion (parse-only)
+        run: |
+          # zsh in non-interactive mode can syntax-check completion files.
+          sudo apt-get update && sudo apt-get install -y zsh
+          zsh -n build/completions/_octane
+
+  website:
+    name: Build Docusaurus site
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install dependencies
+        working-directory: website
+        run: npm ci || npm install
+
+      - name: Build site
+        working-directory: website
+        run: npm run build
+
+      - name: Upload site artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: website-${{ github.sha }}
+          path: website/build/
+          retention-days: 7
