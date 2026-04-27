@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -12,6 +13,9 @@ import (
 
 	"github.com/octane-project/octane/cmd/octane/internal/config"
 	"github.com/octane-project/octane/cmd/octane/internal/exitcode"
+	reportpkg "github.com/octane-project/octane/pkg/report"
+	reportjson "github.com/octane-project/octane/pkg/report/json"
+	"github.com/octane-project/octane/pkg/report/robotxml"
 	"github.com/octane-project/octane/pkg/runner"
 )
 
@@ -25,6 +29,8 @@ var runFlags struct {
 	noWait             bool
 	insecureSkipVerify bool
 	failOn             string
+	reportDir          string
+	noTraceOnPass      bool
 }
 
 //nolint:exhaustruct // cobra.Command has many optional fields
@@ -95,6 +101,20 @@ func init() {
 		`exit with failure when threshold is reached: "any" (default) or "major"`,
 	)
 
+	flags.StringVar(
+		&runFlags.reportDir,
+		"report-dir",
+		"reports/",
+		"directory in which per-run report subdirectories are written",
+	)
+
+	flags.BoolVar(
+		&runFlags.noTraceOnPass,
+		"no-trace-on-pass",
+		false,
+		"omit wire-trace data from reports for stories that passed",
+	)
+
 	rootCmd.AddCommand(runCmd)
 }
 
@@ -149,7 +169,7 @@ func runStories(_ *cobra.Command, storyPaths []string) error {
 		ShardTotal:         shardTotal,
 		CacheDir:           cfg.CacheDir,
 		NoCache:            globalFlags.noCache,
-		NoTraceOnPass:      false,
+		NoTraceOnPass:      runFlags.noTraceOnPass,
 		OCPPVersion:        cfg.OCPPVersion,
 		InsecureSkipVerify: cfg.InsecureSkipVerify,
 	}
@@ -169,6 +189,36 @@ func runStories(_ *cobra.Command, storyPaths []string) error {
 		result.Summary.Skipped,
 		result.Summary.CacheHits,
 	)
+
+	if runFlags.reportDir != "" {
+		reportPath := filepath.Join(runFlags.reportDir, result.RunID)
+
+		jsonOpts := reportpkg.JSONOptions{
+			NoTraceOnPass: runFlags.noTraceOnPass,
+			OctaneVersion: version,
+		}
+
+		if writeErr := reportjson.WriteJSON(result, reportPath, jsonOpts); writeErr != nil {
+			_, _ = fmt.Fprintf(
+				os.Stderr,
+				"octane: warning: JSON report write failed: %v\n",
+				writeErr,
+			)
+		}
+
+		xmlOpts := reportpkg.RobotXMLOptions{ //nolint:exhaustruct // SuiteName defaults to "OCTANE Conformance"
+		}
+
+		if writeErr := robotxml.WriteRobotXML(result, reportPath, xmlOpts); writeErr != nil {
+			_, _ = fmt.Fprintf(
+				os.Stderr,
+				"octane: warning: Robot XML report write failed: %v\n",
+				writeErr,
+			)
+		}
+
+		_, _ = fmt.Fprintf(os.Stdout, "report-dir=%s\n", reportPath)
+	}
 
 	if result.Summary.Failed > 0 {
 		exitcode.Exec(exitcode.TestFailed)

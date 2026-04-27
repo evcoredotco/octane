@@ -44,12 +44,20 @@ Sharding splits the story set across CI workers:
 	maximum number of stories to run concurrently
 
 .PP
+\fB--no-trace-on-pass\fP[=false]
+	omit wire-trace data from reports for stories that passed
+
+.PP
 \fB--no-wait\fP[=false]
 	fail immediately when a cache lock is busy instead of waiting
 
 .PP
 \fB--ocpp-version\fP=""
 	restrict run to stories declaring this OCPP version (e.g. "1.6", "2.0.1")
+
+.PP
+\fB--report-dir\fP="reports/"
+	directory in which per-run report subdirectories are written
 
 .PP
 \fB--shard\fP=""
