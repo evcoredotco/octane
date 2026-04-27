@@ -12,13 +12,37 @@ project's conventions.
 
 ## Table of contents
 
+- [Developer setup](#developer-setup)
 - [Spec-driven development](#spec-driven-development)
 - [Authoring conformance stories](#authoring-conformance-stories)
 - [Authoring helper stories](#authoring-helper-stories)
 - [Adding keywords](#adding-keywords)
 - [Keyword author guide](#keyword-author-guide)
+- [OCPP 1.6 data types](#ocpp-16-data-types)
 - [Code style](#code-style)
 - [Commits and PRs](#commits-and-prs)
+
+## Developer setup
+
+Run this once after cloning:
+
+```bash
+make dev-setup
+```
+
+This installs the Go toolchain helpers (`gofumpt`, `golines`, `gci`,
+`golangci-lint`, `goreleaser`) and configures `GOPRIVATE` to include
+`github.com/evcoreco/*`.
+
+The `GOPRIVATE` setting is required because OCTANE depends on
+`github.com/evcoreco/ocpp16types`, the EVCore shared OCPP 1.6 type
+module (ADR 0020). Without it, `go mod tidy` and `go get` cannot
+resolve the module. Run `go env GOPRIVATE` to confirm the setting
+persisted.
+
+Once `github.com/evcoreco/ocpp16types` publishes its first tagged
+release, run `make pin-ocpp16types` to add the pinned entry to
+`go.mod` and commit the result.
 
 ## Spec-driven development
 
@@ -148,9 +172,7 @@ They live under `pkg/keywords/`:
 - `pkg/keywords/api/`         — public surface (do not modify lightly)
 - `pkg/keywords/registry/`    — self-registration mechanism
 - `pkg/keywords/primitive/`   — transport-level escape hatches
-- `pkg/keywords/domain/v16/`  — OCPP 1.6 keywords
-- `pkg/keywords/domain/` — OCPP 1.6 keywords
-- `pkg/keywords/domain/v21/`  — OCPP 1.6 keywords
+- `pkg/keywords/domain/v16/`  — OCPP 1.6 domain keywords
 
 Each keyword registers exactly one pattern. Domain keywords are
 identical for every CSMS implementing the OCPP version they target;
@@ -188,12 +210,11 @@ WebSocket or sending a raw frame). Write a **domain** keyword when the
 operation encodes OCPP semantics for a specific version (for example,
 sending a BootNotification CALL and validating the CALLRESULT).
 
-Domain keywords live under `pkg/keywords/domain/v16/`, ``, or
-`v21/` depending on the OCPP version. Primitive keywords live under
-`pkg/keywords/primitive/`. Do not write domain keywords that vary by
-CSMS: OCTANE has no per-CSMS override layer (constitution principle
-XII). If a CSMS deviates from the spec, that deviation surfaces as a
-finding — not as a different keyword.
+Domain keywords live under `pkg/keywords/domain/v16/`. Primitive
+keywords live under `pkg/keywords/primitive/`. Do not write domain
+keywords that vary by CSMS: OCTANE has no per-CSMS override layer
+(constitution principle XII). If a CSMS deviates from the spec, that
+deviation surfaces as a finding — not as a different keyword.
 
 ### The `api.Func` signature
 
@@ -396,6 +417,47 @@ go run ./pkg/keywords/api/mock/testdata/external/keyword.go
 
 The file carries `//go:build ignore` and is not compiled by
 `go test ./...`; it is documentation as code.
+
+---
+
+## OCPP 1.6 data types
+
+**All OCPP 1.6 data types must come from `github.com/evcoreco/ocpp16types`
+(ADR 0020).** This is an absolute rule: never declare a local struct,
+type alias, or constant for any type defined by the OCPP 1.6
+specification.
+
+Types covered by this rule:
+
+| Category | Examples |
+|----------|---------|
+| Request / response | `BootNotificationRequest`, `BootNotificationResponse`, `HeartbeatRequest` |
+| Notifications | `MeterValuesRequest`, `StatusNotificationRequest` |
+| Enumerations | `RegistrationStatus`, `ChargePointStatus`, `AuthorizationStatus` |
+| Sub-objects | `IdTagInfo`, `MeterValue`, `SampledValue` |
+| Field types | `CiString20Type`, `CiString50Type` |
+
+Import the module with the project-standard alias:
+
+```go
+import ocpp16 "github.com/evcoreco/ocpp16types"
+
+// Use as:
+req := ocpp16.BootNotificationRequest{
+    ChargePointModel:  args.String("model"),
+    ChargePointVendor: args.String("vendor"),
+}
+```
+
+If the type you need is absent from `ocpp16types`:
+
+1. Open a PR against `github.com/evcoreco/ocpp16types` with the type.
+2. Reference that upstream PR in your OCTANE task.
+3. Do **not** merge the OCTANE task until the upstream release is tagged.
+4. Run `make pin-ocpp16types` once the release lands to update the pin.
+
+The `reviewer` agent flags any locally-declared OCPP type as an
+automatic `REQUEST CHANGES`.
 
 ---
 

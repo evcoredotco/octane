@@ -26,7 +26,7 @@ GCI           ?= gci
 
 PKG    := ./...
 BIN    := ./bin/octane
-MODULE := github.com/octane-project/octane
+MODULE := github.com/evcoreco/octane
 
 .DEFAULT_GOAL := help
 
@@ -111,6 +111,22 @@ install-tools: ## Install development tooling.
 	$(GO) install github.com/daixiang0/gci@latest
 	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	$(GO) install github.com/goreleaser/goreleaser/v2@latest
+
+.PHONY: dev-setup
+dev-setup: install-tools ## One-time dev environment setup (runs install-tools + configures GOPRIVATE).
+	$(GO) env -w GOPRIVATE=github.com/evcoreco/*
+	@echo "GOPRIVATE set to github.com/evcoreco/* (required for ocpp16types — ADR 0020)"
+	@echo "Run 'go env GOPRIVATE' to verify."
+
+# Run this once github.com/evcoreco/ocpp16types publishes its first tagged release.
+# Replace vX.Y.Z with the actual release tag.
+.PHONY: pin-ocpp16types
+pin-ocpp16types: ## Pin github.com/evcoreco/ocpp16types to its latest release (ADR 0020).
+	@echo "Checking GOPRIVATE..."
+	@go env GOPRIVATE | grep -q "evcoreco" || (echo "ERROR: run 'make dev-setup' first to configure GOPRIVATE" && exit 1)
+	$(GO) get github.com/evcoreco/ocpp16types@latest
+	$(GO) mod tidy
+	@echo "ocpp16types pinned. Commit go.mod and go.sum."
 
 # ----------------------------------------------------------------------
 # Documentation: man pages, shell completions, web site
