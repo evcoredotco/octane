@@ -121,13 +121,15 @@ func WriteRobotXML(
 		return err
 	}
 
-	if err := os.MkdirAll(dir, 0o750); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return err
 	}
 
 	outPath := filepath.Join(dir, outputFileName)
 
-	payload := append([]byte(xmlHeader), data...)
+	payload := make([]byte, 0, len(xmlHeader)+len(data)+1)
+	payload = append(payload, xmlHeader...)
+	payload = append(payload, data...)
 	payload = append(payload, '\n')
 
 	return os.WriteFile(outPath, payload, 0o600)

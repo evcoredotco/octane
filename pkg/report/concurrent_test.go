@@ -41,10 +41,11 @@ func Test_report_WriteJSON_ConcurrentDistinctRunIDs(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
+			fixedTime := time.Date(2024, 1, 15, 10, 0, 0, 0, time.UTC)
 			result := &runner.RunResult{
 				RunID:      fmt.Sprintf("run-%02d", i),
-				StartedAt:  time.Now(),
-				FinishedAt: time.Now(),
+				StartedAt:  fixedTime,
+				FinishedAt: fixedTime.Add(5 * time.Second),
 				Stories:    []runner.StoryResult{},
 				Summary:    runner.Summary{ //nolint:exhaustruct // zero-value fixture
 				},
