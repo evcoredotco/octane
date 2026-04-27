@@ -48,4 +48,4 @@ jobs:
 
       - name: Verify octane binary starts
         run: |
-          docker run --rm octane-action:smoke /usr/local/bin/octane --help
+          docker run --rm --entrypoint /usr/local/bin/octane octane-action:smoke --help
