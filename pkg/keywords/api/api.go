@@ -154,6 +154,16 @@ type State interface {
 	// determinism across runs (constitution principle IV).
 	Now() time.Time
 
+	// Sleep blocks until d has elapsed on the runtime's clock, or
+	// until ctx is cancelled. Keywords MUST use this instead of
+	// [time.Sleep] so that the runtime can inject a deterministic
+	// clock and tests complete without real wall-clock delay
+	// (constitution principle IV).
+	//
+	// Returns [context.Canceled] or [context.DeadlineExceeded] if
+	// the context is done before d elapses.
+	Sleep(ctx context.Context, d time.Duration) error
+
 	// Logf emits a structured log line scoped to the current
 	// step execution. The format string and arguments follow
 	// [fmt.Sprintf] conventions. Log output appears in the
