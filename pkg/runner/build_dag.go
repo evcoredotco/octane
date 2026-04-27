@@ -122,9 +122,24 @@ func buildDAG(
 	nodes := make([]storyNode, 0, len(stories))
 	nodeIdx := make(map[string]int, len(stories))
 
-	// First pass: create all nodes. For each story we create one
-	// node per station handle.
+	// Pre-scan: collect story IDs that appear as prerequisites in any
+	// Depends entry. These stories must NOT be expanded into standalone
+	// per-station nodes in the first pass; instead their scoped nodes
+	// are created on demand in the second pass (addDepEdges) to avoid
+	// creating both a standalone /CP01 node and a /runID node for the
+	// same story when scope = per-run or scope = global.
+	prereqIDs := collectPrereqIDs(stories)
+
+	// First pass: create standalone nodes for stories that are NOT
+	// referenced as prerequisites. Each such story runs independently,
+	// once per station handle declared in its Meta.Stations field.
 	for _, storyAST := range stories {
+		if prereqIDs[storyAST.Meta.ID] {
+			// This story will be instantiated by addDepEdges below
+			// with the correct scope (per-station, per-run, or global).
+			continue
+		}
+
 		stationCount := effectiveStationCount(
 			storyAST.Meta.Stations,
 			stationCountOverride,
@@ -171,6 +186,23 @@ func buildDAG(
 
 		for _, depScopeKey := range dependentScopeKeys {
 			dependentNID := makeNodeID(storyAST.Meta.ID, depScopeKey)
+
+			// Ensure the dependent node exists only when this story has
+			// dependencies. A story with no Depends skipped in the first
+			// pass (because it is a prereq of another story) should NOT
+			// be recreated here with its per-station scope key — it will
+			// be instantiated by addDepEdges with the correct scope when
+			// a dependent story references it.
+			if len(storyAST.Meta.Depends) > 0 {
+				ensureNodeExists(
+					dependentNID,
+					storyAST,
+					depScopeKey,
+					grph,
+					&nodes,
+					nodeIdx,
+				)
+			}
 
 			for _, dep := range storyAST.Meta.Depends {
 				if err := addDepEdges(
@@ -232,12 +264,23 @@ func addDepEdges(
 		return nil
 	}
 
-	prereqStationCount := effectiveStationCount(
-		prereqStory.Meta.Stations,
-		stationCountOverride,
-	)
+	// For per-station scope, the prerequisite runs once per station of
+	// the DEPENDENT story (not once per station of the prereq itself).
+	// The dependent's scope key encodes the station handle for this
+	// particular instance, so we mirror it onto the prereq.
+	var prereqScopeKeys []string
 
-	prereqScopeKeys := scopeKeysFor(dep.Scope, prereqStationCount, runID)
+	if dep.Scope == ast.ScopePerStation {
+		_, depScopeKey := splitNodeID(dependentNID)
+		prereqScopeKeys = []string{depScopeKey}
+	} else {
+		prereqStationCount := effectiveStationCount(
+			prereqStory.Meta.Stations,
+			stationCountOverride,
+		)
+
+		prereqScopeKeys = scopeKeysFor(dep.Scope, prereqStationCount, runID)
+	}
 
 	for _, prereqScopeKey := range prereqScopeKeys {
 		prereqNID := makeNodeID(dep.ID, prereqScopeKey)
@@ -322,4 +365,21 @@ func inShardFilter(testID string, shardIndex, shardTotal int) bool {
 // Separated from inShardFilter to keep cyclomatic complexity low.
 func sha256Sum(text string) [32]byte {
 	return sha256Of([]byte(text))
+}
+
+// collectPrereqIDs returns the set of story IDs that appear as
+// prerequisites in any Depends entry within the given story collection.
+// The set is used by buildDAG to skip standalone node creation for
+// prerequisite stories; their scoped instances are created on-demand
+// by addDepEdges with the correct scope key.
+func collectPrereqIDs(stories []*ast.Story) map[string]bool {
+	prereqs := make(map[string]bool)
+
+	for _, storyAST := range stories {
+		for _, dep := range storyAST.Meta.Depends {
+			prereqs[dep.ID] = true
+		}
+	}
+
+	return prereqs
 }

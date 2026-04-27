@@ -174,10 +174,12 @@ func (ss *schedulerState) skipDependents(
 
 		causeChain := buildCauseChain(originResult)
 
+		depStoryID, depScopeKey := splitNodeID(depID)
+
 		skipResult := StoryResult{
 			Order:       0,
-			TestID:      depID,
-			ScopeKey:    "",
+			TestID:      depStoryID,
+			ScopeKey:    depScopeKey,
 			OCPPVersion: "",
 			Status:      StatusSkipped,
 			CacheStatus: CacheMiss,
@@ -186,12 +188,12 @@ func (ss *schedulerState) skipDependents(
 			Findings: []Finding{
 				{
 					Message: "skipped: prerequisite " +
-						originID + " failed",
+						originResult.TestID + " failed",
 					Severity: "error",
 				},
 			},
 			Trace:      nil,
-			Cause:      originID,
+			Cause:      originResult.TestID,
 			CauseChain: causeChain,
 		}
 
