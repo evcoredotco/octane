@@ -117,21 +117,6 @@ type Key struct {
 	ParameterSHA string
 }
 
-// Hash returns the SHA-256 hex digest of the cache key tuple.
-// The fields are joined in lexicographic field-name order with
-// colon separators, matching the derivation algorithm in ADR 0016.
-//
-// The returned string is used as the filesystem path component
-// under the cache directory (with a two-character fanout prefix).
-//
-// Implementation is provided by T-005-21; this method is a stub
-// that panics until that task lands.
-func (k Key) Hash() string {
-	panic(
-		"cache: Key.Hash not yet implemented (T-005-21)",
-	)
-}
-
 // Entry is a single cache entry comprising the serialised test
 // result, the optional wire trace, and timing metadata.
 //

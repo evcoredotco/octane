@@ -1,0 +1,92 @@
+package cache
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"time"
+)
+
+// schemaVersion is the current schema version written into
+// version.json by [Open]. Readers compare this value against
+// the supported range to detect incompatible cache directories.
+const schemaVersion = 1
+
+// versionStamp is the structure written to version.json at
+// cache-open time. It lets operators and future OCTANE versions
+// detect schema incompatibilities before reading entries.
+type versionStamp struct {
+	// SchemaVersion is the integer schema version of this
+	// cache directory. Currently always 1.
+	SchemaVersion int `json:"schema_version"`
+
+	// CreatedAt is the RFC 3339 timestamp when the cache
+	// directory was first initialised.
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// Open creates (or verifies) a content-addressed cache directory
+// rooted at dir and returns a [Cache] implementation backed by
+// that directory tree.
+//
+// Open creates the following sub-directories if they do not exist:
+//
+//	<dir>/results/   — two-character fanout directories live here
+//	<dir>/locks/     — flock target files (Phase 4, T-005-30)
+//
+// A version stamp file (<dir>/version.json) is written on the
+// first call; subsequent calls leave the existing stamp intact.
+//
+// Open returns an error if dir cannot be created, if the directory
+// tree is not writable, or if the version stamp cannot be written.
+func Open(dir string) (Cache, error) {
+	subDirs := []string{
+		filepath.Join(dir, "results"),
+		filepath.Join(dir, "locks"),
+	}
+
+	for _, sub := range subDirs {
+		if err := os.MkdirAll(sub, 0o750); err != nil {
+			return nil, fmt.Errorf(
+				"cache: create directory %q: %w",
+				sub,
+				err,
+			)
+		}
+	}
+
+	if err := writeVersionStamp(dir); err != nil {
+		return nil, err
+	}
+
+	return &FileCache{dir: dir}, nil
+}
+
+// writeVersionStamp writes version.json into dir if the file does
+// not already exist. If the file is present (cache was opened
+// before), writeVersionStamp is a no-op.
+func writeVersionStamp(dir string) error {
+	versionPath := filepath.Join(dir, "version.json")
+
+	if _, err := os.Stat(versionPath); err == nil {
+		// File already exists; leave it untouched.
+		return nil
+	}
+
+	stamp := versionStamp{
+		SchemaVersion: schemaVersion,
+		CreatedAt:     time.Now().UTC(),
+	}
+
+	data, err := json.Marshal(stamp)
+	if err != nil {
+		return fmt.Errorf("cache: marshal version stamp: %w", err)
+	}
+
+	if err = atomicWriteFile(versionPath, data); err != nil {
+		return fmt.Errorf("cache: write version stamp: %w", err)
+	}
+
+	return nil
+}
