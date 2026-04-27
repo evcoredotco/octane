@@ -41,5 +41,7 @@ func Load(path string) (Config, error) {
 // --config flag and is therefore operator-controlled; the gosec G304
 // warning is intentionally suppressed.
 func readConfigFile(path string) ([]byte, error) {
-	return os.ReadFile(path) //nolint:gosec // G304: path from --config flag; operator-controlled
+	return os.ReadFile(
+		path,
+	) //nolint:gosec // G304: path from --config flag; operator-controlled
 }

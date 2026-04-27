@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/octane-project/octane/pkg/runner"
 	_ "github.com/octane-project/octane/pkg/keywords/primitive"
+	"github.com/octane-project/octane/pkg/runner"
 )
 
 // storyAlwaysFails uses an unrecognised step so the runner produces ErrNoMatch.
@@ -64,7 +64,11 @@ func Test_runner_RunDependentSkippedOnPrereqFailure(t *testing.T) {
 
 	const expectedStories = 2
 	if len(result.Stories) != expectedStories {
-		t.Fatalf("len(result.Stories): want %d, got %d", expectedStories, len(result.Stories))
+		t.Fatalf(
+			"len(result.Stories): want %d, got %d",
+			expectedStories,
+			len(result.Stories),
+		)
 	}
 
 	byID := storyResultsByTestID(result.Stories)
@@ -99,7 +103,9 @@ func Test_runner_RunDependentSkippedOnPrereqFailure(t *testing.T) {
 }
 
 // storyResultsByTestID indexes a slice of StoryResult by TestID for O(1) lookup.
-func storyResultsByTestID(stories []runner.StoryResult) map[string]runner.StoryResult {
+func storyResultsByTestID(
+	stories []runner.StoryResult,
+) map[string]runner.StoryResult {
 	m := make(map[string]runner.StoryResult, len(stories))
 
 	for _, sr := range stories {

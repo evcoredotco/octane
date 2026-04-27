@@ -513,7 +513,13 @@ func executeWithLock(
 
 	// Steps 5–6: write result and trace to the cache.
 	if result.Status == StatusPassed || result.Status == StatusFailed {
-		writeToCache(ctx, storyCache, cacheKey, result, storyNodeVal.story.Meta.CacheTTL)
+		writeToCache(
+			ctx,
+			storyCache,
+			cacheKey,
+			result,
+			storyNodeVal.story.Meta.CacheTTL,
+		)
 	}
 
 	return result
@@ -914,7 +920,9 @@ func walkStoryFiles(root string) ([]*ast.Story, error) {
 				return nil
 			}
 
-			data, readErr := os.ReadFile(path) //nolint:gosec // G304: paths from cfg.StoryPaths
+			data, readErr := os.ReadFile(
+				path,
+			) //nolint:gosec // G304: paths from cfg.StoryPaths
 			if readErr != nil {
 				return fmt.Errorf("read %q: %w", path, readErr)
 			}

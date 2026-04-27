@@ -11,9 +11,9 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/octane-project/octane/pkg/runner"
 	// Registers wait {duration:duration} and other primitive keywords.
 	_ "github.com/octane-project/octane/pkg/keywords/primitive"
+	"github.com/octane-project/octane/pkg/runner"
 )
 
 // storyChainA is the root of a 4-deep chain: no dependencies.
@@ -99,17 +99,29 @@ func Test_runner_RunChain(t *testing.T) {
 	// Invariant: all 4 stories must be present in the result.
 	const expectedStories = 4
 	if len(result.Stories) != expectedStories {
-		t.Fatalf("len(result.Stories): want %d, got %d", expectedStories, len(result.Stories))
+		t.Fatalf(
+			"len(result.Stories): want %d, got %d",
+			expectedStories,
+			len(result.Stories),
+		)
 	}
 
 	// Invariant: all stories must have passed with cache bypassed.
 	for _, sr := range result.Stories {
 		if sr.Status != runner.StatusPassed {
-			t.Errorf("story %q: want StatusPassed, got %s", sr.TestID, sr.Status)
+			t.Errorf(
+				"story %q: want StatusPassed, got %s",
+				sr.TestID,
+				sr.Status,
+			)
 		}
 
 		if sr.CacheStatus != runner.CacheBypassed {
-			t.Errorf("story %q: want CacheBypassed, got %s", sr.TestID, sr.CacheStatus)
+			t.Errorf(
+				"story %q: want CacheBypassed, got %s",
+				sr.TestID,
+				sr.CacheStatus,
+			)
 		}
 	}
 

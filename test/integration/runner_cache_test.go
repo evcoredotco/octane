@@ -8,8 +8,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/octane-project/octane/pkg/runner"
 	_ "github.com/octane-project/octane/pkg/keywords/primitive"
+	"github.com/octane-project/octane/pkg/runner"
 )
 
 // storyPrereq is a simple passing story with no dependencies.
@@ -64,13 +64,21 @@ func Test_runner_RunCacheHitOnSecondRun(t *testing.T) {
 
 	const expectedStoriesCount = 2
 	if len(firstResult.Stories) != expectedStoriesCount {
-		t.Fatalf("first run: len(Stories): want %d, got %d", expectedStoriesCount, len(firstResult.Stories))
+		t.Fatalf(
+			"first run: len(Stories): want %d, got %d",
+			expectedStoriesCount,
+			len(firstResult.Stories),
+		)
 	}
 
 	for _, sr := range firstResult.Stories {
 		// Invariant: first run must be a cache miss.
 		if sr.CacheStatus != runner.CacheMiss {
-			t.Errorf("first run: story %q: want CacheMiss, got %s", sr.TestID, sr.CacheStatus)
+			t.Errorf(
+				"first run: story %q: want CacheMiss, got %s",
+				sr.TestID,
+				sr.CacheStatus,
+			)
 		}
 	}
 
@@ -81,14 +89,23 @@ func Test_runner_RunCacheHitOnSecondRun(t *testing.T) {
 	}
 
 	if len(secondResult.Stories) != expectedStoriesCount {
-		t.Fatalf("second run: len(Stories): want %d, got %d", expectedStoriesCount, len(secondResult.Stories))
+		t.Fatalf(
+			"second run: len(Stories): want %d, got %d",
+			expectedStoriesCount,
+			len(secondResult.Stories),
+		)
 	}
 
 	for _, sr := range secondResult.Stories {
 		// Invariant: second run must be a cache hit (pass or skip).
-		isHit := sr.CacheStatus == runner.CacheHitPass || sr.CacheStatus == runner.CacheHitSkip
+		isHit := sr.CacheStatus == runner.CacheHitPass ||
+			sr.CacheStatus == runner.CacheHitSkip
 		if !isHit {
-			t.Errorf("second run: story %q: want CacheHit*, got %s", sr.TestID, sr.CacheStatus)
+			t.Errorf(
+				"second run: story %q: want CacheHit*, got %s",
+				sr.TestID,
+				sr.CacheStatus,
+			)
 		}
 	}
 

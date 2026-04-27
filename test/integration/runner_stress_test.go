@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/octane-project/octane/pkg/runner"
 	_ "github.com/octane-project/octane/pkg/keywords/primitive"
+	"github.com/octane-project/octane/pkg/runner"
 )
 
 // stressPrereqStory is the single shared prerequisite for all stress leaves.
@@ -60,10 +60,17 @@ func Test_runner_RunStress(t *testing.T) {
 
 	storyDir := t.TempDir()
 
-	writeFile(t, filepath.Join(storyDir, "stress_prereq.story"), stressPrereqStory)
+	writeFile(
+		t,
+		filepath.Join(storyDir, "stress_prereq.story"),
+		stressPrereqStory,
+	)
 
 	for i := range totalLeaves {
-		name := filepath.Join(storyDir, fmt.Sprintf("stress_leaf_%03d.story", i))
+		name := filepath.Join(
+			storyDir,
+			fmt.Sprintf("stress_leaf_%03d.story", i),
+		)
 		writeFile(t, name, stressLeafTemplate(i))
 	}
 
@@ -80,19 +87,31 @@ func Test_runner_RunStress(t *testing.T) {
 
 	// Invariant: all 101 stories (1 prereq + 100 leaves) must be present.
 	if len(result.Stories) != expectedTotal {
-		t.Fatalf("len(result.Stories): want %d, got %d", expectedTotal, len(result.Stories))
+		t.Fatalf(
+			"len(result.Stories): want %d, got %d",
+			expectedTotal,
+			len(result.Stories),
+		)
 	}
 
 	// Invariant: all stories must have passed.
 	for _, sr := range result.Stories {
 		if sr.Status != runner.StatusPassed {
-			t.Errorf("story %q: want StatusPassed, got %s", sr.TestID, sr.Status)
+			t.Errorf(
+				"story %q: want StatusPassed, got %s",
+				sr.TestID,
+				sr.Status,
+			)
 		}
 	}
 
 	// Invariant: summary must report all passed.
 	if result.Summary.Passed != expectedTotal {
-		t.Errorf("Summary.Passed: want %d, got %d", expectedTotal, result.Summary.Passed)
+		t.Errorf(
+			"Summary.Passed: want %d, got %d",
+			expectedTotal,
+			result.Summary.Passed,
+		)
 	}
 
 	if result.Summary.Failed != 0 {
