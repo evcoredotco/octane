@@ -6,7 +6,7 @@
 
 # ----- builder ---------------------------------------------------------
 
-FROM golang:1.26-alpine AS builder
+FROM golang:1.26.2-alpine AS builder
 
 # BuildKit injects TARGETARCH and TARGETOS when --platform is used.
 # Declare them here so the shell expansion below resolves correctly.
