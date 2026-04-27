@@ -9,6 +9,34 @@ This project adheres to [Keep a Changelog 1.1.0][kac] and
 
 ## [Unreleased]
 
+### Added — Spec 007: Reports
+
+- `pkg/report/json`: `WriteJSON` writes `octane.json` (schema_version: 1) to
+  `<report-dir>/<run-id>/` at the end of every `octane run`. The file is
+  byte-deterministic: stories are sorted by `(test_id, scope_key)` and
+  findings by `(severity desc, message asc)` (spec 007).
+- `pkg/report/robotxml`: `WriteRobotXML` writes a Robot Framework 7.x
+  `output.xml` to the same per-run directory. Wire trace frames become
+  `<kw name="trace.frame">` elements; story findings become `<msg>` children
+  on each test's `<status>` node (ADR 0009, spec 007).
+- `--report-dir` flag on `octane run` (default: `reports/`). Each run writes
+  into `<report-dir>/<run-id>/` so successive runs never overwrite one another
+  (spec 007).
+- `--no-trace-on-pass` flag on `octane run`. When set, wire trace data is
+  suppressed for stories that pass (`trace_present: false`, `trace` field
+  omitted). Failing and skipped stories are unaffected (spec 007).
+- `pkg/report/internal/redact`: deny-by-default redaction applied to
+  connection profile auth blocks (every field replaced) and HTTP headers
+  (`Authorization`, `Cookie`, `Set-Cookie`, `X-Api-Key`,
+  `Proxy-Authorization`). Redacted values become the literal string
+  `<redacted>` (spec 007).
+- `docs/concepts/reports.md`: report format reference — JSON schema, field
+  inventory, realistic example, Robot XML overview, `--no-trace-on-pass`
+  behaviour, and redaction rules (T-007-51).
+- `docs/integrations/robot-framework.md`: `rebot` quickstart (Docker and
+  pip), multi-shard merge with `rebot --merge`, and OCTANE-to-RF status
+  mapping table (T-007-52).
+
 ### Added — Spec 006: CLI and Action Surface
 
 - `cmd/octane/`: complete `octane` CLI built on `spf13/cobra` (ADR 0011).
