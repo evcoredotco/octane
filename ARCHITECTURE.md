@@ -216,7 +216,49 @@ mental model and emits its `output.xml` format (see §8).
 
 Defined in **ADR 0007**.
 
-## 6. Connection profiles
+## 6. Shared OCPP 1.6 data types
+
+All OCPP 1.6 message structs, field types, and enumeration constants used
+anywhere in OCTANE **must** be imported from the EVCore shared type module:
+
+```
+github.com/evcoreco/ocpp16types
+```
+
+This is a **hard architectural rule**, not a convention. The intent is
+that every EVCore application that speaks OCPP 1.6 operates on identical
+Go types — same field names, same JSON tags, same enum values, same
+validation logic — so that a protocol-level discrepancy can never hide
+behind a local type variant.
+
+| Category | Examples |
+|----------|---------|
+| Request / response structs | `BootNotificationRequest`, `BootNotificationResponse`, `HeartbeatRequest` |
+| Notification structs | `MeterValuesRequest`, `StatusNotificationRequest` |
+| Enumerations | `RegistrationStatus`, `ChargePointStatus`, `AuthorizationStatus` |
+| Sub-objects | `IdTagInfo`, `MeterValue`, `SampledValue` |
+| Field-level types | `CiString20Type`, `CiString50Type` |
+
+Local re-declarations — even for test packages — are **forbidden**. When
+`ocpp16types` does not yet expose a needed type, the correct action is to
+contribute the type to the upstream module first, then unblock the OCTANE
+task once the release is tagged.
+
+```go
+import ocpp16 "github.com/evcoreco/ocpp16types"
+
+// Keyword function bodies reference types as:
+//   ocpp16.BootNotificationRequest
+//   ocpp16.RegistrationStatus
+//   ocpp16.AuthorizationStatus
+```
+
+This rule is enforced at code-review time. The `reviewer` agent rejects
+any PR that introduces a locally-declared OCPP 1.6 data type.
+
+Defined in **ADR 0020**.
+
+## 7. Connection profiles
 
 OCTANE has no CSMS-specific behavioral adaptation surface
 (constitution principle XII). What is legitimately CSMS-specific is
@@ -255,7 +297,7 @@ metadata, full stop.
 
 Defined in **ADR 0010**.
 
-## 7. Test dependency graph
+## 8. Test dependency graph
 
 OCPP scenarios are not independent: a reservation test cannot run
 against a CSMS that has not registered the station, and a station
@@ -328,7 +370,7 @@ defined by the cache (see §8).
 
 Defined in **ADR 0015**.
 
-## 8. Cache and locks
+## 9. Cache and locks
 
 To make the dependency graph efficient, OCTANE caches test results
 across `octane run` invocations. The cache is a **content-addressed
@@ -457,7 +499,7 @@ Inspection is `cat | jq`. No SQL, no third-party tool to install.
 
 Defined in **ADR 0016**.
 
-## 9. Multi-station orchestration
+## 10. Multi-station orchestration
 
 Many stateful OCPP scenarios are reachable on the wire by coordinating
 two or more simulated stations. A story declares the count in `Meta`:
@@ -487,7 +529,7 @@ either order, and the report records both observed orders.
 
 Defined in **ADR 0008**.
 
-## 10. Reports
+## 11. Reports
 
 Every run produces two artefacts:
 
@@ -511,7 +553,7 @@ consumability.
 
 Defined in **ADR 0009**.
 
-## 11. Distribution and operator surface
+## 12. Distribution and operator surface
 
 ### CLI
 
@@ -591,7 +633,7 @@ modes deserve different content shapes. Three of its reference pages
 are mechanically generated (CLI, config schema, keyword catalog); the
 rest is hand-written.
 
-## 12. Design history
+## 13. Design history
 
 OCTANE's current shape emerged from a sequence of design decisions
 that explicitly rejected some intuitive but problematic alternatives.
@@ -637,7 +679,7 @@ ecosystem compatibility while keeping the core in Go.
   recovering the stateful-scenario coverage that adapter-based
   designs were trying to address.
 
-## 13. Repository layout
+## 14. Repository layout
 
 ```
 octane/
@@ -686,7 +728,7 @@ octane/
 > and 002) but not yet written. Implementation follows the
 > Spec-Kit workflow.
 
-## 14. ADR index
+## 15. ADR index
 
 All ADRs are active and accepted. The numbering is sequential without
 gaps; superseded design history was removed during a 2026-04-26
@@ -710,6 +752,9 @@ cleanup so that new contributors see only the current design.
 | 0014 | Intellectual Property and Authoring Guidelines |
 | 0015 | Test Dependency Graph |
 | 0016 | Cache and Lock Subsystem — Content-Addressed File Tree |
+| 0018 | Determinism Primitives (Clock and Rand interfaces) |
+| 0019 | Runner Concurrency Model |
+| 0020 | Shared OCPP 1.6 Data Types via `ocpp16types` |
 
 Forthcoming (sketched in conversation, not yet written):
 
@@ -720,7 +765,7 @@ Forthcoming (sketched in conversation, not yet written):
 | Distribution Channels | `.deb`, `.rpm`, Homebrew, Scoop, signing |
 | Story Parameters | Project-supplied inputs in story Meta |
 
-## 15. What is implemented today
+## 16. What is implemented today
 
 This is honest scaffolding inventory, not aspirational marketing.
 
@@ -749,7 +794,7 @@ Spec-Kit workflow defined in `.specify/`, with each piece of the
 design landing as code only after its spec has been refined to
 implementation-ready detail.
 
-## 16. Reading order for new contributors
+## 17. Reading order for new contributors
 
 1. This document (`ARCHITECTURE.md`)
 2. `.specify/memory/constitution.md`
@@ -765,7 +810,7 @@ implementation-ready detail.
 For Claude Code users specifically, also read `CLAUDE.md` to
 understand the dispatch table and slash-command surface.
 
-## 17. References
+## 18. References
 
 - **Constitution:** `.specify/memory/constitution.md`
 - **OCPP specifications:**

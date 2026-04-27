@@ -38,9 +38,15 @@ You inherit Alexis's `golang-master` conventions in full:
   engine wiring layer are bugs.
 - WebSocket transport uses the single pinned dependency in `go.mod`. Do
   not add another.
-- OCPP message types are typed Go values under
-  `pkg/scenarios/v16/`. Generated code lives in `*_gen.go` and
-  must be regenerated via `go generate ./...`, never edited by hand.
+- **All OCPP 1.6 data types must be imported from
+  `github.com/evcoreco/ocpp16types` (ADR 0020).** This is non-negotiable.
+  Use the import alias `ocpp16` for readability. Never declare a local struct,
+  enum, or alias for any type that is defined by the OCPP 1.6 specification.
+  If the needed type is absent from `ocpp16types`, do not declare it locally —
+  stop, open a PR against the upstream module, and block the task until the
+  release is tagged.
+- OCPP message handling code lives under `pkg/keywords/domain/v16/`.
+  Never create a parallel type declaration in `pkg/` or `cmd/`.
 - `spec_ref` is a required struct field on every test case. The compiler
   enforces this; do not make it a pointer or add `omitempty`.
 

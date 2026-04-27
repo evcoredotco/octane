@@ -42,6 +42,11 @@ content here is binding for all of them.
    reachable from the GitHub Action and vice versa.
 8. **No secrets in code, fixtures, or reports.** Use environment variables and
    document them in `docs/configuration.md`.
+9. **All OCPP 1.6 data types come from `github.com/evcoreco/ocpp16types`.**
+   This is an absolute rule with no exceptions (ADR 0020). Never declare a
+   local struct, type alias, or shadow copy of any OCPP 1.6 message,
+   enumeration, or sub-object. If the type is absent from the shared module,
+   contribute it upstream and block the OCTANE task until the release is tagged.
 
 ## Spec-driven workflow
 
