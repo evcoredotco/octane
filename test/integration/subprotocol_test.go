@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
+
 	"github.com/octane-project/octane/pkg/transport"
 )
 
@@ -22,11 +23,13 @@ func TestSubprotocolMismatch(t *testing.T) {
 	t.Parallel()
 
 	// A fake CSMS that accepts WebSocket but returns "ocpp2.0.1" subprotocol
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = websocket.Accept(w, r, &websocket.AcceptOptions{
-			Subprotocols: []string{"ocpp2.0.1"},
-		})
-	}))
+	srv := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, _ = websocket.Accept(w, r, &websocket.AcceptOptions{
+				Subprotocols: []string{"ocpp2.0.1"},
+			})
+		}),
+	)
 	defer srv.Close()
 
 	wsURL := strings.Replace(srv.URL, "http://", "ws://", 1)
@@ -43,7 +46,11 @@ func TestSubprotocolMismatch(t *testing.T) {
 
 	var mismatch *transport.ErrSubprotocolMismatch
 	if !errors.As(err, &mismatch) {
-		t.Errorf("expected *transport.ErrSubprotocolMismatch, got %T: %v", err, err)
+		t.Errorf(
+			"expected *transport.ErrSubprotocolMismatch, got %T: %v",
+			err,
+			err,
+		)
 	}
 
 	if mismatch.Got != "ocpp2.0.1" {

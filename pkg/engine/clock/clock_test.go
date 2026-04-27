@@ -72,7 +72,11 @@ func TestDeterministicSleepCancelCtx(t *testing.T) {
 
 	err := <-done
 	if err != context.Canceled {
-		t.Errorf("Sleep with cancelled ctx: got %v, want %v", err, context.Canceled)
+		t.Errorf(
+			"Sleep with cancelled ctx: got %v, want %v",
+			err,
+			context.Canceled,
+		)
 	}
 }
 

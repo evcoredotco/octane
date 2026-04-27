@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
+
 	"github.com/octane-project/octane/pkg/transport"
 )
 
@@ -23,14 +24,16 @@ func TestTLSValidationError(t *testing.T) {
 	t.Parallel()
 
 	// Start a local HTTPS server (self-signed cert) that accepts WebSocket connections
-	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := websocket.Accept(w, r, &websocket.AcceptOptions{
-			Subprotocols: []string{"ocpp1.6"},
-		})
-		if err != nil {
-			return
-		}
-	}))
+	srv := httptest.NewTLSServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, err := websocket.Accept(w, r, &websocket.AcceptOptions{
+				Subprotocols: []string{"ocpp1.6"},
+			})
+			if err != nil {
+				return
+			}
+		}),
+	)
 	defer srv.Close()
 
 	// Convert https:// to wss://

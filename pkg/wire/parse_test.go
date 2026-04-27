@@ -150,7 +150,11 @@ func callErrShape(
 	}
 
 	if wantSubstr != "" && !strings.Contains(fsErr.Reason, wantSubstr) {
-		t.Errorf("ErrFrameShape.Reason = %q, want substring %q", fsErr.Reason, wantSubstr)
+		t.Errorf(
+			"ErrFrameShape.Reason = %q, want substring %q",
+			fsErr.Reason,
+			wantSubstr,
+		)
 	}
 }
 
