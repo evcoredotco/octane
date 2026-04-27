@@ -164,6 +164,22 @@ type State interface {
 	// the context is done before d elapses.
 	Sleep(ctx context.Context, d time.Duration) error
 
+	// Stash stores value under key in the scenario's scratch
+	// space. It is used by primitive keywords to pass data
+	// between steps (e.g., the frame received by
+	// [expect any frame] is stashed so a subsequent assertion
+	// step can inspect it). Keys are scoped to the current
+	// scenario execution and are not persisted across runs.
+	//
+	// A common key convention is "<keyword>:<station>",
+	// e.g., "last_frame:CP01".
+	Stash(key string, value any)
+
+	// Pop retrieves and removes the value stored under key.
+	// Returns the value and true if the key exists; returns
+	// nil and false if it does not.
+	Pop(key string) (any, bool)
+
 	// Logf emits a structured log line scoped to the current
 	// step execution. The format string and arguments follow
 	// [fmt.Sprintf] conventions. Log output appears in the
