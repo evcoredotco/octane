@@ -68,6 +68,19 @@ Same as previous specs.
 | T-007-60 | Security review: redaction completeness | security | S | AC7 | — |
 | T-007-61 | Reviewer pass: schema stability, byte determinism | reviewer | S | AC2 | — |
 
+## Phase 8 — Security hardening (pending, from T-007-60 review)
+
+Findings surfaced by the security review that were not blocking but remain open.
+
+| ID | Severity | Title | Agent | Files |
+|----|----------|-------|-------|-------|
+| T-007-70 | medium | Expand sensitive header list: add `www-authenticate`, `x-auth-token`, `x-amz-security-token` to `sensitiveHeaderRE` | security | `pkg/report/internal/redact/headers.go` |
+| T-007-71 | medium | Add `AuthBlock` doc comment clarifying callers must pass the top-level map; add recursive `AuthBlockDeep` variant for nested credential structures | backend | `pkg/report/internal/redact/redact.go` |
+| T-007-72 | medium | Create `pkg/report/redact.go` policy registry — declare redaction policy (`pass-through`, `scrub-auth`, `scrub-jwt`, `omit`) for every field in `model.Report` and sub-types; enforced by a test | backend | `pkg/report/redact.go`, `pkg/report/redact_test.go` |
+| T-007-73 | low | Add edge-case tests: `AuthBlock(nil)`, non-string values in auth maps, `Header("")`, `Header("AUTHORIZATION", ...)` all-caps explicit case, header with embedded newline | qa | `pkg/report/internal/redact/redact_test.go`, `pkg/report/internal/redact/headers_test.go` |
+| T-007-74 | low | Add golden test for `NoTraceOnPass: true` path (second golden file `testdata/golden_no_trace.json`) | qa | `pkg/report/json/golden_test.go`, `pkg/report/json/testdata/golden_no_trace.json` |
+| T-007-75 | low | Add `OctaneVersion` field to `RobotXMLOptions`; forward it to `<robot generator="octane/x.y.z">` attribute instead of hardcoded constant | backend | `pkg/report/options.go`, `pkg/report/robotxml/robotxml.go` |
+
 ---
 
 ## Definition of Done
