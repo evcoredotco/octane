@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generated="20240115 10:00:00.000" generator="octane/0.1.0">
+  <suite id="s1" name="OCTANE Conformance" source="">
+    <test id="s1-t1" name="tc_boot_notification (CP01)">
+      <kw name="trace.frame">
+        <status status="PASS" starttime="20240115 10:00:00.000" endtime="20240115 10:00:00.000"></status>
+        <msg>[2,&#34;abc123&#34;,&#34;BootNotification&#34;,{&#34;reason&#34;:&#34;PowerUp&#34;}]</msg>
+      </kw>
+      <kw name="trace.frame">
+        <status status="PASS" starttime="20240115 10:00:00.000" endtime="20240115 10:00:00.000"></status>
+        <msg>[3,&#34;abc123&#34;,{&#34;currentTime&#34;:&#34;2024-01-15T10:00:01Z&#34;,&#34;interval&#34;:300,&#34;status&#34;:&#34;Accepted&#34;}]</msg>
+      </kw>
+      <status status="PASS" starttime="20240115 10:00:00.000" endtime="20240115 10:00:10.000"></status>
+    </test>
+    <test id="s1-t2" name="tc_heartbeat (CP01)">
+      <status status="FAIL" starttime="20240115 10:00:10.000" endtime="20240115 10:00:20.000">
+        <msg level="ERROR">heartbeat interval mismatch: got 600, want 300</msg>
+        <msg level="WARN">response took 250ms</msg>
+      </status>
+    </test>
+    <test id="s1-t3" name="tc_status_notification (CP01)">
+      <status status="SKIP" starttime="20240115 10:00:20.000" endtime="20240115 10:00:20.000"></status>
+    </test>
+    <status status="FAIL" starttime="20240115 10:00:00.000" endtime="20240115 10:00:30.000"></status>
+  </suite>
+  <statistics></statistics>
+  <errors></errors>
+</robot>

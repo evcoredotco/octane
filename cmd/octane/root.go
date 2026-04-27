@@ -10,6 +10,10 @@ import (
 	_ "github.com/octane-project/octane/pkg/keywords/primitive" // register primitive keywords
 )
 
+// version is the binary version string, injected at build time by goreleaser
+// via -X main.version={{.Version}}. Defaults to "dev" in local builds.
+var version = "dev" //nolint:gochecknoglobals // set by ldflags
+
 // globalFlags holds the parsed values of the persistent global flags
 // declared on the root command. They are set by cobra's flag binding
 // before any RunE function executes.
