@@ -9,6 +9,58 @@ This project adheres to [Keep a Changelog 1.1.0][kac] and
 
 ## [Unreleased]
 
+### Added — Spec 005: Dependency Cache
+
+- `pkg/runner/`: story runner with DAG traversal, worker pool, shard
+  filtering, and cache integration. `runner.Run(ctx, Config) (*RunResult,
+  error)` is the single public entry point consumed by the CLI (spec 006) and
+  GitHub Action (spec 006) (spec 005 G1, constitution principle II).
+- Dependency graph built from `Depends:` YAML blocks in `.story` Meta
+  sections. Three scope types supported: `per-station` (one prerequisite
+  instance per station handle), `per-run` (one instance per `octane run`
+  invocation), and `global` (shared across runs via cache) (ADR 0015, spec
+  005 §10).
+- Cycle detection via topological sort; `runner.ErrCycle` is returned when
+  a cycle is found. The error wraps `*dag.ErrCycle` which names the offending
+  edges (spec 005 AC3).
+- Failure propagation: a failed story marks all of its dependents
+  `StatusSkipped`. The `Cause` and `CauseChain` fields on `StoryResult`
+  identify the root failure (spec 005 AC4).
+- Worker pool with configurable parallelism via `Config.MaxParallel`
+  (`--max-parallel` flag in spec 006). Stories within a topological level
+  execute concurrently up to the pool size; ordering within a level is
+  lexicographic for determinism (ADR 0019, constitution principle IV).
+- CI sharding via `Config.ShardIndex` / `Config.ShardTotal` (`--shard N/M`
+  flag). Distributes stories by `sha256(test_id) % M`; prerequisites outside
+  the shard are always included (spec 005 OQ1).
+- `pkg/cache/`: content-addressed file cache with TTL, atomic writes, and
+  flock-based in-machine locking (ADR 0016):
+  - `cache.Key` — seven-field tuple whose SHA-256 becomes the filesystem path.
+  - `cache.Entry` — result JSON + optional trace JSON + TTL metadata.
+  - `cache.Cache` — minimal interface (`Get`, `Put`, `Prune`) consumed by the
+    runner; in-memory test doubles satisfy it without touching the filesystem.
+  - `cache.FileCache` — file tree implementation using two-character fanout
+    directories matching Bazel / ccache / Go's build cache layout.
+  - `cache.Open(dir)` — creates or verifies the cache directory structure and
+    returns a `Cache` implementation.
+  - Atomic write protocol: temp file → `fsync` → rename → directory `fsync`
+    (spec 005 §10 step 4).
+  - `cache.AcquireLock` — exclusive `flock` on `<hash>.lock`; implements the
+    double-checked acquire pattern to prevent two concurrent `octane run`
+    processes from executing the same story twice (ADR 0016 §"Acquire
+    pattern", ADR 0019).
+  - `Cache-TTL:` Meta key support: `Entry.TTL == 0` means never expires;
+    helper stories default to no TTL (spec 005 AC10).
+  - `cache.ErrCacheMiss` — typed sentinel returned by `Get` on miss or
+    expiry; callers use `errors.Is` to detect and re-execute.
+- `Config.NoCache` (`--no-cache`): bypasses all cache reads and writes;
+  `CacheStatus` is `bypassed` for every story in the report (spec 005 G4).
+- `docs/concepts/dependency-graph.md` — authoring guide for `Depends:`
+  declarations, scope types, DAG construction, and cycle detection (T-005-61).
+- `docs/concepts/cache.md` — operational guide covering cache location,
+  entry lifetime, atomic write protocol, flock locking, `--no-cache`, and CI
+  sharding (T-005-62).
+
 ### Added — Spec 004: Primitive Keywords
 
 - `pkg/keywords/primitive/`: ten transport-level primitive keywords covering
