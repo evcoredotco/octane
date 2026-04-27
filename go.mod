@@ -4,7 +4,9 @@ go 1.26.2
 
 require (
 	github.com/coder/websocket v1.8.14
-	// github.com/evcoreco/ocpp16types — added when first tagged release is available (ADR 0020)
+	// github.com/evcoreco/ocpp16types vX.Y.Z — uncomment and run `make pin-ocpp16types` once
+	// the first tagged release is published (ADR 0020). Requires GOPRIVATE=github.com/evcoreco/*
+	// (run `make dev-setup` once to configure this in your Go environment).
 	github.com/spf13/cobra v1.10.2
 	go.yaml.in/yaml/v3 v3.0.4
 )

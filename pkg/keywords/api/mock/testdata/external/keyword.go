@@ -30,6 +30,19 @@ import (
 
 // bootNotificationFrame is a minimal OCPP 1.6 BootNotification CALL frame
 // expressed as a decoded Go []any value per ADR 0006.
+//
+// NOTE (ADR 0020): When github.com/evcoreco/ocpp16types is available, the
+// payload map[string]any below should be replaced with the typed struct:
+//
+//	import ocpp16 "github.com/evcoreco/ocpp16types"
+//	payload := ocpp16.BootNotificationRequest{
+//	    ChargePointModel:  "ACME-500",
+//	    ChargePointVendor: "ACME Corp",
+//	}
+//
+// Until then, this file deliberately constructs raw wire frames because
+// it demonstrates the primitive/wire layer only. Real domain keywords
+// use typed structs exclusively.
 var bootNotificationFrame = []any{
 	2,
 	"msg-boot-001",
