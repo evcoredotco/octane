@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
+# SYNTHETIC CREDENTIALS ONLY — all passwords in this file are local-only
+# test fixtures (guest/guest, citrine/citrine, minioadmin/minioadmin).
+# They must NEVER be replaced with real operator credentials.
+#
 # Minimal CitrineOS reference rig for OCTANE integration tests.
 # Pinned to CitrineOS v1.9.0 (commit 5925f33b2839de60c68c4a029e6d2389fbe002c4).
 #

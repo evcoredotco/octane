@@ -8,6 +8,7 @@ on:
 permissions:
   contents: write
   packages: write
+  id-token: write  # required for keyless cosign OIDC signing
 
 jobs:
   release:
@@ -15,31 +16,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332  # v4.1.7
         with:
           fetch-depth: 0
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32  # v5.0.2
         with:
           go-version: "1.23"
           cache: true
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130  # v3
 
       - name: Set up Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Goreleaser
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a  # v6
         with:
           distribution: goreleaser
           version: "~> v2"
@@ -47,16 +48,31 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Compute the vX.Y minor-version tag alongside the full vX.Y.Z tag.
+      - name: Compute image tags
+        id: image-tags
+        env:
+          REF: ${{ github.ref_name }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          minor="$(echo "${REF}" | cut -d. -f1,2)"
+          {
+            echo "patch=ghcr.io/${OWNER}/octane:${REF}"
+            echo "minor=ghcr.io/${OWNER}/octane:${minor}"
+            echo "latest=ghcr.io/${OWNER}/octane:latest"
+          } >> "${GITHUB_OUTPUT}"
+
       - name: Build and push action image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8  # v6
         with:
           context: .
           file: action/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/octane:${{ github.ref_name }}
-            ghcr.io/${{ github.repository_owner }}/octane:latest
+            ${{ steps.image-tags.outputs.patch }}
+            ${{ steps.image-tags.outputs.minor }}
+            ${{ steps.image-tags.outputs.latest }}
           provenance: true
           sbom: true
 
@@ -66,7 +82,7 @@ jobs:
     needs: release
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332  # v4.1.7
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}

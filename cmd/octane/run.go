@@ -49,7 +49,7 @@ func init() {
 	flags.IntVar(
 		&runFlags.maxParallel,
 		"max-parallel",
-		1,
+		0,
 		"maximum number of stories to run concurrently",
 	)
 
@@ -104,7 +104,12 @@ func init() {
 func runStories(_ *cobra.Command, storyPaths []string) error {
 	cfg, err := config.Load(globalFlags.configPath)
 	if err != nil {
-		dieErr(exitcode.ConfigError, "octane: config error: %v\n", err)
+		dieErr(
+			exitcode.ConfigError,
+			"octane: %q: config error: %v\n",
+			globalFlags.configPath,
+			err,
+		)
 
 		return nil
 	}
@@ -136,21 +141,22 @@ func runStories(_ *cobra.Command, storyPaths []string) error {
 	}
 
 	runnerCfg := runner.Config{
-		StoryPaths:    storyPaths,
-		MaxParallel:   cfg.MaxParallel,
-		LockTimeout:   cfg.LockTimeout,
-		NoWait:        runFlags.noWait,
-		ShardIndex:    shardIndex,
-		ShardTotal:    shardTotal,
-		CacheDir:      cfg.CacheDir,
-		NoCache:       globalFlags.noCache,
-		NoTraceOnPass: false,
-		OCPPVersion:   cfg.OCPPVersion,
+		StoryPaths:         storyPaths,
+		MaxParallel:        cfg.MaxParallel,
+		LockTimeout:        cfg.LockTimeout,
+		NoWait:             runFlags.noWait,
+		ShardIndex:         shardIndex,
+		ShardTotal:         shardTotal,
+		CacheDir:           cfg.CacheDir,
+		NoCache:            globalFlags.noCache,
+		NoTraceOnPass:      false,
+		OCPPVersion:        cfg.OCPPVersion,
+		InsecureSkipVerify: cfg.InsecureSkipVerify,
 	}
 
 	result, runErr := runner.Run(context.Background(), runnerCfg)
 	if runErr != nil {
-		dieErr(exitcode.InternalError, "octane: run error: %v\n", runErr)
+		dieErr(exitcode.ToolError, "octane: run error: %v\n", runErr)
 
 		return nil
 	}
@@ -201,6 +207,11 @@ func applyRunFlagOverrides(cfg config.Config) config.Config {
 	if runFlags.insecureSkipVerify {
 		skip := true
 		overrides.InsecureSkipVerify = &skip
+	}
+
+	if globalFlags.cacheDir != "" {
+		cacheDir := globalFlags.cacheDir
+		overrides.CacheDir = &cacheDir
 	}
 
 	return config.Resolve(cfg, overrides)

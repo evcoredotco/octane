@@ -111,7 +111,7 @@ func resolveCacheDirForCLI() (string, error) {
 func cacheInfo(_ *cobra.Command, _ []string) error {
 	cacheDir, err := resolveCacheDirForCLI()
 	if err != nil {
-		dieErr(exitcode.IOError, "octane: %v\n", err)
+		dieErr(exitcode.ToolError, "octane: %v\n", err)
 
 		return nil
 	}
@@ -125,20 +125,20 @@ func cacheInfo(_ *cobra.Command, _ []string) error {
 func cachePrune(_ *cobra.Command, _ []string) error {
 	cacheDir, err := resolveCacheDirForCLI()
 	if err != nil {
-		dieErr(exitcode.IOError, "octane: %v\n", err)
+		dieErr(exitcode.ToolError, "octane: %v\n", err)
 
 		return nil
 	}
 
 	cacheStore, err := cache.Open(cacheDir)
 	if err != nil {
-		dieErr(exitcode.IOError, "octane: open cache: %v\n", err)
+		dieErr(exitcode.ToolError, "octane: open cache: %v\n", err)
 
 		return nil
 	}
 
 	if err = cacheStore.Prune(context.Background(), cachePruneFlags.maxAge); err != nil {
-		dieErr(exitcode.IOError, "octane: prune cache: %v\n", err)
+		dieErr(exitcode.ToolError, "octane: prune cache: %v\n", err)
 
 		return nil
 	}
@@ -152,7 +152,7 @@ func cachePrune(_ *cobra.Command, _ []string) error {
 func cacheClear(_ *cobra.Command, _ []string) error {
 	cacheDir, err := resolveCacheDirForCLI()
 	if err != nil {
-		dieErr(exitcode.IOError, "octane: %v\n", err)
+		dieErr(exitcode.ToolError, "octane: %v\n", err)
 
 		return nil
 	}
@@ -160,13 +160,13 @@ func cacheClear(_ *cobra.Command, _ []string) error {
 	resultsDir := filepath.Join(cacheDir, "results")
 
 	if err = os.RemoveAll(resultsDir); err != nil {
-		dieErr(exitcode.IOError, "octane: remove results dir: %v\n", err)
+		dieErr(exitcode.ToolError, "octane: remove results dir: %v\n", err)
 
 		return nil
 	}
 
 	if err = os.MkdirAll(resultsDir, 0o750); err != nil {
-		dieErr(exitcode.IOError, "octane: recreate results dir: %v\n", err)
+		dieErr(exitcode.ToolError, "octane: recreate results dir: %v\n", err)
 
 		return nil
 	}

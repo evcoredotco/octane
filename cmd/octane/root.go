@@ -71,7 +71,7 @@ func init() {
 // process exit code on error. It is called from main.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		exitcode.Exec(exitcode.InternalError)
+		exitcode.Exec(exitcode.ToolError)
 	}
 }
 

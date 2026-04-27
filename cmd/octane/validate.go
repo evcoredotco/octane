@@ -53,7 +53,7 @@ func validateStories(_ *cobra.Command, storyPaths []string) error {
 	for _, root := range storyPaths {
 		found, err := collectStoryFiles(root)
 		if err != nil {
-			dieErr(exitcode.IOError, "octane: walk %q: %v\n", root, err)
+			dieErr(exitcode.ToolError, "octane: walk %q: %v\n", root, err)
 
 			return nil
 		}
@@ -67,14 +67,14 @@ func validateStories(_ *cobra.Command, storyPaths []string) error {
 		data, err := readStoryFile(path)
 		if err != nil {
 			anyFailed = true
-			_, _ = fmt.Fprintf(os.Stdout, "ERROR: %s: %v\n", path, err)
+			_, _ = fmt.Fprintf(os.Stderr, "ERROR: %s: %v\n", path, err)
 
 			continue
 		}
 
 		if _, parseErr := story.Parse(path, data); parseErr != nil {
 			anyFailed = true
-			_, _ = fmt.Fprintf(os.Stdout, "ERROR: %s: %v\n", path, parseErr)
+			_, _ = fmt.Fprintf(os.Stderr, "ERROR: %s: %v\n", path, parseErr)
 
 			continue
 		}

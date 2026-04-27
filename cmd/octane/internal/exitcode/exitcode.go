@@ -2,11 +2,12 @@ package exitcode
 
 import "os"
 
-// Process exit codes used by the octane CLI.
+// Process exit codes used by the octane CLI (spec 006 §10).
 //
 // OK (0) and TestFailed (1) follow universal CI convention.
-// Codes 2–63 are reserved for future use.
-// Codes 64, 74, and 125 follow the BSD sysexits(3) table.
+// Code 3 is reserved.
+// Codes 64–70 align with BSD sysexits(3) ranges for operator-facing
+// errors. Code 9 is used for lock-contention timeout.
 const (
 	// OK is the exit code used when all stories passed or when
 	// a read-only command (validate, keywords list, cache info)
@@ -18,6 +19,17 @@ const (
 	// build failure; 1 is the canonical value for test failures.
 	TestFailed = 1
 
+	// ToolError is the exit code used when an unexpected internal
+	// failure occurs that is not attributable to user input — for
+	// example a panic, an I/O error, or any other bug in octane
+	// itself.
+	ToolError = 2
+
+	// CacheLockTimeout is the exit code used when cache lock
+	// contention is not resolved within the duration specified by
+	// --lock-timeout. See spec 006 §10.
+	CacheLockTimeout = 9
+
 	// ConfigError is the exit code used when the configuration
 	// file or a command-line flag contains a structural or
 	// semantic error (EX_USAGE in sysexits.h). It is returned
@@ -25,16 +37,17 @@ const (
 	// flag value cannot be parsed.
 	ConfigError = 64
 
-	// IOError is the exit code used when an I/O operation fails
-	// unexpectedly (EX_IOERR in sysexits.h). It is returned
-	// when the cache directory cannot be created, a story file
-	// cannot be read, or a report cannot be written.
-	IOError = 74
+	// StoryParseError is the exit code used when a .story file
+	// cannot be parsed. See spec 001.
+	StoryParseError = 65
 
-	// InternalError is the exit code used when an unexpected
-	// internal failure occurs that is not attributable to user
-	// input or I/O. It signals a bug in octane itself.
-	InternalError = 125
+	// KeywordError is the exit code used when keyword resolution
+	// fails. See spec 003.
+	KeywordError = 66
+
+	// TransportError is the exit code used when the wire
+	// transport fails to connect or communicate. See spec 002.
+	TransportError = 70
 )
 
 // Exec terminates the current process with code. It is a thin

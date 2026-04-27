@@ -64,7 +64,7 @@ func generateCompletion(_ *cobra.Command, args []string) error {
 	}
 
 	if err != nil {
-		dieErr(exitcode.IOError, "octane: generate completion: %v\n", err)
+		dieErr(exitcode.ToolError, "octane: generate completion: %v\n", err)
 	}
 
 	return nil

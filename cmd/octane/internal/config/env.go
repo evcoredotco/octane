@@ -12,11 +12,12 @@ import (
 //
 // Supported variables:
 //
-//   - OCTANE_CACHE_DIR    → [Config.CacheDir]
-//   - OCTANE_MAX_PARALLEL → [Config.MaxParallel] (parsed as int)
-//   - OCTANE_OCPP_VERSION → [Config.OCPPVersion]
-//   - OCTANE_LOCK_TIMEOUT → [Config.LockTimeout] (parsed as duration)
-//   - OCTANE_FAIL_ON      → [Config.FailOn]
+//   - OCTANE_CACHE_DIR             → [Config.CacheDir]
+//   - OCTANE_MAX_PARALLEL          → [Config.MaxParallel] (parsed as int)
+//   - OCTANE_OCPP_VERSION          → [Config.OCPPVersion]
+//   - OCTANE_LOCK_TIMEOUT          → [Config.LockTimeout] (parsed as duration)
+//   - OCTANE_FAIL_ON               → [Config.FailOn]
+//   - OCTANE_INSECURE_SKIP_VERIFY  → [Config.InsecureSkipVerify] ("true" or "1")
 //
 // If a numeric or duration variable is present but cannot be parsed,
 // ApplyEnv leaves that field unchanged and silently drops the
@@ -45,6 +46,14 @@ func ApplyEnv(cfg Config) Config {
 
 	if failOn := os.Getenv("OCTANE_FAIL_ON"); failOn != "" {
 		cfg.FailOn = failOn
+	}
+
+	// OCTANE_INSECURE_SKIP_VERIFY is intentionally supported via env var
+	// (needed for headless CI environments that cannot pass CLI flags).
+	// A warning banner is always emitted by the CLI when this is active.
+	if skipVerify := os.Getenv("OCTANE_INSECURE_SKIP_VERIFY"); skipVerify == "true" ||
+		skipVerify == "1" {
+		cfg.InsecureSkipVerify = true
 	}
 
 	return cfg

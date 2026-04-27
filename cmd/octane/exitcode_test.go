@@ -7,46 +7,48 @@ import (
 )
 
 // TestExitCodesUnique asserts that each exit code constant is a
-// distinct value and belongs to the expected set.
+// distinct value, exists with its expected numeric value, and that
+// the full set matches spec 006 §10.
 func TestExitCodesUnique(t *testing.T) {
 	t.Parallel()
 
-	codeMap := map[string]int{
-		"OK":            exitcode.OK,
-		"TestFailed":    exitcode.TestFailed,
-		"ConfigError":   exitcode.ConfigError,
-		"IOError":       exitcode.IOError,
-		"InternalError": exitcode.InternalError,
+	// Verify each constant has its spec-mandated value.
+	cases := []struct {
+		name string
+		got  int
+		want int
+	}{
+		{"OK", exitcode.OK, 0},
+		{"TestFailed", exitcode.TestFailed, 1},
+		{"ToolError", exitcode.ToolError, 2},
+		{"CacheLockTimeout", exitcode.CacheLockTimeout, 9},
+		{"ConfigError", exitcode.ConfigError, 64},
+		{"StoryParseError", exitcode.StoryParseError, 65},
+		{"KeywordError", exitcode.KeywordError, 66},
+		{"TransportError", exitcode.TransportError, 70},
 	}
 
-	allowed := map[int]bool{
-		0:   true,
-		1:   true,
-		64:  true,
-		74:  true,
-		125: true,
-	}
+	seen := make(map[int]string, len(cases))
 
-	seen := make(map[int]string, len(codeMap))
+	for _, testCase := range cases {
+		if testCase.got != testCase.want {
+			t.Errorf(
+				"exitcode.%s = %d; want %d",
+				testCase.name,
+				testCase.got,
+				testCase.want,
+			)
+		}
 
-	for name, code := range codeMap {
-		if prev, dup := seen[code]; dup {
+		if prev, dup := seen[testCase.got]; dup {
 			t.Errorf(
 				"exit code %d assigned to both %q and %q",
-				code,
+				testCase.got,
 				prev,
-				name,
+				testCase.name,
 			)
 		}
 
-		seen[code] = name
-
-		if !allowed[code] {
-			t.Errorf(
-				"exit code %q = %d is not in the allowed set",
-				name,
-				code,
-			)
-		}
+		seen[testCase.got] = testCase.name
 	}
 }
