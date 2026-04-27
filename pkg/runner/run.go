@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -356,14 +357,23 @@ func runScheduler(
 		}
 	}
 
-	go completionLoop()
+	// Run completionLoop in a goroutine and block until it finishes.
+	// completionLoop owns pool.completionCh exclusively; the main
+	// goroutine must NOT read from completionCh while completionLoop is
+	// running (doing so races and steals completion items, causing the
+	// scheduler to block forever). A sync.WaitGroup is the simplest
+	// correct synchronization here.
+	var wg sync.WaitGroup
 
-	// Drain the completion channel after the scheduler goroutine
-	// closes it. The goroutine writes results into schedState before
-	// closing pool.completionCh; this loop handles any items the
-	// goroutine placed after its own loop exited.
-	for range pool.completionCh { //nolint:revive // intentional drain
-	}
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+
+		completionLoop()
+	}()
+
+	wg.Wait()
 
 	return schedState.result
 }
@@ -404,6 +414,7 @@ func makeExecFunc(
 			result := executeStory(ctx, storyNodeVal, cfg, clk)
 			result.StartedAt = startedAt
 			result.FinishedAt = clk.Now()
+			result.CacheStatus = CacheBypassed
 
 			return result
 		}
@@ -479,7 +490,7 @@ func executeWithLock(
 	if lockErr != nil {
 		return StoryResult{
 			Order:       0,
-			TestID:      nodeID,
+			TestID:      storyNodeVal.story.Meta.ID,
 			ScopeKey:    storyNodeVal.scopeKey,
 			OCPPVersion: "",
 			Status:      StatusFailed,
@@ -514,7 +525,7 @@ func executeWithLock(
 
 	// Steps 5–6: write result and trace to the cache.
 	if result.Status == StatusPassed || result.Status == StatusFailed {
-		writeToCache(ctx, storyCache, cacheKey, result)
+		writeToCache(ctx, storyCache, cacheKey, result, storyNodeVal.story.Meta.CacheTTL)
 	}
 
 	return result
@@ -549,9 +560,9 @@ func cacheHitResult(
 
 	return StoryResult{
 		Order:       0,
-		TestID:      nodeID,
+		TestID:      storyNodeVal.story.Meta.ID,
 		ScopeKey:    storyNodeVal.scopeKey,
-		OCPPVersion: storyNodeVal.story.Meta.ID,
+		OCPPVersion: "",
 		Status:      resultStatus,
 		CacheStatus: cacheStatus,
 		StartedAt:   startedAt,
@@ -596,7 +607,7 @@ func executeStory(
 		})
 	}
 
-	result.TestID = storyNodeVal.nodeID
+	result.TestID = storyNodeVal.story.Meta.ID
 	result.ScopeKey = storyNodeVal.scopeKey
 	result.OCPPVersion = ocppVer
 	result.Findings = findings
@@ -707,6 +718,9 @@ func runStep(
 // cache. Errors are silently dropped (a write failure is not fatal;
 // the next run will re-execute).
 //
+// cacheTTL is the override from the story's Meta.CacheTTL field.
+// When nil the entry uses TTL=0 (no expiry, valid indefinitely).
+//
 // Constitution principle X: no credentials must appear in the cache.
 // At this layer we trust that keyword functions do not expose
 // credentials via the StoryResult fields.
@@ -715,6 +729,7 @@ func writeToCache(
 	storyCache cache.Cache,
 	key cache.Key,
 	result StoryResult,
+	cacheTTL *time.Duration,
 ) {
 	encoded, err := json.Marshal(struct {
 		Status string `json:"status"`
@@ -723,11 +738,16 @@ func writeToCache(
 		return
 	}
 
+	var ttl time.Duration
+	if cacheTTL != nil {
+		ttl = *cacheTTL
+	}
+
 	entry := cache.Entry{
 		Result:    encoded,
 		Trace:     nil,
 		WrittenAt: time.Time{},
-		TTL:       0,
+		TTL:       ttl,
 	}
 
 	_ = storyCache.Put(ctx, key, entry)
@@ -799,10 +819,11 @@ func buildRunResult(
 		result, ok := results[nodeID]
 		if !ok {
 			// Node never executed; mark as skipped.
+			storyID, scopeKey := splitNodeID(nodeID)
 			result = StoryResult{
 				Order:       orderIdx,
-				TestID:      nodeID,
-				ScopeKey:    "",
+				TestID:      storyID,
+				ScopeKey:    scopeKey,
 				OCPPVersion: "",
 				Status:      StatusSkipped,
 				CacheStatus: CacheMiss,
@@ -1017,4 +1038,17 @@ func generateRunID(clk clock.Clock) string {
 	now := clk.Now()
 
 	return fmt.Sprintf("%016x", now.UnixNano())
+}
+
+// splitNodeID parses a DAG node ID of the form "story_id/scope_key"
+// or just "story_id" (when scope is global). Story IDs are
+// snake_case (no "/"); scope keys are alphanumeric station handles
+// ("CP01") or run IDs (hex strings). The split is safe because
+// story IDs never contain a "/".
+func splitNodeID(nodeID string) (storyID, scopeKey string) {
+	if idx := strings.IndexByte(nodeID, '/'); idx >= 0 {
+		return nodeID[:idx], nodeID[idx+1:]
+	}
+
+	return nodeID, ""
 }
