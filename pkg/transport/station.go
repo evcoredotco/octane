@@ -138,6 +138,17 @@ func (sta *stationHandle) Close() error {
 	return nil
 }
 
+// IsOpen reports whether the connection is currently open. It returns
+// false once [Close] has been called. IsOpen is safe for concurrent use.
+func (sta *stationHandle) IsOpen() bool {
+	select {
+	case <-sta.closed:
+		return false
+	default:
+		return true
+	}
+}
+
 // readLoop is the reader goroutine started by newStationHandle. It reads
 // frames from the WebSocket, decodes each as a JSON array, and sends the
 // result to the inbound channel.
