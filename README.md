@@ -16,14 +16,14 @@ OCTANE has zero adoption cost for CSMS teams: one CLI command,
 no code changes, no sidecar service, no privileged admin API.
 
 ```bash
-# Install once on Debian/Ubuntu
-sudo apt install octane
+# Install via Go toolchain
+go install github.com/octane-project/octane/cmd/octane@latest
 
-# Run a single conformance scenario against your CSMS
-octane run scenarios/v16/connector_reservation_faulted.story
-
-# Or run the full suite
+# Run the full OCPP 1.6J suite against your CSMS
 octane run scenarios/v16/
+
+# Or use the GitHub Action
+# See examples/ci/github-actions/ocpp-conformance.yml
 ```
 
 > **Status:** pre-alpha. The architecture is designed and specified;
@@ -241,13 +241,11 @@ are no separate per-CSMS code repositories.
 
 ## What's implemented today
 
-OCTANE is in a deliberate **design-complete, code-empty** state.
-All architectural decisions are committed in ADRs and specs; no Go
-code has been written yet. Implementation will follow the
+Implementation is underway following the
 [GitHub Spec-Kit](https://github.com/github/spec-kit) workflow
-defined in `.specify/`, with each piece of the design landing as
-code only after its spec has been refined to implementation-ready
-detail.
+defined in `.specify/`. Specs 001–006 are fully implemented; spec 007
+(reports) is in progress. Each piece of the design lands as code only
+after its spec has been refined to implementation-ready detail.
 
 ### Done
 
@@ -260,38 +258,36 @@ detail.
 - 7 specs (`001-story-parser`, `002-wire-engine`,
   `003-keyword-api`, `004-primitive-keywords`,
   `005-dependency-cache`, `006-cli-action`, `007-reports`) with
-  full acceptance criteria, plans, and atomic tasks ready for
-  implementation
+  full acceptance criteria, plans, and atomic tasks
 - `.specify/` Spec-Kit scaffolding (constitution, templates, helper
   scripts, slash commands)
 - 8 Claude Code subagents (architect, backend, keyword-author,
   devops, qa, security, reviewer, docs)
-- Example `.story` files: 7 conformance stories
-  (`boot_notification_accepted`, `boot_notification_malformed`,
-  `authorize_concurrent_rejected`, `boot_sequence_accepted`,
-  `connector_reservation_faulted`,
-  `transaction_pluginfirst_accepted`,
-  `transaction_identificationfirst_accepted`) and 3 helpers
-- `CONTRIBUTING.md` (authoring guidelines) and
-  `docs/conformance-claim.md` (public conformance scope)
+- Story DSL parser (`pkg/story/`) — spec 001
+- WebSocket transport, OCPP-J frame parser, deterministic clock/rand
+  (`pkg/transport/`, `pkg/wire/`, `pkg/engine/`) — spec 002
+- Keyword API surface, registry, resolver
+  (`pkg/keywords/api/`, `pkg/keywords/registry/`) — spec 003
+- Primitive keyword layer (`pkg/keywords/primitive/`) — spec 004
+- Story runner with DAG, worker pool, sharding, and content-addressed
+  file cache (`pkg/runner/`, `pkg/cache/`) — spec 005
+- Complete `octane` CLI built on cobra: `run`, `validate stories`,
+  `keywords list/resolve`, `cache info/prune/clear/key`,
+  `completion bash|zsh|fish|powershell` (`cmd/octane/`) — spec 006
+- GitHub Action (`action/action.yml`, `action/Dockerfile`,
+  `action/entrypoint.sh`) — spec 006
+- Example `.story` files: 7 conformance stories and 3 helpers
+- `CONTRIBUTING.md`, `docs/conformance-claim.md`,
+  `docs/getting-started.md`, `docs/cli-reference.md`,
+  `docs/configuration.md`
 - Man-page sources (§5 for config and story, §7 for concepts)
 - Packaging via goreleaser + nfpm (`.deb`, `.rpm`, Homebrew, SBOM)
-- CI workflow files (Go-related jobs activate when code lands)
-- Docusaurus website skeleton
+- CI workflow files
 
-### Specced, not yet written
+### In progress / not yet written
 
-Everything in `pkg/`, `cmd/`, and `connections/` is design only.
-This includes:
-
-- Story DSL parser (`pkg/story/`)
-- Engine, transport, wire frame parser (`pkg/engine/`,
-  `pkg/transport/`, `pkg/wire/`)
-- Keyword library: API surface, registry, primitive layer, OCPP
-  1.6 / 2.0.1 / 2.1 domain layers (`pkg/keywords/`)
-- Cache and lock subsystem (`pkg/cache/`)
-- CLI subcommands (`cmd/octane/`)
-- Robot XML emitter (`pkg/report/`)
+- Robot XML emitter (`pkg/report/`) — spec 007
+- OCPP 1.6 / 2.0.1 / 2.1 domain keyword layers
 - Sample connection profile YAML files
 - Public APT/RPM repos and Homebrew tap
 
