@@ -41,7 +41,7 @@ variables:
 
 # Reusable script for the conformance run.
 .octane-run: &octane-run
-  - octane run "scenarios/v${OCPP_VERSION}/" --fail-on major --report-dir reports/
+  - octane run "scenarios/v${OCPP_VERSION}/" --fail-on major
 
 conformance:1.6:
   stage: conformance
