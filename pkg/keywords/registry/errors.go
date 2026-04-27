@@ -1,11 +1,8 @@
-// Package registry provides the global keyword registry and
-// resolver for OCTANE's story DSL. Keywords register themselves
-// at init() time via [Register]; the resolver matches AST step
-// text against registered patterns and returns the bound keyword
-// function and its typed arguments.
+// Package registry — typed resolver error values.
 //
-// This file defines the typed error values returned by the
-// resolver when step resolution fails.
+// This file defines [ErrNoMatch] and [ErrTypeMismatch], the two
+// typed errors returned by [Resolve] when step resolution fails.
+// See registry.go for the package-level documentation.
 package registry
 
 import "fmt"

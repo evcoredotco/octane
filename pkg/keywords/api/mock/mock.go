@@ -124,6 +124,11 @@ func (s *State) Logs() []string {
 // keyword unit tests. It records every frame passed to [Station.Send] and
 // serves pre-queued frames from [Station.Expect].
 //
+// Note: this type is named Station and lives in the mock package; it
+// implements the [api.Station] interface but is distinct from it. When
+// both appear in the same file, qualify the interface as [api.Station]
+// and this concrete type as [mock.Station] to avoid confusion.
+//
 // The zero value is not usable; create instances via [NewMockStation].
 type Station struct {
 	// sentFrames accumulates every frame passed to Send.

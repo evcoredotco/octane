@@ -9,6 +9,32 @@ This project adheres to [Keep a Changelog 1.1.0][kac] and
 
 ## [Unreleased]
 
+### Added — Spec 003: Keyword API and Registry
+
+- `pkg/keywords/api`: public contract package for keyword authors — `Func`,
+  `Args`, `State`, `Station`, `Keyword`, `Layer`, `OCPPVersion` types and
+  interfaces. No implementation logic; stdlib-only.
+- `pkg/keywords/api/mock`: in-memory test doubles `mock.State` and
+  `mock.Station` (`NewMockState`, `NewMockStation`) enabling keyword unit
+  tests with no dependency on `pkg/runner/`, `pkg/transport/`, or any network
+  library (spec 003 AC8).
+- `pkg/keywords/registry`: global keyword registry with `Register`, `All`,
+  and `Resolve`. Self-registration at `init()` time per ADR 0007. Collision
+  detection panics at startup naming both conflicting registration sites (AC2).
+- `pkg/keywords/registry/internal/pattern`: `{name:type}` placeholder parser
+  (`Parse`), pattern matcher (`Match`), and type coercer (`Coerce`) covering
+  all seven placeholder types: `string`, `int`, `float`, `bool`, `duration`,
+  `station`, `any`.
+- `pkg/keywords/registry/internal/levenshtein`: edit-distance helpers for
+  "did you mean?" suggestions on unmatched steps.
+- Layered resolution per ADR 0007: domain keywords for the active OCPP version
+  take precedence over primitive keywords; longer patterns win within a layer
+  (AC3, AC4, AC5, AC6, AC7).
+- `ErrNoMatch` (with optional `Closest` suggestion at Levenshtein ≤ 5) and
+  `ErrTypeMismatch` typed resolver errors.
+- `registry.All()` returns keywords in stable `(Layer, OCPPVersion, Pattern)`
+  sort order, satisfying constitution principle IV (determinism) (AC1).
+
 ### Added — Spec 002: Wire Engine
 
 - `pkg/transport`: WebSocket client with TLS, subprotocol negotiation, and configurable timeouts (`Station`, `Dial`, `DialOptions`)

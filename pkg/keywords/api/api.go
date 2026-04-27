@@ -7,16 +7,29 @@
 // third-party dependencies, and no imports beyond the standard
 // library.
 //
-// The two enumerations defined here — [Layer] and [OCPPVersion] —
-// control how the registry resolves step text to keyword
-// functions. Domain-layer keywords scoped to a specific OCPP
-// version take precedence over primitive-layer keywords; see
-// ADR 0007 for the full resolution rules.
+// # Core types
 //
-// The [State] and [Station] interfaces are the runtime's surface
-// as seen by keyword functions. Both are interfaces (not concrete
-// types) so that keyword libraries can be unit-tested against
-// mocks without importing the runtime or transport packages.
+// [Func] is the function signature every keyword author implements.
+// [Keyword] is the registration record that binds a [Func] to its
+// [Pattern], [Layer], and [OCPPVersion].
+// [Args] holds the named parameter values extracted by the pattern
+// matcher; its typed accessors (String, Int, Duration, …) panic on
+// missing keys as a registry-bug signal.
+//
+// # Layer and version enumerations
+//
+// [Layer] and [OCPPVersion] control how the registry resolves step
+// text to keyword functions. Domain-layer keywords scoped to a
+// specific OCPP version take precedence over primitive-layer keywords;
+// see ADR 0007 for the full resolution rules.
+//
+// # Runtime interfaces
+//
+// [State] and [Station] are the runtime's surface as seen by keyword
+// functions. Both are interfaces (not concrete types) so that keyword
+// libraries can be unit-tested against mocks without importing the
+// runtime or transport packages. For unit testing, use the test doubles
+// in the sibling package pkg/keywords/api/mock.
 package api
 
 import (
