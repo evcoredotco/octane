@@ -45,14 +45,22 @@ func stringAt(
 	if !ok {
 		return "", frameShape(
 			frame,
-			fmt.Sprintf("element %d (%s) must be a non-empty string", idx, name),
+			fmt.Sprintf(
+				"element %d (%s) must be a non-empty string",
+				idx,
+				name,
+			),
 		)
 	}
 
 	if val == "" {
 		return "", frameShape(
 			frame,
-			fmt.Sprintf("element %d (%s) must be a non-empty string", idx, name),
+			fmt.Sprintf(
+				"element %d (%s) must be a non-empty string",
+				idx,
+				name,
+			),
 		)
 	}
 

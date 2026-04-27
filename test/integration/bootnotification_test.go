@@ -21,9 +21,13 @@ func TestBootNotificationHandshake(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	sta, err := transport.Dial(ctx, "ws://localhost:9210/CP001", transport.DialOptions{
-		Subprotocols: []string{"ocpp1.6"},
-	})
+	sta, err := transport.Dial(
+		ctx,
+		"ws://localhost:9210/CP001",
+		transport.DialOptions{
+			Subprotocols: []string{"ocpp1.6"},
+		},
+	)
 	if err != nil {
 		t.Fatalf("dial: %v", err)
 	}

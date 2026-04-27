@@ -21,13 +21,13 @@ import (
 // it a fast-teardown path under test (where the peer may stop sending
 // without closing the TCP connection).
 type stationHandle struct {
-	conn        *websocket.Conn
-	inbound     chan []any
-	closed      chan struct{}
-	once        sync.Once
-	readCancel  context.CancelFunc
-	readErr     atomic.Pointer[error]
-	maxBytes    int64
+	conn       *websocket.Conn
+	inbound    chan []any
+	closed     chan struct{}
+	once       sync.Once
+	readCancel context.CancelFunc
+	readErr    atomic.Pointer[error]
+	maxBytes   int64
 }
 
 // newStationHandle allocates a stationHandle, starts the reader goroutine,
