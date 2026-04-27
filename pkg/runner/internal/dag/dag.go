@@ -7,7 +7,10 @@
 // deterministic iteration and serialization order.
 package dag
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 // Node is a vertex in the dependency graph. Each node corresponds to
 // a single story identified by its stable snake_case ID.
@@ -70,24 +73,91 @@ func New() *Graph {
 	}
 }
 
+// ErrUnknownNode is returned by [Graph.AddEdge] when either endpoint
+// of the requested edge has not been registered via [Graph.AddNode].
+var ErrUnknownNode = errors.New("dag: unknown node ID")
+
 // AddNode inserts a vertex into the graph. If a node with the same
 // ID already exists, AddNode is a no-op.
-//
-// Implementation is provided by T-005-10.
-func (g *Graph) AddNode(n Node) {
-	_ = n // Stub: implementation in T-005-10.
+func (g *Graph) AddNode(node Node) {
+	if _, exists := g.nodeIndex[node.ID]; exists {
+		return
+	}
+
+	g.nodeIndex[node.ID] = len(g.nodes)
+	g.nodes = append(g.nodes, node)
+	g.adjacency[node.ID] = nil
 }
 
 // AddEdge inserts a directed dependency edge from a prerequisite to a
 // dependent. Both endpoint node IDs must have been added via [AddNode]
 // before calling AddEdge.
 //
-// AddEdge returns [ErrCycle] if the new edge would introduce a cycle.
-// On error the graph is left unchanged.
-//
-// Implementation is provided by T-005-10.
-func (g *Graph) AddEdge(e Edge) error {
-	_ = e // Stub: implementation in T-005-10.
+// AddEdge returns [ErrUnknownNode] (wrapped) when either endpoint has
+// not been registered. AddEdge returns [*ErrCycle] if the new edge
+// would introduce a cycle. On any error the graph is left unchanged.
+func (g *Graph) AddEdge(edge Edge) error {
+	if _, ok := g.nodeIndex[edge.From]; !ok {
+		return fmt.Errorf("from %q: %w", edge.From, ErrUnknownNode)
+	}
+
+	if _, ok := g.nodeIndex[edge.To]; !ok {
+		return fmt.Errorf("to %q: %w", edge.To, ErrUnknownNode)
+	}
+
+	// Detect whether adding From→To would create a cycle by checking
+	// whether To can already reach From via existing edges (DFS).
+	if cyclePath := g.reachablePath(edge.To, edge.From); cyclePath != nil {
+		// Build the cycle edge list: the new edge first, then the
+		// existing path back, so the sequence closes the loop.
+		cycleEdges := make([]Edge, 0, len(cyclePath)+1)
+		cycleEdges = append(cycleEdges, edge)
+		cycleEdges = append(cycleEdges, cyclePath...)
+
+		return &ErrCycle{Edges: cycleEdges}
+	}
+
+	g.edges = append(g.edges, edge)
+	g.adjacency[edge.From] = append(g.adjacency[edge.From], edge.To)
+	g.inDegree[edge.To]++
+
+	return nil
+}
+
+// reachablePath returns the sequence of edges that form a path from
+// start to target using a depth-first search over existing adjacency.
+// It returns nil when no path exists. The returned slice represents
+// the edges along the path from start toward target, in traversal
+// order.
+func (g *Graph) reachablePath(start, target string) []Edge {
+	visited := make(map[string]bool, len(g.nodes))
+
+	return g.dfsPath(start, target, visited)
+}
+
+// dfsPath is the recursive helper for [Graph.reachablePath]. It
+// returns the edge path from current to target, or nil if unreachable.
+func (g *Graph) dfsPath(
+	current, target string,
+	visited map[string]bool,
+) []Edge {
+	if current == target {
+		return []Edge{}
+	}
+
+	visited[current] = true
+
+	for _, neighbor := range g.adjacency[current] {
+		if visited[neighbor] {
+			continue
+		}
+
+		edge := Edge{From: current, To: neighbor}
+
+		if tail := g.dfsPath(neighbor, target, visited); tail != nil {
+			return append([]Edge{edge}, tail...)
+		}
+	}
 
 	return nil
 }
