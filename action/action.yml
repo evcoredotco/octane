@@ -59,5 +59,9 @@ outputs:
 
 runs:
   using: "docker"
-  image: "Dockerfile"
+  # Reference the pre-built GHCR image so GitHub's runner does not
+  # attempt to build the Dockerfile (which requires repo-root context
+  # that is unavailable when action.yml is the build context root).
+  # The image is published by release.yml on every vX.Y.Z tag push.
+  image: "docker://ghcr.io/octane-project/octane:v0"
   entrypoint: "/entrypoint.sh"

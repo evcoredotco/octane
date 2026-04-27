@@ -64,7 +64,7 @@ func runGenManPages(_ *cobra.Command, _ []string) error {
 	//nolint:gosec // G301: outDir is operator-supplied; 0755 is intentional for public man directories
 	if err := os.MkdirAll(outDir, 0o755); err != nil { //nolint:mnd // 0755 is conventional dir perms
 		dieErr(
-			exitcode.IOError,
+			exitcode.ToolError,
 			"octane: gen-manpages: mkdir %q: %v\n",
 			outDir,
 			err,
@@ -79,7 +79,7 @@ func runGenManPages(_ *cobra.Command, _ []string) error {
 	}
 
 	if err := doc.GenManTree(rootCmd, header, outDir); err != nil {
-		dieErr(exitcode.IOError, "octane: gen-manpages: %v\n", err)
+		dieErr(exitcode.ToolError, "octane: gen-manpages: %v\n", err)
 	}
 
 	return nil

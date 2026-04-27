@@ -22,8 +22,8 @@ func Test_octane_ManGolden(t *testing.T) {
 	t.Parallel()
 
 	if _, err := os.Stat("testdata/man"); os.IsNotExist(err) && !*updateGolden {
-		t.Skip(
-			"testdata/man not found; run with -update to create golden files",
+		t.Fatal(
+			"testdata/man not found; run: go test -run Test_octane_ManGolden -update ./cmd/octane/",
 		)
 	}
 

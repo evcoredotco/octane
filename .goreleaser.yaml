@@ -127,9 +127,11 @@ signs:
     args:
       - "sign-blob"
       - "--yes"
-      - "--key=env://COSIGN_PRIVATE_KEY"
       - "--output-signature=${signature}"
       - "${artifact}"
+      # Keyless signing via GitHub Actions OIDC (no COSIGN_PRIVATE_KEY
+      # secret needed). The release.yml workflow must have
+      # id-token: write permission for this to succeed.
 
 checksum:
   name_template: "checksums.txt"

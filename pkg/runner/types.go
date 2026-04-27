@@ -337,4 +337,10 @@ type Config struct {
 	// OCPPVersion restricts the run to stories declaring this
 	// OCPP version. When empty, all versions are included.
 	OCPPVersion string
+
+	// InsecureSkipVerify disables TLS certificate verification for
+	// WebSocket connections. When true the runner threads this flag
+	// through to the wire transport and the report emitter injects
+	// a banner-level finding (spec 006 AC7, constitution principle X).
+	InsecureSkipVerify bool
 }
