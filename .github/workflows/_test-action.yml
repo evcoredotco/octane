@@ -1,0 +1,51 @@
+# _test-action.yml — Smoke test for the published octane-action.
+#
+# Internal workflow (underscore prefix). Verifies:
+#   1. entrypoint.sh is syntactically valid (bash -n).
+#   2. The Docker image builds successfully.
+#   3. The octane binary starts and responds to --help.
+#
+# A live CSMS is NOT required; this is a build + syntax smoke test only.
+# Full conformance coverage is gated by the reference.yml workflow.
+
+name: "action smoke test"
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  action-smoke:
+    name: "Build & syntax-check octane-action"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+
+      - name: Syntax-check entrypoint.sh
+        run: bash -n action/entrypoint.sh
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --platform linux/amd64 \
+            -t octane-action:smoke \
+            -f action/Dockerfile \
+            .
+
+      - name: Verify octane binary starts
+        run: |
+          docker run --rm octane-action:smoke /usr/local/bin/octane --help
