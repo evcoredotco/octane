@@ -1,8 +1,8 @@
 # Multi-stage build for the published octane-action image.
 #
-# Stage 1 builds a static linux binary using the same Makefile target as
-# the local dev workflow. Stage 2 ships a minimal runtime image
-# (distroless) carrying only the binary and CA certificates.
+# Stage 1 builds a static linux binary for the target platform.
+# Stage 2 ships a minimal alpine runtime image carrying only the binary,
+# CA certificates, and bash (required by entrypoint.sh).
 
 # ----- builder ---------------------------------------------------------
 
@@ -29,7 +29,12 @@ RUN apk add --no-cache git \
 
 # ----- runtime ---------------------------------------------------------
 
-FROM gcr.io/distroless/static-debian12:nonroot@sha256:a9329520abc449e3b14d5bc3a6ffae065bdde0f02667fa10880c49b35c109fd1
+# Alpine provides a minimal shell environment needed by entrypoint.sh.
+# SHA pinned for reproducible builds. Refresh with:
+#   docker pull alpine:3.21 && docker inspect alpine:3.21 --format '{{index .RepoDigests 0}}'
+FROM alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d
+
+RUN apk add --no-cache bash ca-certificates
 
 LABEL org.opencontainers.image.source="https://github.com/octane-project/octane"
 LABEL org.opencontainers.image.title="octane-action"
