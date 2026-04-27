@@ -111,8 +111,8 @@ func (v OCPPVersion) String() string {
 }
 
 // State is the runtime's surface as seen by keyword functions.
-// It exposes exactly three capabilities: station lookup, a
-// deterministic clock, and structured logging.
+// It exposes station registration and lookup, a deterministic
+// clock, and structured logging.
 //
 // State is an interface so that keyword libraries can be
 // unit-tested against a mock (see pkg/keywords/api/mock) without
@@ -140,6 +140,14 @@ type State interface {
 	// to the current scenario — typically because it was not
 	// declared or has already been torn down.
 	Station(handle string) (Station, error)
+
+	// RegisterStation binds station to handle so that subsequent
+	// [State.Station] calls can retrieve it. Registering the same
+	// handle twice replaces the previous entry. This method is
+	// called by the open-WebSocket primitive keyword after a
+	// successful [transport.Dial] to make the live connection
+	// available to subsequent steps.
+	RegisterStation(handle string, station Station)
 
 	// Now returns the current time from the runtime's clock.
 	// Keywords MUST use this instead of [time.Now] to preserve
@@ -215,8 +223,9 @@ type Keyword struct {
 }
 
 // Station is the wire-I/O surface for a single charging station
-// connection. Keywords use it to send OCPP-J frames to a CSMS
-// and to receive frames from the wire.
+// connection. Keywords use it to send OCPP-J frames to a CSMS,
+// receive frames from the wire, close the connection, and check
+// whether the connection is still open.
 //
 // Station is an interface so that keyword unit tests can supply
 // a mock without importing pkg/transport/ or any network library
@@ -245,4 +254,12 @@ type Station interface {
 	// read fails, the connection is closed, or the context
 	// expires before a frame arrives.
 	Expect(ctx context.Context) ([]any, error)
+
+	// Close gracefully shuts down the WebSocket connection.
+	// Subsequent calls are no-ops and return nil.
+	Close() error
+
+	// IsOpen reports whether the connection is currently open.
+	// It returns false once [Close] has been called.
+	IsOpen() bool
 }

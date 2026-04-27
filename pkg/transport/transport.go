@@ -43,6 +43,10 @@ type Station interface {
 	//
 	// It is safe to call Close more than once; subsequent calls are no-ops.
 	Close() error
+
+	// IsOpen reports whether the connection is currently open.
+	// It returns false once [Close] has been called.
+	IsOpen() bool
 }
 
 // DialOptions configures a [Dial] call.

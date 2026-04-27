@@ -143,16 +143,21 @@ type Station struct {
 	// expectErr is returned by Expect when non-nil (takes priority over
 	// pendingFrames).
 	expectErr error
+
+	// open tracks the connection state. True means the station is open.
+	open bool
 }
 
-// NewMockStation returns a ready-to-use *[Station] with empty frame buffers
-// and nil errors.
+// NewMockStation returns a ready-to-use *[Station] with empty frame
+// buffers, nil errors, and the connection open (IsOpen returns true
+// until [Station.Close] is called).
 func NewMockStation() *Station {
 	return &Station{
 		sentFrames:    nil,
 		pendingFrames: nil,
 		sendErr:       nil,
 		expectErr:     nil,
+		open:          true,
 	}
 }
 
@@ -242,4 +247,18 @@ func (st *Station) SetSendError(err error) {
 // Pass nil to clear a previously set error.
 func (st *Station) SetExpectError(err error) {
 	st.expectErr = err
+}
+
+// Close marks the station as closed. Subsequent calls to [Station.IsOpen]
+// return false. Close is idempotent and always returns nil.
+func (st *Station) Close() error {
+	st.open = false
+
+	return nil
+}
+
+// IsOpen reports whether the station has not yet been closed.
+// It returns true from construction until [Station.Close] is called.
+func (st *Station) IsOpen() bool {
+	return st.open
 }
