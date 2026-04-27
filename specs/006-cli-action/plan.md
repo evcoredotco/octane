@@ -71,7 +71,7 @@ inputs:
     description: "Output directory for reports"
     default: "reports/"
   ocpp-version:
-    description: "Override OCPP version (1.6|2.0.1|2.1)"
+    description: "Override OCPP version (1.6)"
     default: ""
 outputs:
   report-path:

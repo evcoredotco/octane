@@ -29,7 +29,7 @@ type Config struct {
 	MaxParallel int `yaml:"max_parallel"`
 
 	// OCPPVersion restricts the run to stories declaring this OCPP
-	// version (e.g., "1.6", "2.0.1", "2.1"). When empty all
+	// version (e.g., "1.6"). When empty all
 	// stories are eligible regardless of their declared version.
 	OCPPVersion string `yaml:"ocpp_version"`
 

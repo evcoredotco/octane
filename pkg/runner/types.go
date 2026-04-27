@@ -168,7 +168,7 @@ type StoryResult struct {
 	ScopeKey string
 
 	// OCPPVersion is the OCPP version declared by the story
-	// (e.g. "1.6", "2.0.1", "2.1").
+	// (e.g. "1.6").
 	OCPPVersion string
 
 	// Status is the execution outcome: passed, failed, or

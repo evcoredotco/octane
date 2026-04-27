@@ -15,7 +15,7 @@
 ## 1. What OCTANE is
 
 OCTANE — *OCPP Conformance Testing & Network Evaluation* — is an
-open-source conformance harness for OCPP 1.6J, 2.0.1, and 2.1
+open-source conformance harness for OCPP 1.6J
 Charging Station Management Systems. It runs against an unmodified
 CSMS and verifies wire-level conformance to the publicly published
 OCPP specifications, automated and CI-friendly.
@@ -67,7 +67,7 @@ run OCTANE against an unmodified deployment with one CLI command.
 │  ──────────────────────────────────────────────────────────────  │
 │  Declarative Gherkin-flavored scenarios. One per OCPP section/  │
 │  protocol behavior under test.                                  │
-│  Live in scenarios/v16/, scenarios/v201/, scenarios/v21/.        │
+│  Live in scenarios/v16/, scenarios/, scenarios/v21/.        │
 │  Read by certification reviewers. Version-controlled. ADR 0006.  │
 └──────────────────────────────────────────────────────────────────┘
                               ▼  resolves keywords against
@@ -229,14 +229,14 @@ A connection profile is roughly 30 lines:
 ```yaml
 schema_version: "1"
 name: citrineos
-ocpp_versions: ["1.6", "2.0.1"]
+ocpp_versions: ["1.6", "1.6"]
 connection:
   url_template: "ws://{host}:{port}/ocpp/{station_id}"
   default_host: localhost
   default_port: 8081
   subprotocol_by_ocpp_version:
     "1.6":   "ocpp1.6"
-    "2.0.1": "ocpp2.0.1"
+    "1.6": "ocpp1.6"
 auth:
   modes_supported: [none, basic, bearer]
   default_mode: none
@@ -464,7 +464,7 @@ two or more simulated stations. A story declares the count in `Meta`:
 
 ```
 Meta
-    Spec-Ref:    OCPP-2.0.1 / TC_E_07_CS
+    Spec-Ref:    OCPP-1.6 / TC_E_07_CS
     Stations:    2
 ```
 
@@ -519,7 +519,7 @@ The canonical invocation is:
 
 ```
 octane run scenarios/v16/TC_048_1_CSMS.story
-octane run scenarios/v201/                     # whole directory
+octane run scenarios/                     # whole directory
 octane run scenarios/                           # everything
 ```
 
@@ -664,7 +664,7 @@ octane/
 │   └── 007-reports/                  # JSON + Robot XML emitters
 ├── scenarios/
 │   ├── v16/                         # OCPP 1.6 stories: helpers + connector_reservation_faulted
-│   └── v201/                        # OCPP 2.0.1 stories: boot_notification_*, authorize_concurrent_rejected
+│   └──                         # OCPP 1.6 stories: boot_notification_*, authorize_concurrent_rejected
 ├── action/                          # GitHub Action wrapper (manifest only; binary lands later)
 ├── examples/                        # Consumer copy-paste artifacts (CI workflows for GH/GL)
 ├── packaging/                       # nfpm.yaml for .deb/.rpm
@@ -756,11 +756,11 @@ implementation-ready detail.
 3. `AGENTS.md`
 4. The current spec under `specs/<NNN>-<slug>/`
 5. The matching ADRs from `docs/adr/`
-6. The example stories under `scenarios/v16/` and `scenarios/v201/`
+6. The example stories under `scenarios/v16/` and `scenarios/`
    to see how the design plays out in practice. The starter keyword
    catalog in spec 002 §10 lists every pattern the example stories
    reference.
-7. The example stories under `scenarios/v201/`
+7. The example stories under `scenarios/`
 
 For Claude Code users specifically, also read `CLAUDE.md` to
 understand the dispatch table and slash-command surface.
@@ -770,8 +770,8 @@ understand the dispatch table and slash-command surface.
 - **Constitution:** `.specify/memory/constitution.md`
 - **OCPP specifications:**
   - OCPP 1.6: <https://www.openchargealliance.org/protocols/ocpp-16/>
-  - OCPP 2.0.1: <https://www.openchargealliance.org/protocols/ocpp-201/>
-  - OCPP 2.1: <https://www.openchargealliance.org/protocols/ocpp-21/>
+  - OCPP 1.6: <https://www.openchargealliance.org/protocols/ocpp-201/>
+  - OCPP 1.6: <https://www.openchargealliance.org/protocols/ocpp-21/>
 - **CitrineOS:** <https://citrineos.github.io/>
 - **Robot Framework user guide (mental-model precedent):**
   <https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html>

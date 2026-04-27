@@ -8,7 +8,7 @@
 [![Status](https://img.shields.io/badge/Status-Pre--Alpha-orange.svg)]()
 
 OCTANE is an open-source, AI-native conformance harness for OCPP 1.6J,
-2.0.1, and 2.1 Charging Station Management Systems (CSMS). It runs
+ Charging Station Management Systems (CSMS). It runs
 against an **unmodified CSMS** and verifies wire-level conformance to
 the publicly published OCPP specifications, automated and CI-friendly.
 
@@ -221,7 +221,7 @@ published OCPP specifications via the `Spec-Ref` meta key.
 │   └── 007-reports/             # JSON + Robot XML
 ├── scenarios/
 │   ├── v16/                     # OCPP 1.6 stories (helpers + reservation)
-│   └── v201/                    # OCPP 2.0.1 stories (boot, authorize)
+│   └──                     # OCPP 1.6 stories (boot, authorize)
 ├── action/                      # GitHub Action manifest
 ├── packaging/                   # nfpm.yaml for .deb/.rpm
 ├── scripts/                     # gen-manpages.sh, gen-completions.sh
@@ -287,7 +287,7 @@ after its spec has been refined to implementation-ready detail.
 ### In progress / not yet written
 
 - Robot XML emitter (`pkg/report/`) — spec 007
-- OCPP 1.6 / 2.0.1 / 2.1 domain keyword layers
+- OCPP 1.6 / 1.6 / 2.1 domain keyword layers
 - Sample connection profile YAML files
 - Public APT/RPM repos and Homebrew tap
 

@@ -8,7 +8,7 @@
 
 ## Context
 
-OCPP 1.6J / 2.0.1 / 2.1 transports JSON over WebSocket (WSS in production).
+OCPP 1.6J transports JSON over WebSocket (WSS in production).
 The Go standard library does not include a WebSocket implementation, so
 OCTANE must take exactly one third-party dependency to cover this gap.
 
@@ -73,4 +73,4 @@ WebSocket dependency for OCTANE. Pin to a specific minor version in
 
 - Constitution: principles V, X
 - nhooyr.io/websocket: https://github.com/coder/websocket
-- OCPP-J transport spec: OCA OCPP-J 1.6 §3 / OCPP-J 2.0.1 §3 / OCPP-J 2.1 §3
+- OCPP-J transport spec: OCA OCPP-J 1.6 §3 / OCPP-J 1.6 §3 / OCPP-J 2.1 §3

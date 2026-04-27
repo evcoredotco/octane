@@ -40,7 +40,7 @@ starts (no silent fallthrough at runtime).
 ### Layer 1 — Domain keywords
 
 **Owner:** OCTANE project, `pkg/keywords/domain/v16/`,
-`pkg/keywords/domain/v201/`, `pkg/keywords/domain/v21/`.
+`pkg/keywords/domain/`.
 
 Domain keywords encode OCPP semantics. They are the keywords story
 authors use 95% of the time.
@@ -54,7 +54,7 @@ Examples:
 - `station {station:string} sends Heartbeat`
 
 Domain keywords are versioned per OCPP version. A keyword in
-`domain/v201/` is invisible when a story declares
+`domain/` is invisible when a story declares
 `Spec-Ref: OCPP-1.6 / ...` and vice versa. This keeps OCPP version
 ambiguity out of stories.
 
@@ -118,7 +118,7 @@ Keywords are registered at package init() with:
 ```go
 registry.Register(api.Keyword{
     Layer:       api.LayerDomain,
-    OCPPVersion: api.OCPP201,
+    OCPPVersion: api.OCPP16,
     Pattern: "station {station:string} sends BootNotification " +
         "with reason {reason:string}",
     Func: func(ctx context.Context, s api.State, args api.Args) error {

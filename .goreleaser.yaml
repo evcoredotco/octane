@@ -75,7 +75,7 @@ nfpms:
     maintainer: "OCTANE Authors <maintainers@octane.dev>"
     description: |
       OCPP Conformance Testing & Network Evaluation.
-      Wire-only conformance harness for OCPP 1.6J / 2.0.1 / 2.1.
+      Wire-only conformance harness for OCPP 1.6J.
     license: "Apache-2.0"
     section: net
     priority: optional

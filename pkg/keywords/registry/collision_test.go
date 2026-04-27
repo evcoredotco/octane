@@ -211,45 +211,6 @@ func Test_registry_Register_collisionPanicMessageContainsBothSites(
 	}
 }
 
-// Test_registry_Register_differentVersionSamePatternDoesNotPanic verifies
-// that two keywords sharing the same Pattern and Layer but different
-// OCPPVersions are NOT a collision and both register successfully.
-func Test_registry_Register_differentVersionSamePatternDoesNotPanic(
-	t *testing.T,
-) {
-	// Invariant: (Pattern, Layer, OCPPVersion=OCPP16) and
-	// (Pattern, Layer, OCPPVersion=OCPP201) are distinct keys — no panic.
-	reset()
-
-	// First registration: OCPP 1.6.
-	Register(api.Keyword{
-		Pattern:     patternCollision,
-		Layer:       api.LayerDomain,
-		OCPPVersion: api.OCPP16,
-		Func:        noopFunc,
-	})
-
-	// Second registration: OCPP 2.0.1 — must NOT panic.
-	Register(api.Keyword{
-		Pattern:     patternCollision,
-		Layer:       api.LayerDomain,
-		OCPPVersion: api.OCPP201,
-		Func:        noopFunc,
-	})
-
-	keywords := All()
-
-	const wantCount = 2
-
-	if len(keywords) != wantCount {
-		t.Errorf(
-			"All() count: want %d (both versions registered), got %d",
-			wantCount,
-			len(keywords),
-		)
-	}
-}
-
 // Test_registry_Register_differentLayerSamePatternDoesNotPanic verifies
 // that two keywords sharing the same Pattern and OCPPVersion but different
 // Layers are NOT a collision and both register successfully.

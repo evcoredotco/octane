@@ -2,8 +2,7 @@
 //
 // Validates spec 004 AC7: when a domain keyword and a primitive keyword share
 // the same step pattern in a story declaring OCPP 1.6, the domain keyword
-// wins.  When the resolver runs for OCPP 2.0.1 and the domain keyword is
-// OCPP-1.6-scoped, the primitive wins as a fallback.
+// wins.
 //
 // Strategy: register a fixture domain keyword whose pattern is unique enough
 // that it cannot collide with any production primitive (the pattern literal
@@ -103,28 +102,6 @@ func Test_primitive_precedence_domainWinsForOCPP16(t *testing.T) {
 	}
 }
 
-// Test_primitive_precedence_primitiveWinsForOCPP201 verifies that when the
-// resolver runs for OCPP 2.0.1 and the only domain keyword sharing the
-// pattern is OCPP-1.6-scoped, that domain keyword is excluded and the
-// primitive-layer fallback wins (spec 004 AC7, ADR 0007).
-func Test_primitive_precedence_primitiveWinsForOCPP201(t *testing.T) {
-	t.Parallel()
-
-	// Invariant: Resolve(OCPP201) excludes the OCPP16-scoped domain keyword
-	// and falls back to the primitive keyword (AC7).
-	match, err := registry.Resolve(stepPrecedenceFixture, api.OCPP201)
-	if err != nil {
-		t.Fatalf("registry.Resolve: unexpected error: %v", err)
-	}
-
-	if match.Keyword.Layer != api.LayerPrimitive {
-		t.Errorf(
-			"Match.Keyword.Layer: want LayerPrimitive (OCPP16 domain excluded for OCPP201), got %v",
-			match.Keyword.Layer,
-		)
-	}
-}
-
 // Test_primitive_precedence_argsCorrectlyBound verifies that the matched
 // keyword (regardless of layer) correctly binds the {n:int} placeholder from
 // the step text, confirming the pattern match and coercion path is healthy.
@@ -132,7 +109,7 @@ func Test_primitive_precedence_argsCorrectlyBound(t *testing.T) {
 	t.Parallel()
 
 	// Invariant: the {n:int} placeholder is bound to 42 in both resolution
-	// paths (domain for OCPP16, primitive for OCPP201).
+	// paths (domain for OCPP16).
 	match, err := registry.Resolve(stepPrecedenceFixture, api.OCPP16)
 	if err != nil {
 		t.Fatalf("registry.Resolve: unexpected error: %v", err)

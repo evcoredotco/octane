@@ -10,7 +10,7 @@ import (
 )
 
 // credentialFieldRE matches JSON object keys that are likely to carry
-// credentials in OCPP 2.x connection profile payloads and similar structures.
+// credentials in OCPP-J payloads and similar structures.
 // The pattern is case-insensitive and requires an exact key match.
 var credentialFieldRE = regexp.MustCompile(
 	`(?i)^(password|passphrase|privatekey|clientcertificate|bearertoken|` +

@@ -142,7 +142,7 @@ func validateSubprotocol(
 //
 // A TLS 1.2 minimum version floor is always enforced — if the caller supplies
 // a config with a lower MinVersion, it is raised to tls.VersionTLS12 per NIST
-// SP 800-52 Rev. 2 and the OCA Security Profile 2 (OCPP 2.0.1 Part 2, §3.1).
+// SP 800-52 Rev. 2 and the OCA Security Profile for OCPP 1.6.
 //
 // If opts.InsecureSkipVerify is true a warning is logged and the config's
 // InsecureSkipVerify field is set. The original config is cloned to avoid

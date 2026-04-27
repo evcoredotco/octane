@@ -8,7 +8,7 @@ content here is binding for all of them.
 ## Project at a glance
 
 - **Name:** OCTANE — OCPP Conformance Testing & Network Evaluation
-- **Goal:** Hardened, scriptable conformance harness for OCPP 1.6J / 2.0.1 / 2.1
+- **Goal:** Hardened, scriptable conformance harness for OCPP 1.6J
 - **Architecture:** Story-driven framework (per ADR 0005) — `.story`
   files in a Gherkin-flavored DSL drive the CSMS over the OCPP wire,
   parameterized by user-owned connection metadata (ADR 0010).

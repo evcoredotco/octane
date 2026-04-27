@@ -37,13 +37,8 @@ import (
 // and fast-fail").
 const defaultLockTimeout = 60 * time.Second
 
-// OCPP version string constants used for tag matching and keyword
-// resolution to satisfy the goconst linter (multiple occurrences).
-const (
-	ocppVersion16  = "1.6"
-	ocppVersion201 = "2.0.1"
-	ocppVersion21  = "2.1"
-)
+// ocppVersion16 is the only supported OCPP version string.
+const ocppVersion16 = "1.6"
 
 // runnerState implements api.State for use by keyword functions
 // during story execution. It wraps the station registry and the
@@ -969,17 +964,12 @@ func filterByOCPPVersion(
 }
 
 // resolveOCPPVersion determines the OCPP version string to use for
-// keyword resolution. It checks the story's tags for a version
+// keyword resolution. It checks the story's tags for the ocpp1.6
 // marker and falls back to the config's OCPPVersion.
 func resolveOCPPVersion(tags []string, cfgVersion string) string {
 	for _, tag := range tags {
-		switch tag {
-		case "ocpp1.6", ocppVersion16:
+		if tag == "ocpp1.6" || tag == ocppVersion16 {
 			return ocppVersion16
-		case "ocpp2.0.1", ocppVersion201:
-			return ocppVersion201
-		case "ocpp2.1", ocppVersion21:
-			return ocppVersion21
 		}
 	}
 
@@ -991,15 +981,9 @@ func resolveOCPPVersion(tags []string, cfgVersion string) string {
 }
 
 // parseOCPPVersion converts a version string to api.OCPPVersion.
-func parseOCPPVersion(ver string) api.OCPPVersion {
-	switch ver {
-	case ocppVersion201:
-		return api.OCPP201
-	case ocppVersion21:
-		return api.OCPP21
-	default:
-		return api.OCPP16
-	}
+// Only OCPP 1.6 is supported.
+func parseOCPPVersion(_ string) api.OCPPVersion {
+	return api.OCPP16
 }
 
 // resolveCacheDir returns the effective cache directory, applying

@@ -118,9 +118,9 @@ keyword bodies to land.
        primitive-layer keyword with the same pattern, **when**
        the resolver runs against a story declaring OCPP 1.6,
        **then** the domain keyword wins.
-- AC7. **Given** a domain-layer keyword for OCPP 2.0.1 only and
+- AC7. **Given** a domain-layer keyword for OCPP 1.6 only and
        a story declaring OCPP 1.6, **when** the resolver runs,
-       **then** the OCPP 2.0.1 keyword is invisible and the
+       **then** the OCPP 1.6 keyword is invisible and the
        resolver falls through to the primitive layer.
 - AC8. **Given** a mock `State` and `Station` from
        `pkg/keywords/api/mock`, **when** a third-party keyword
@@ -131,7 +131,7 @@ keyword bodies to land.
 ## 7. OCPP Scope
 
 The keyword API is OCPP-version-agnostic. The `OCPPVersion`
-enum (`1.6`, `2.0.1`, `2.1`) exists only as a registry filter;
+enum (`1.6`, `1.6`, `2.1`) exists only as a registry filter;
 no version-specific message logic appears in this package.
 
 ## 8. Open Questions

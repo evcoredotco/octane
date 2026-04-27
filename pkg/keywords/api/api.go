@@ -87,24 +87,14 @@ type OCPPVersion int
 const (
 	// OCPP16 represents OCPP 1.6 (JSON / OCPP-J 1.6).
 	OCPP16 OCPPVersion = iota + 1
-
-	// OCPP201 represents OCPP 2.0.1.
-	OCPP201
-
-	// OCPP21 represents OCPP 2.1.
-	OCPP21
 )
 
 // String returns the human-readable version string for an
-// OCPPVersion value (e.g., "1.6", "2.0.1", "2.1").
+// OCPPVersion value (e.g., "1.6").
 func (v OCPPVersion) String() string {
 	switch v {
 	case OCPP16:
 		return "1.6"
-	case OCPP201:
-		return "2.0.1"
-	case OCPP21:
-		return "2.1"
 	default:
 		return "unknown"
 	}
@@ -214,7 +204,7 @@ type Func func(ctx context.Context, state State, args Args) error
 //	registry.Register(api.Keyword{
 //	    Pattern:     "station {station:string} sends BootNotification",
 //	    Layer:       api.LayerDomain,
-//	    OCPPVersion: api.OCPP201,
+//	    OCPPVersion: api.OCPP16,
 //	    Func: func(ctx context.Context, s api.State, a api.Args) error {
 //	        // ... drives the wire ...
 //	        return nil
@@ -235,7 +225,7 @@ type Keyword struct {
 
 	// OCPPVersion scopes the keyword to a specific OCPP
 	// version. Domain-layer keywords MUST set this to a
-	// non-zero value (OCPP16, OCPP201, or OCPP21).
+	// non-zero value (OCPP16).
 	// Primitive-layer keywords leave this as the zero value,
 	// indicating they are version-agnostic and visible to all
 	// stories regardless of the declared OCPP version.

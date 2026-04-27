@@ -112,8 +112,8 @@ OCTANE references OCPP specifications published by the Open Charge
 Alliance:
 
 - OCPP 1.6J: <https://www.openchargealliance.org/protocols/ocpp-16/>
-- OCPP 2.0.1: <https://www.openchargealliance.org/protocols/ocpp-201/>
-- OCPP 2.1: <https://www.openchargealliance.org/protocols/ocpp-21/>
+- OCPP 1.6: <https://www.openchargealliance.org/protocols/ocpp-201/>
+- OCPP 1.6: <https://www.openchargealliance.org/protocols/ocpp-21/>
 
 These specifications are the source of truth for every conformance
 assertion OCTANE makes. Where the OCPP specification is silent or

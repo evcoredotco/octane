@@ -36,7 +36,7 @@ are searched recursively. When no paths are given, OCTANE searches the
 |---|---|---|---|
 | `--max-parallel` | int | `1` | Maximum number of stories to run concurrently. |
 | `--shard` | string | `` | Shard index in `N/M` format (e.g. `1/4`). Distributes stories across parallel CI workers by `sha256(test_id) % M`. |
-| `--ocpp-version` | string | `` | Restrict the run to stories declaring this OCPP version (`1.6`, `2.0.1`, or `2.1`). When empty all versions are included. |
+| `--ocpp-version` | string | `` | Restrict the run to stories declaring this OCPP version (`1.6`, `1.6`, or `2.1`). When empty all versions are included. |
 | `--lock-timeout` | duration | `60s` | Maximum time to wait when acquiring a per-cache-key lock. |
 | `--no-wait` | bool | `false` | Fail immediately when a cache lock is busy instead of waiting. |
 | `--insecure-skip-verify` | bool | `false` | Disable TLS certificate verification. Emits a warning banner. Do not use in production. |

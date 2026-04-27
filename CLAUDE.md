@@ -77,6 +77,4 @@ For everything else, delegate to the appropriate subagent.
 ## Quick references
 
 - OCPP 1.6J spec: https://www.openchargealliance.org/protocols/ocpp-16/
-- OCPP 2.0.1 spec: https://www.openchargealliance.org/protocols/ocpp-201/
-- OCPP 2.1 spec: https://www.openchargealliance.org/protocols/ocpp-21/
-- CitrineOS: https://citrineos.github.io/
+- - - CitrineOS: https://citrineos.github.io/

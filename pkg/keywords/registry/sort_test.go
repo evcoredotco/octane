@@ -29,9 +29,8 @@ const (
 // layerValues enumerates the two legal Layer values in ascending order.
 var layerValues = []api.Layer{api.LayerPrimitive, api.LayerDomain}
 
-// versionValues enumerates the three legal OCPPVersion values in
-// ascending order.
-var versionValues = []api.OCPPVersion{api.OCPP16, api.OCPP201, api.OCPP21}
+// versionValues enumerates the supported OCPPVersion values.
+var versionValues = []api.OCPPVersion{api.OCPP16}
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 

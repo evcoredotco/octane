@@ -41,7 +41,7 @@ cache_dir: ""
 max_parallel: 1
 
 # Restrict execution to stories declaring this OCPP version.
-# Valid values: "1.6", "2.0.1", "2.1". Empty means all versions.
+# Valid values: "1.6". Empty means all versions.
 ocpp_version: ""
 
 # Maximum time to wait when acquiring a per-cache-key lock.

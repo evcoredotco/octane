@@ -56,12 +56,12 @@ The following arguments and flag values are completed dynamically:
 
 | Token | Source | Example |
 |-------|--------|---------|
-| `octane run <PATH>` | filesystem walk for `*.story` files | `octane run scenarios/v201/<TAB>` |
+| `octane run <PATH>` | filesystem walk for `*.story` files | `octane run scenarios/<TAB>` |
 | `--profile <NAME>` | local cache + Go module index | `octane run --profile <TAB>` |
 | `octane keywords show <NAME>` | registered keyword library | `octane keywords show station<TAB>` |
 | `--config <PATH>` | filesystem walk for `*.yml`/`*.yaml` | `octane run --config <TAB>` |
 | `octane validate <SUBJECT>` | enum: `config`, `story`, `profile` | `octane validate <TAB>` |
-| `--ocpp-version <VERSION>` | enum: `1.6`, `2.0.1`, `2.1` | `--ocpp-version <TAB>` |
+| `--ocpp-version <VERSION>` | enum: `1.6`, `1.6`, `2.1` | `--ocpp-version <TAB>` |
 
 ### Security boundary — read-only and side-effect-free
 

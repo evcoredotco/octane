@@ -16,7 +16,7 @@ priority: optional
 maintainer: "OCTANE Authors <maintainers@octane.dev>"
 description: |
   OCPP Conformance Testing & Network Evaluation.
-  A wire-only conformance harness for OCPP 1.6J / 2.0.1 / 2.1
+  A wire-only conformance harness for OCPP 1.6J
   Charging Station Management Systems. Drives an unmodified CSMS
   by impersonating one or more charging stations and matching wire
   responses against the OCPP specification.

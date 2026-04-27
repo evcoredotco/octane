@@ -22,11 +22,14 @@ import (
 func TestSubprotocolMismatch(t *testing.T) {
 	t.Parallel()
 
-	// A fake CSMS that accepts WebSocket but returns "ocpp2.0.1" subprotocol
+	// A fake CSMS that accepts WebSocket but returns an unsupported subprotocol,
+	// simulating a server that does not speak OCPP 1.6.
+	const wrongSubprotocol = "ocpp_unsupported"
+
 	srv := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			_, _ = websocket.Accept(w, r, &websocket.AcceptOptions{
-				Subprotocols: []string{"ocpp2.0.1"},
+				Subprotocols: []string{wrongSubprotocol},
 			})
 		}),
 	)
@@ -53,7 +56,7 @@ func TestSubprotocolMismatch(t *testing.T) {
 		)
 	}
 
-	if mismatch.Got != "ocpp2.0.1" {
-		t.Errorf("Got = %q, want %q", mismatch.Got, "ocpp2.0.1")
+	if mismatch.Got != wrongSubprotocol {
+		t.Errorf("Got = %q, want %q", mismatch.Got, wrongSubprotocol)
 	}
 }

@@ -10,7 +10,6 @@
 #   - OCTANE cache restoration across runs (per ADR 0016)
 #   - Partial cache hits via restore-keys
 #   - Report artifact upload for both passing and failing runs
-#   - Fan-out across OCPP versions via matrix strategy
 
 name: ocpp-conformance
 
@@ -36,7 +35,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ocpp-version: ["1.6", "2.0.1"]
+        ocpp-version: ["1.6"]
 
     env:
       OCTANE_CACHE_DIR: ${{ github.workspace }}/.octane-cache

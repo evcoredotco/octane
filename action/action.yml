@@ -1,7 +1,7 @@
 name: "OCTANE — OCPP Conformance Check"
 description: >
   Run OCTANE against a CSMS endpoint and produce a deterministic OCPP
-  conformance report. Supports OCPP 1.6J, 2.0.1, and 2.1.
+  conformance report. Supports OCPP 1.6J.
 author: "The OCTANE Authors"
 branding:
   icon: zap
@@ -31,7 +31,7 @@ inputs:
     required: false
     default: "reports/"
   ocpp-version:
-    description: "Restrict run to stories declaring this OCPP version (e.g. '1.6', '2.0.1', '2.1')."
+    description: "Restrict run to stories declaring this OCPP version (e.g. '1.6')."
     required: false
     default: ""
   shard:

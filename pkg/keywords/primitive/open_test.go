@@ -264,8 +264,8 @@ func Test_primitive_openWebSocketWithSubprotocol(t *testing.T) {
 func Test_primitive_openWebSocketWithSubprotocol_Mismatch(t *testing.T) {
 	t.Parallel()
 
-	// The server accepts only "ocpp2.0.1"; the client requests "ocpp1.6".
-	srv, wsURL := newSubprotocolServer(t, "ocpp2.0.1")
+	// The server accepts only an unsupported subprotocol; the client requests "ocpp1.6".
+	srv, wsURL := newSubprotocolServer(t, "ocpp_unsupported")
 
 	defer srv.Close()
 
