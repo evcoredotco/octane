@@ -56,6 +56,28 @@ You may not write to:
 - Patterns use `{name:type}` placeholders only. The supported type
   set is fixed in ADR 0006; expanding it is an ADR-level decision.
 
+### OCPP 1.6 data types
+
+**All OCPP 1.6 types must come from `github.com/evcoreco/ocpp16types`
+(ADR 0020).** This applies to every keyword function body, every test
+fixture, and every helper inside `pkg/keywords/`. The import alias
+`ocpp16` is the project standard:
+
+```go
+import ocpp16 "github.com/evcoreco/ocpp16types"
+
+// Keyword bodies reference types as:
+//   ocpp16.BootNotificationRequest
+//   ocpp16.RegistrationStatus
+```
+
+Never declare a local struct or enum for anything the OCPP 1.6 spec
+defines. If the required type is missing from `ocpp16types`:
+
+1. Open a PR against `github.com/evcoreco/ocpp16types`.
+2. Block the OCTANE keyword task on the upstream release.
+3. Do **not** create a local placeholder copy.
+
 ### Layer discipline
 
 - **Primitive keywords** never reference OCPP semantics. If a primitive

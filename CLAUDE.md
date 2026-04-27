@@ -73,6 +73,10 @@ For everything else, delegate to the appropriate subagent.
 - Add new third-party Go dependencies without a draft ADR.
 - Mark a test case stable before it has passed against the pinned CitrineOS.
 - Push directly to `main`. Always work on a `spec/...` or `feat/...` branch.
+- Declare any OCPP 1.6 data type (struct, enum, sub-object) locally in OCTANE.
+  All OCPP 1.6 types **must** come from `github.com/evcoreco/ocpp16types`
+  (ADR 0020). If the required type is missing from that module, stop and
+  instruct the user to contribute it upstream first.
 
 ## Quick references
 

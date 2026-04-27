@@ -42,6 +42,10 @@ multiple failing items at the architectural level escalate to a
 - [ ] No `time.Now()` / unseeded `rand` in engine code paths.
 - [ ] Exported symbols documented; unexported names follow `mixedCaps`.
 - [ ] No magic numbers — extracted to named constants.
+- [ ] **No locally-declared OCPP 1.6 data type.** Every struct, enum, or
+      sub-object defined by the OCPP 1.6 specification must be imported from
+      `github.com/evcoreco/ocpp16types` (ADR 0020). A locally-declared copy
+      is an automatic `REQUEST CHANGES`, no exceptions.
 
 ### 4. Tests
 
