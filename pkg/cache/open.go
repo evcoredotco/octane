@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/octane-project/octane/pkg/engine/clock"
 )
 
 // schemaVersion is the current schema version written into
@@ -60,7 +62,35 @@ func Open(dir string) (Cache, error) {
 		return nil, err
 	}
 
-	return &FileCache{dir: dir}, nil
+	return &FileCache{dir: dir, clk: clock.Real()}, nil
+}
+
+// OpenWithClock is identical to [Open] but uses the supplied clock
+// for all TTL checks and WrittenAt timestamps inside [FileCache].
+// Inject a [clock.DeterministicClock] in tests that need precise
+// control over cache expiry without real wall-clock delay
+// (constitution principle IV).
+func OpenWithClock(dir string, clk clock.Clock) (Cache, error) {
+	subDirs := []string{
+		filepath.Join(dir, "results"),
+		filepath.Join(dir, "locks"),
+	}
+
+	for _, sub := range subDirs {
+		if err := os.MkdirAll(sub, 0o750); err != nil {
+			return nil, fmt.Errorf(
+				"cache: create directory %q: %w",
+				sub,
+				err,
+			)
+		}
+	}
+
+	if err := writeVersionStamp(dir); err != nil {
+		return nil, err
+	}
+
+	return &FileCache{dir: dir, clk: clk}, nil
 }
 
 // writeVersionStamp writes version.json into dir if the file does

@@ -3,16 +3,6 @@
 // Task: T-005-57
 // AC10: Cache-TTL: the cache treats an entry with an expired TTL as a miss and
 // causes the runner to re-execute the story.
-//
-// PRODUCTION GAP NOTE (hand-off to backend agent):
-// runner.writeToCache in pkg/runner/run.go writes TTL:0 regardless of the
-// story's Meta.CacheTTL value. As a result, Cache-TTL declared in the story
-// Meta is not propagated into the cache entry by the runner. This test works
-// around the limitation by writing the cache entry directly via cache.Open +
-// cache.Put with a 1s TTL, then verifying that cache.Get returns ErrCacheMiss
-// after the TTL elapses. The runner-level end-to-end test (first run populates,
-// second run re-executes due to expired TTL) is blocked by this gap and will
-// only work once writeToCache propagates Meta.CacheTTL.
 package integration_test
 
 import (
@@ -106,11 +96,6 @@ func Test_runner_CacheTTLDirectExpiry(t *testing.T) {
 // Test_runner_CacheTTLRunnerSecondRunIsHit validates the positive case:
 // when caching is enabled and no TTL expiry occurs between two runs,
 // the second run is served from the cache.
-//
-// NOTE: This test is blocked by the same production gap that prevents
-// runner.Run from propagating Meta.CacheTTL to cache entries. The test
-// checks that a no-TTL second run is a cache hit, which is the baseline
-// behaviour used by Test_runner_RunCacheHitOnSecondRun.
 func Test_runner_CacheTTLRunnerSecondRunIsHit(t *testing.T) {
 	t.Parallel()
 

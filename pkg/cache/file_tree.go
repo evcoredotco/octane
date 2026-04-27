@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/octane-project/octane/pkg/engine/clock"
 )
 
 // resultEnvelope is the JSON structure persisted as result.json.
@@ -49,6 +51,11 @@ type FileCache struct {
 	// dir is the root of the cache directory tree, as received
 	// from [Open]. All paths are derived from this root.
 	dir string
+
+	// clk is the clock used for TTL expiry checks (Get) and
+	// WrittenAt timestamps (Put). Defaults to clock.Real();
+	// inject a deterministic clock in tests via [OpenWithClock].
+	clk clock.Clock
 }
 
 // resultDir returns the directory path for a given hash, including
@@ -113,7 +120,7 @@ func (fc *FileCache) Get(
 	}
 
 	// TTL invalidation: spec 005 AC10.
-	if entry.IsExpired(time.Now()) {
+	if entry.IsExpired(fc.clk.Now()) {
 		return nil, ErrCacheMiss
 	}
 
@@ -179,7 +186,7 @@ func (fc *FileCache) Put(
 
 	writtenAt := entry.WrittenAt
 	if writtenAt.IsZero() {
-		writtenAt = time.Now().UTC()
+		writtenAt = fc.clk.Now().UTC()
 	}
 
 	env := resultEnvelope{
