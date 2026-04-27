@@ -95,23 +95,36 @@ func Dial(
 
 	conn.SetReadLimit(maxBytes)
 
-	if len(opts.Subprotocols) > 0 {
-		negotiated := conn.Subprotocol()
+	if err = validateSubprotocol(conn, opts.Subprotocols); err != nil {
+		_ = conn.Close(websocket.StatusNormalClosure, "subprotocol mismatch")
 
-		if !contains(opts.Subprotocols, negotiated) {
-			_ = conn.Close(
-				websocket.StatusNormalClosure,
-				"subprotocol mismatch",
-			)
-
-			return nil, &ErrSubprotocolMismatch{
-				Requested: opts.Subprotocols,
-				Got:       negotiated,
-			}
-		}
+		return nil, err
 	}
 
-	return newStationHandle(conn, maxBytes), nil
+	return newStationHandle(conn), nil
+}
+
+// validateSubprotocol checks that the server chose a subprotocol from the
+// requested list. It returns nil when the list is empty (caller has no
+// preference). On mismatch it returns *ErrSubprotocolMismatch.
+func validateSubprotocol(
+	conn *websocket.Conn,
+	subprotocols []string,
+) error {
+	if len(subprotocols) == 0 {
+		return nil
+	}
+
+	negotiated := conn.Subprotocol()
+
+	if contains(subprotocols, negotiated) {
+		return nil
+	}
+
+	return &ErrSubprotocolMismatch{
+		Requested: subprotocols,
+		Got:       negotiated,
+	}
 }
 
 // buildTLSConfig derives the *tls.Config to use for the dial.
