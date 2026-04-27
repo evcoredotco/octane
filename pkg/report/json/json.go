@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"time"
 
 	"github.com/octane-project/octane/pkg/report"
 	"github.com/octane-project/octane/pkg/report/model"
@@ -64,7 +65,7 @@ type jsonFinding struct {
 }
 
 // rfc3339 is the time layout used throughout the JSON report.
-const rfc3339 = "2006-01-02T15:04:05Z07:00"
+const rfc3339 = time.RFC3339
 
 // WriteJSON projects result into a model.Report, serializes it to
 // JSON with 2-space indentation, and writes the result to
@@ -84,7 +85,7 @@ func WriteJSON(
 		return err
 	}
 
-	if err := os.MkdirAll(dir, 0o750); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return err
 	}
 

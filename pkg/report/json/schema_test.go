@@ -17,6 +17,7 @@ import (
 // level of every octane.json report.
 var requiredTopLevelKeys = []string{
 	"schema_version",
+	"octane_version",
 	"run_id",
 	"started_at",
 	"finished_at",
@@ -95,8 +96,24 @@ func Test_json_Schema(t *testing.T) {
 	}
 
 	assertSchemaVersion(t, top)
+	assertOctaneVersion(t, top)
 	assertSummaryShape(t, top)
 	assertStoriesShape(t, top)
+}
+
+// assertOctaneVersion verifies that octane_version is a non-empty string.
+func assertOctaneVersion(t *testing.T, top map[string]any) {
+	t.Helper()
+
+	val, present := top["octane_version"]
+	if !present {
+		return
+	}
+
+	str, isStr := val.(string)
+	if !isStr || str == "" {
+		t.Errorf("octane_version: got %v, want non-empty string", val)
+	}
 }
 
 // assertSchemaVersion verifies that schema_version is a non-zero number.

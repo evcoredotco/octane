@@ -9,8 +9,8 @@ package report
 // JSONOptions controls the JSON emitter behaviour.
 type JSONOptions struct {
 	// NoTraceOnPass suppresses wire trace data for stories that passed.
-	// When true, StoryReport.TracePresent is set to false for passing
-	// stories.
+	// When true, the emitted trace_present JSON field is false and the
+	// trace object is omitted for passing stories.
 	NoTraceOnPass bool
 
 	// OctaneVersion is embedded in the report header. Defaults to "dev"

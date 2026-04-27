@@ -7,6 +7,7 @@ package model
 import (
 	"sort"
 
+	"github.com/octane-project/octane/pkg/report/internal/redact"
 	"github.com/octane-project/octane/pkg/runner"
 )
 
@@ -124,7 +125,8 @@ func projectCacheStatus(src runner.CacheStatus) string {
 }
 
 // projectFindings converts a slice of runner.Finding to a slice of
-// model.Finding.
+// model.Finding. Each finding message is scrubbed for JWT patterns and
+// other credential-bearing strings before inclusion in the report.
 func projectFindings(src []runner.Finding) []Finding {
 	if len(src) == 0 {
 		return nil
@@ -134,7 +136,7 @@ func projectFindings(src []runner.Finding) []Finding {
 
 	for idx, f := range src {
 		out[idx] = Finding{
-			Message:  f.Message,
+			Message:  redact.FindingMessage(f.Message),
 			Severity: f.Severity,
 		}
 	}
@@ -143,7 +145,8 @@ func projectFindings(src []runner.Finding) []Finding {
 }
 
 // projectTrace converts a *runner.Trace to a *model.Trace. Returns nil when
-// src is nil.
+// src is nil. Each raw OCPP-J frame is passed through the frame redactor
+// before inclusion in the report.
 func projectTrace(src *runner.Trace) *Trace {
 	if src == nil {
 		return nil
@@ -152,7 +155,7 @@ func projectTrace(src *runner.Trace) *Trace {
 	frames := make([]Frame, len(src.Frames))
 
 	for idx, raw := range src.Frames {
-		frames[idx] = Frame{Raw: raw}
+		frames[idx] = Frame{Raw: redact.Frame(raw)}
 	}
 
 	return &Trace{Frames: frames}
