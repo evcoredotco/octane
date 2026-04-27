@@ -8,6 +8,11 @@
 
 FROM golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f AS builder
 
+# BuildKit injects TARGETARCH and TARGETOS when --platform is used.
+# Declare them here so the shell expansion below resolves correctly.
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+
 WORKDIR /src
 
 # Cache module downloads.
@@ -17,9 +22,10 @@ RUN go mod download
 # Bring in source.
 COPY . .
 
-# Static binary; the make target enforces the same flags used in CI.
-RUN apk add --no-cache make git \
- && make build-static
+# Static binary for the target platform.
+RUN apk add --no-cache git \
+ && CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+    go build -trimpath -ldflags='-s -w' -o bin/octane ./cmd/octane
 
 # ----- runtime ---------------------------------------------------------
 
@@ -32,7 +38,11 @@ LABEL org.opencontainers.image.licenses="Apache-2.0"
 
 COPY --from=builder /src/bin/octane /usr/local/bin/octane
 
+# Entrypoint script translates INPUT_* env vars to CLI flags.
+COPY action/entrypoint.sh /entrypoint.sh
+
 # Action workspace will be mounted at /github/workspace by the runner.
 WORKDIR /github/workspace
 
-ENTRYPOINT ["/usr/local/bin/octane"]
+ENTRYPOINT ["/entrypoint.sh"]
+CMD []
