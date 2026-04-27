@@ -4,7 +4,6 @@
 //   - Happy path: primitive keyword resolved by step text.
 //   - Happy path: domain keyword resolved for matching OCPPVersion.
 //   - Domain wins over primitive for same pattern (AC6).
-//   - Domain keyword for OCPP 2.0.1 invisible when version is OCPP 1.6 (AC7).
 //   - Domain keyword with OCPPVersion=0 (version-agnostic) matches all versions.
 //   - No match → *ErrNoMatch returned; Closest populated when near pattern exists (AC4).
 //   - Type coercion failure → *ErrTypeMismatch returned (AC5).
@@ -244,66 +243,6 @@ func Test_registry_Resolve_domainWinsOverPrimitiveForSamePattern(t *testing.T) {
 	}
 }
 
-// ── AC7: domain keyword for OCPP 2.0.1 invisible when version is OCPP 1.6 ────
-
-// Test_registry_Resolve_domainOCPP201InvisibleForOCPP16 verifies that a
-// domain-layer keyword registered for OCPP 2.0.1 is not matched when the
-// resolver is called with OCPP 1.6, and the resolver falls through to the
-// primitive layer instead (AC7).
-func Test_registry_Resolve_domainOCPP201InvisibleForOCPP16(t *testing.T) {
-	// Invariant: OCPP 2.0.1 domain keyword is excluded when resolving for
-	// OCPP 1.6; the primitive-layer fallback is selected (AC7).
-	reset()
-
-	registerPrimitive(patternDomain16)
-	registerDomain16(api.OCPP201)
-
-	match, err := Resolve(stepDomain16, api.OCPP16)
-	if err != nil {
-		t.Fatalf("Resolve: unexpected error: %v", err)
-	}
-
-	// The domain keyword for OCPP 2.0.1 must be invisible; only primitive wins.
-	if match.Keyword.Layer != api.LayerPrimitive {
-		t.Errorf(
-			"Match.Keyword.Layer: want LayerPrimitive (OCPP 2.0.1 domain invisible for OCPP 1.6), got %v",
-			match.Keyword.Layer,
-		)
-	}
-}
-
-// Test_registry_Resolve_domainOCPP201InvisibleForOCPP16_noFallback verifies
-// that when no primitive fallback exists, the OCPP 2.0.1 domain keyword is
-// completely invisible and ErrNoMatch is returned when resolving for OCPP 1.6.
-func Test_registry_Resolve_domainOCPP201InvisibleForOCPP16_noFallback(
-	t *testing.T,
-) {
-	// Invariant: a domain keyword for a different OCPP version produces
-	// ErrNoMatch — it is not selected as a fallback (AC7).
-	reset()
-
-	registerDomain16(api.OCPP201)
-
-	_, err := Resolve(stepDomain16, api.OCPP16)
-
-	if err == nil {
-		t.Fatal("Resolve: expected ErrNoMatch, got nil")
-	}
-
-	var noMatch *ErrNoMatch
-	if !errors.As(err, &noMatch) {
-		t.Fatalf("Resolve error type: want *ErrNoMatch, got %T: %v", err, err)
-	}
-
-	if noMatch.StepText != stepDomain16 {
-		t.Errorf(
-			"ErrNoMatch.StepText: want %q, got %q",
-			stepDomain16,
-			noMatch.StepText,
-		)
-	}
-}
-
 // ── Domain keyword with OCPPVersion=0 matches all versions ───────────────────
 
 // Test_registry_Resolve_domainVersionAgnosticMatchesOCPP16 verifies that a
@@ -345,36 +284,6 @@ func Test_registry_Resolve_domainVersionAgnosticMatchesOCPP16(t *testing.T) {
 	}
 }
 
-// Test_registry_Resolve_domainVersionAgnosticMatchesOCPP201 verifies that a
-// domain-layer keyword registered with OCPPVersion=0 is also matched when the
-// resolver runs with OCPP 2.0.1, confirming truly version-agnostic behavior.
-func Test_registry_Resolve_domainVersionAgnosticMatchesOCPP201(t *testing.T) {
-	// Invariant: a domain keyword with OCPPVersion=0 is eligible for OCPP 2.0.1.
-	reset()
-
-	const versionAgnostic api.OCPPVersion = 0
-
-	versionAgnosticKeyword := api.Keyword{
-		Pattern:     patternDomain16,
-		Layer:       api.LayerDomain,
-		OCPPVersion: versionAgnostic,
-		Func:        resolveNoopFunc,
-	}
-
-	Register(versionAgnosticKeyword)
-
-	match, err := Resolve(stepDomain16, api.OCPP201)
-	if err != nil {
-		t.Fatalf("Resolve: unexpected error: %v", err)
-	}
-
-	if match.Keyword.Layer != api.LayerDomain {
-		t.Errorf(
-			"Match.Keyword.Layer: want LayerDomain, got %v",
-			match.Keyword.Layer,
-		)
-	}
-}
 
 // ── AC4: no match → ErrNoMatch; Closest populated when near pattern exists ───
 

@@ -62,7 +62,7 @@ You may not write to:
   keyword needs to know about CALL or CALLERROR, it is a domain
   keyword, not a primitive.
 - **Domain keywords** are scoped to one OCPP version. A keyword in
-  `domain/v201/` is invisible to a story declaring
+  `domain/` is invisible to a story declaring
   `Spec-Ref: OCPP-1.6 / ...`.
 - There is no profile keyword layer (per constitution principle XII
   and ADR 0007). Per-CSMS overrides are forbidden.
@@ -104,6 +104,6 @@ For `/implement T-NNN-MM` where the agent is `keyword-author`:
 ## Output style
 
 - Reference the task ID and the layer touched in commit messages
-  (`feat(keywords/v201): authorize-id-token (T-002-08)`).
+  (`feat(keywords/v16): authorize-id-token (T-002-08)`).
 - Keyword documentation lines are one sentence each, present tense,
   consistent with the pattern.

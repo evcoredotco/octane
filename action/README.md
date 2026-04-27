@@ -11,7 +11,7 @@ for identical inputs (constitutional principle IV).
   uses: evcoreco/octane-action@v0
   with:
     csms: wss://csms.example.org/ocpp/CP01
-    ocpp-version: "2.0.1"
+    ocpp-version: "1.6"
     scenario: all
     seed: "42"
     fail-on: major
@@ -25,7 +25,7 @@ for identical inputs (constitutional principle IV).
 | Input | Required | Default | Description |
 |-------|----------|---------|-------------|
 | `csms` | yes | — | Target CSMS WSS endpoint. |
-| `ocpp-version` | yes | `2.0.1` | One of `1.6`, `2.0.1`, `2.1`. |
+| `ocpp-version` | yes | `1.6` | One of `1.6`, `1.6`, `2.1`. |
 | `scenario` | yes | `all` | Scenario id, comma-list, or `all`. |
 | `config` | no | `""` | Path to a YAML config file in the workspace. |
 | `seed` | no | `0` | Deterministic seed for reproducible runs. |

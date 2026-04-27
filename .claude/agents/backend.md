@@ -39,7 +39,7 @@ You inherit Alexis's `golang-master` conventions in full:
 - WebSocket transport uses the single pinned dependency in `go.mod`. Do
   not add another.
 - OCPP message types are typed Go values under
-  `pkg/scenarios/v16|v201|v21/`. Generated code lives in `*_gen.go` and
+  `pkg/scenarios/v16/`. Generated code lives in `*_gen.go` and
   must be regenerated via `go generate ./...`, never edited by hand.
 - `spec_ref` is a required struct field on every test case. The compiler
   enforces this; do not make it a pointer or add `omitempty`.

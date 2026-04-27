@@ -66,7 +66,7 @@ var ErrCacheMiss = errors.New("cache: miss")
 //     subprotocol + auth-mode tuple).
 //   - OctaneVersion:   build version string.
 //   - OCPPVersion:     OCPP version from story Meta or
-//     config (e.g., "1.6", "2.0.1").
+//     config (e.g., "1.6").
 //   - StoryContentSHA: SHA-256 hex digest of the story
 //     file content plus the transitive
 //     content of all prerequisite stories.
@@ -100,8 +100,7 @@ type Key struct {
 	OctaneVersion string
 
 	// OCPPVersion is the OCPP protocol version declared by the
-	// story or the run configuration (e.g., "1.6", "2.0.1",
-	// "2.1").
+	// story or the run configuration (e.g., "1.6").
 	OCPPVersion string
 
 	// StoryContentSHA is the SHA-256 hex digest of the story

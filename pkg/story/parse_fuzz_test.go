@@ -36,7 +36,7 @@ func FuzzParse(f *testing.F) {
 		"Meta\n" +
 			"    Name:     Boot\n" +
 			"    Id:       boot\n" +
-			"    Spec-Ref: OCPP 2.0.1 §B01\n" +
+			"    Spec-Ref: OCPP 1.6 §B01\n" +
 			"    Tags:     core\n" +
 			"    Stations: 1\n" +
 			"    Depends:\n" +

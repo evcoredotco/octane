@@ -43,7 +43,7 @@ The runtime contract is:
 ```
 octane run \
   --connection citrineos \
-  --story scenarios/v201/TC_B_01_CS.story
+  --story scenarios/TC_B_01_CS.story
 ```
 
 OCTANE loads the connection metadata, parses the story per ADR 0006,

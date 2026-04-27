@@ -9,7 +9,6 @@
 #   - OCTANE cache restoration across runs (per ADR 0016)
 #   - Partial cache hits via key prefixing
 #   - Report artifact upload for both passing and failing runs
-#   - Parallel fan-out per OCPP version
 
 stages:
   - conformance
@@ -63,20 +62,3 @@ conformance:1.6:
       - reports/
     expire_in: 14 days
 
-conformance:2.0.1:
-  stage: conformance
-  image: ${OCTANE_IMAGE}
-  variables:
-    OCPP_VERSION: "2.0.1"
-  services:
-    - name: ghcr.io/citrineos/citrineos:2.0.1
-      alias: csms
-  <<: *octane-cache
-  script:
-    - *octane-run
-  artifacts:
-    when: always
-    name: "octane-reports-2.0.1-${CI_COMMIT_SHORT_SHA}"
-    paths:
-      - reports/
-    expire_in: 14 days

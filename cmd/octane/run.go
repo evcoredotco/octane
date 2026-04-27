@@ -70,7 +70,7 @@ func init() {
 		&runFlags.ocppVersion,
 		"ocpp-version",
 		"",
-		"restrict run to stories declaring this OCPP version (e.g. \"1.6\", \"2.0.1\")",
+		"restrict run to stories declaring this OCPP version (e.g. \"1.6\")",
 	)
 
 	flags.DurationVar(

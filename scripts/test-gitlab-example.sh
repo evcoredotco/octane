@@ -58,7 +58,6 @@ check_key "stages:"
 check_key "variables:"
 check_key "OCTANE_IMAGE"
 check_key "conformance:1.6"
-check_key "conformance:2.0.1"
 
 echo "Structural validation passed."
 

@@ -125,13 +125,13 @@ observable wire effect. Spec 003 (keyword API) consumes the
 ## 7. OCPP Scope
 
 This spec covers the OCPP-J framing layer per OCPP-J 1.6 §3.4
-and OCPP 2.0.1 §3 (which defines an analogous JSON-array frame
+and OCPP 1.6 §3 (which defines an analogous JSON-array frame
 format). Message-level semantics (Authorize.req payload schema,
 BootNotification.req schema) are out of scope; they live in the
 domain keyword specs (007+).
 
 The wire engine is OCPP-version-agnostic. Subprotocol selection
-(`ocpp1.6`, `ocpp2.0.1`) is a transport configuration, not a wire
+(`ocpp1.6`, `ocpp1.6`) is a transport configuration, not a wire
 behavior.
 
 ## 8. Open Questions
@@ -190,8 +190,8 @@ are dictated by the specification and MUST NOT be renumbered.
 ### Subprotocol negotiation
 
 The `Sec-WebSocket-Protocol` request header carries a list of
-subprotocols the station accepts (`ocpp1.6`, `ocpp2.0.1`,
-`ocpp2.1`). The CSMS's response selects one. If the response
+subprotocols the station accepts (`ocpp1.6`, `ocpp1.6`,
+`ocpp1.6`). The CSMS's response selects one. If the response
 omits the header or selects a value not in the request list,
 `Dial` returns `ErrSubprotocolMismatch` with both lists in the
 error message.

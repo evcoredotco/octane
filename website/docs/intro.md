@@ -5,7 +5,7 @@ sidebar_position: 1
 # Introduction
 
 **OCTANE** — *OCPP Conformance Testing & Network Evaluation* — is an
-open-source conformance harness for OCPP 1.6J, 2.0.1, and 2.1
+open-source conformance harness for OCPP 1.6J
 Charging Station Management Systems (CSMS).
 
 ## What OCTANE does

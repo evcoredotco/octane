@@ -74,4 +74,4 @@ When dispatched on `/tasks`:
 - Keep prose tight. Specs are read by humans on small screens and by other
   agents during implementation.
 - When you cite OCPP specification sections, include the version
-  prefix and section identifier (e.g. `OCPP 2.0.1 §C01 Authorize`).
+  prefix and section identifier (e.g. `OCPP 1.6 §C01 Authorize`).

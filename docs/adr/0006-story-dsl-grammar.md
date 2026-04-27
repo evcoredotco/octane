@@ -37,7 +37,7 @@ introduced by a top-level keyword on its own line:
 Meta
     Name:        Boot notification with accepted registration
     Id:          boot_notification_accepted
-    Spec-Ref:    OCPP 2.0.1 §B01 BootNotification
+    Spec-Ref:    OCPP 1.6 §B01 BootNotification
     Tags:        core, boot, wire-only
     Stations:    1
     Timeout:     30s
@@ -128,7 +128,7 @@ permitted (forces clean, diffable lines).
 
 - Extension: `.story`.
 - Default discovery root: `scenarios/`.
-- Scenarios for OCPP 2.0.1 live under `scenarios/v201/`, etc.
+- Scenarios for OCPP 1.6 live under `scenarios/`, etc.
 - A story file MAY contain only one `Scenario:` block in v1 to keep
   the data model simple. Multi-scenario files are an ADR-level
   decision deferred to v1.1.

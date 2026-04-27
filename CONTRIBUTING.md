@@ -50,7 +50,7 @@ conformant CSMS behavior looks like; that is what OCTANE tests.
 
 In practice:
 
-- Open the relevant OCPP spec PDF (1.6J, 2.0.1, or 2.1).
+- Open the relevant OCPP spec PDF (1.6J, 1.6, or 2.1).
 - Locate the section describing the message or behavior you want
   to test.
 - Read the normative text — request schema, response schema,
@@ -99,9 +99,9 @@ Meta
 `Spec-Ref` MUST cite the OCPP specification, not a third-party
 testing tool. The format is one of:
 
-- `OCPP 2.0.1 §B01 BootNotification`
+- `OCPP 1.6 §B01 BootNotification`
 - `OCPP-J 1.6 §6.40 ReserveNow`
-- `OCPP 2.1 §C01 Authorize`
+- `OCPP 1.6 §C01 Authorize`
 
 ### Required prose comment block
 
@@ -113,7 +113,7 @@ own words. Do not copy from any third-party source.
 Example:
 
 ```
-# Validates that a CSMS implementing OCPP 2.0.1 §B01 BootNotification
+# Validates that a CSMS implementing OCPP 1.6 §B01 BootNotification
 # replies to a well-formed BootNotification.req with a
 # BootNotificationResponse carrying status "Accepted" and a
 # heartbeatInterval within the spec-permitted range.
@@ -134,7 +134,7 @@ Differences from conformance stories:
 - **Tag `helper`** — required.
 - **Filename matches the ID** — kebab-case snake_case as before.
 - **Lives alongside conformance stories** — under
-  `scenarios/v16/`, `scenarios/v201/`, etc. (no separate
+  `scenarios/v16/`, `scenarios/`, etc. (no separate
   `helpers/` directory).
 
 The parser enforces the distinction: a story tagged `helper` MUST
@@ -149,8 +149,8 @@ They live under `pkg/keywords/`:
 - `pkg/keywords/registry/`    — self-registration mechanism
 - `pkg/keywords/primitive/`   — transport-level escape hatches
 - `pkg/keywords/domain/v16/`  — OCPP 1.6 keywords
-- `pkg/keywords/domain/v201/` — OCPP 2.0.1 keywords
-- `pkg/keywords/domain/v21/`  — OCPP 2.1 keywords
+- `pkg/keywords/domain/` — OCPP 1.6 keywords
+- `pkg/keywords/domain/v21/`  — OCPP 1.6 keywords
 
 Each keyword registers exactly one pattern. Domain keywords are
 identical for every CSMS implementing the OCPP version they target;
@@ -188,7 +188,7 @@ WebSocket or sending a raw frame). Write a **domain** keyword when the
 operation encodes OCPP semantics for a specific version (for example,
 sending a BootNotification CALL and validating the CALLRESULT).
 
-Domain keywords live under `pkg/keywords/domain/v16/`, `v201/`, or
+Domain keywords live under `pkg/keywords/domain/v16/`, ``, or
 `v21/` depending on the OCPP version. Primitive keywords live under
 `pkg/keywords/primitive/`. Do not write domain keywords that vary by
 CSMS: OCTANE has no per-CSMS override layer (constitution principle
@@ -259,7 +259,7 @@ func init() {
     registry.Register(api.Keyword{
         Pattern:     "station {station:station} sends BootNotification with reason {reason:string}",
         Layer:       api.LayerDomain,
-        OCPPVersion: api.OCPP201,
+        OCPPVersion: api.OCPP16,
         Func:        sendBootNotification,
     })
 }

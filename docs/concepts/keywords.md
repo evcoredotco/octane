@@ -18,7 +18,7 @@ principle XII):
 
 ```
 Layer 2  Domain keywords    pkg/keywords/domain/v16/
-                            pkg/keywords/domain/v201/
+                            pkg/keywords/domain/
                             pkg/keywords/domain/v21/
 
 Layer 1  Primitive keywords pkg/keywords/primitive/
@@ -28,8 +28,8 @@ Layer 1  Primitive keywords pkg/keywords/primitive/
 
 Domain keywords encode OCPP semantics. They are scoped to a specific OCPP
 version and are invisible to stories that declare a different version. A story
-declaring `OCPP 2.0.1` only sees domain keywords registered with
-`api.OCPP201`; keywords registered with `api.OCPP16` or `api.OCPP21` are not
+declaring `OCPP 1.6` only sees domain keywords registered with
+`api.OCPP16`; keywords registered with a different version are not
 candidates.
 
 Domain keywords do not vary by CSMS. There is no per-CSMS override layer. If

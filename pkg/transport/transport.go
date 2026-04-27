@@ -57,7 +57,7 @@ type Station interface {
 type DialOptions struct {
 	// Subprotocols lists the OCPP subprotocols to offer in the
 	// Sec-WebSocket-Protocol header, in preference order.
-	// Typical values: "ocpp1.6", "ocpp2.0.1", "ocpp2.1".
+	// Typical values: "ocpp1.6".
 	//
 	// If the CSMS selects a protocol not in this list, or omits the
 	// Sec-WebSocket-Protocol response header entirely, Dial returns

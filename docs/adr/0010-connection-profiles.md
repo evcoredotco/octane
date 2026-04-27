@@ -13,7 +13,7 @@ under different WebSocket subprotocols, with different authentication
 modes:
 
 - CitrineOS development default: `ws://localhost:8081/ocpp/{station_id}`,
-  subprotocol `ocpp1.6` or `ocpp2.0.1`, auth optional.
+  subprotocol `ocpp1.6` or `ocpp1.6`, auth optional.
 - SteVe: `ws://host:port/steve/websocket/CentralSystemService/{station_id}`,
   subprotocol `ocpp1.6`.
 - Production deployments: arbitrary URLs over WSS with mTLS or basic
@@ -46,14 +46,14 @@ schema_version: "1"
 name: citrineos
 description: |
   CitrineOS development defaults. Adapt for production deployments.
-ocpp_versions: ["1.6", "2.0.1"]
+ocpp_versions: ["1.6", "1.6"]
 connection:
   url_template: "ws://{host}:{port}/ocpp/{station_id}"
   default_host: localhost
   default_port: 8081
   subprotocol_by_ocpp_version:
     "1.6":   "ocpp1.6"
-    "2.0.1": "ocpp2.0.1"
+    "1.6": "ocpp1.6"
 auth:
   modes_supported: [none, basic, bearer]
   default_mode: none

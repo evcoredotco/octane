@@ -80,7 +80,7 @@ func TestResolve_YAMLWinsOverDefault(t *testing.T) {
 	t.Parallel()
 
 	base := config.Default()
-	base.OCPPVersion = "2.0.1" // YAML-sourced value
+	base.OCPPVersion = "1.6" // YAML-sourced value
 
 	// No flag override for OCPPVersion.
 	flags := config.FlagOverrides{
@@ -94,10 +94,10 @@ func TestResolve_YAMLWinsOverDefault(t *testing.T) {
 
 	resolved := config.Resolve(base, flags)
 
-	if resolved.OCPPVersion != "2.0.1" {
+	if resolved.OCPPVersion != "1.6" {
 		t.Errorf(
 			"expected OCPPVersion=%q, got %q",
-			"2.0.1",
+			"1.6",
 			resolved.OCPPVersion,
 		)
 	}

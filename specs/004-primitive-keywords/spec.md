@@ -27,7 +27,7 @@ reasons:
 
 This spec ships only the primitives needed by the runner to
 execute conformance stories at all. Domain keywords for OCPP 1.6,
-2.0.1, and 2.1 are deferred to spec 007 and beyond.
+ are deferred to spec 007 and beyond.
 
 ## 2. Goals
 

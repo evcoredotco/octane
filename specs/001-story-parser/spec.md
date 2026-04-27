@@ -105,7 +105,7 @@ unblocks specs 003–007.
        returns `ErrUnboundParameter` listing every unbound
        reference.
 - AC8. **Given** the existing 10 `.story` files under
-       `scenarios/v16/` and `scenarios/v201/`, **when**
+       `scenarios/v16/` and `scenarios/`, **when**
        `octane validate stories` runs, **then** all 10 parse
        successfully and the exit code is 0.
 

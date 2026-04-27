@@ -332,7 +332,7 @@ This project adheres to [Keep a Changelog 1.1.0][kac] and
 - Spec `001-bootstrap-engine` (revised) covering the wire path foundation.
 - Spec `002-story-framework` covering the DSL parser, keyword library,
   multi-station orchestration, and Robot XML emission.
-- Example stories `scenarios/v201/TC_B_01_CS.story`,
+- Example stories `scenarios/TC_B_01_CS.story`,
   `TC_E_07_CS.story`, `TC_PR_01.story`.
 - Man-page sources under `docs/man/` for §5 (config, story) and §7
   (concepts).

@@ -34,7 +34,7 @@ OCTANE supports declaring N stations per scenario in the story Meta:
 
 ```
 Meta
-    Spec-Ref: OCPP-2.0.1 / TC_T_07_CS
+    Spec-Ref: OCPP-1.6 / TC_T_07_CS
     Title:    ConcurrentTx — same id token at two stations
     Tags:     core, transactions, multi-station
     Stations: 2

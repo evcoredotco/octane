@@ -46,7 +46,7 @@ You may write to:
 - Markdown, organized by user journey:
   - `docs/getting-started.md` (5 minutes to first run)
   - `docs/configuration.md` (every flag, every env var, every secret)
-  - `docs/scenarios/v16.md`, `v201.md`, `v21.md`
+  - `docs/scenarios/v16.md`
   - `docs/reports.md` (report shape, redaction, retention)
   - `docs/contributing.md` (links AGENTS.md and the constitution)
   - `docs/troubleshooting.md`
@@ -85,4 +85,4 @@ For `/implement T-NNN-MM` where the agent is `docs`:
 - Code blocks specify the language for syntax highlighting.
 - Prefer tables for flag/input/env-var inventories.
 - Cite the task ID in commit messages (`docs(scenarios): document
-  TC_C_01_CS for v201 (T-007-04)`).
+  TC_C_01_CS for v16 (T-007-04)`).
