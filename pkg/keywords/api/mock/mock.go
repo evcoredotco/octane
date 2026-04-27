@@ -29,6 +29,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/octane-project/octane/pkg/engine/clock"
 	"github.com/octane-project/octane/pkg/keywords/api"
 )
 
@@ -44,20 +45,32 @@ type State struct {
 	// frozenTime is the fixed time returned by [State.Now].
 	frozenTime time.Time
 
+	// clk is the clock used by [State.Sleep]. Defaults to a
+	// [clock.DeterministicClock] frozen at the zero time. Inject a
+	// custom clock via [State.SetClock] to control sleep behaviour in
+	// timing-sensitive tests.
+	clk clock.Clock
+
 	// logs accumulates every Logf call for later assertion.
 	logs []string
 }
 
 // NewMockState returns a ready-to-use *[State] with an empty station map,
-// a zero-value frozen time, and an empty log buffer.
+// a zero-value frozen time, a deterministic clock frozen at the zero
+// time, and an empty log buffer.
 //
 // The frozen time defaults to the zero value of [time.Time]. Call
 // [State.SetNow] to configure a specific instant before the test runs
 // the keyword under test.
+//
+// The default clock is a [clock.DeterministicClock] that never advances
+// on its own. Call [State.SetClock] to inject a custom clock when the
+// keyword under test calls [State.Sleep].
 func NewMockState() *State {
 	return &State{
 		stations:   make(map[string]api.Station),
 		frozenTime: time.Time{},
+		clk:        clock.Deterministic(time.Time{}),
 		logs:       nil,
 	}
 }
@@ -99,6 +112,26 @@ func (s *State) Logf(format string, args ...any) {
 // running the keyword under test to control timestamp behaviour.
 func (s *State) SetNow(frozenTime time.Time) {
 	s.frozenTime = frozenTime
+}
+
+// SetClock replaces the clock used by [State.Sleep]. Use this in tests
+// that exercise keywords which call [api.State.Sleep] — typically timing
+// primitives such as "wait {duration:duration}" — to inject a
+// [clock.DeterministicClock] that can be advanced without real wall-clock
+// delay.
+//
+// If not called, [State.Sleep] delegates to the default deterministic
+// clock frozen at the zero time (see [NewMockState]).
+func (s *State) SetClock(clk clock.Clock) {
+	s.clk = clk
+}
+
+// Sleep delegates to the injected clock's Sleep method. It blocks until
+// d has elapsed on the clock, or until ctx is cancelled. Use
+// [State.SetClock] to inject a [clock.DeterministicClock] in tests that
+// must advance time without real wall-clock delay.
+func (s *State) Sleep(ctx context.Context, d time.Duration) error {
+	return s.clk.Sleep(ctx, d)
 }
 
 // RegisterStation adds station under handle so that [State.Station] can
