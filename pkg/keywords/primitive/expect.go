@@ -110,6 +110,11 @@ func expectAnyFrame(
 		)
 	}
 
+	// Stash the received frame under "last_frame:<handle>" so that
+	// subsequent steps can inspect the frame content without needing
+	// a direct reference to the Station handle (spec 004 AC3).
+	state.Stash("last_frame:"+handle, frame)
+
 	state.Logf(
 		"station %q: received frame (%d elements)",
 		handle,

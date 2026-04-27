@@ -53,6 +53,9 @@ type State struct {
 
 	// logs accumulates every Logf call for later assertion.
 	logs []string
+
+	// scratch is the per-scenario key-value stash used by Stash/Pop.
+	scratch map[string]any
 }
 
 // NewMockState returns a ready-to-use *[State] with an empty station map,
@@ -72,6 +75,7 @@ func NewMockState() *State {
 		frozenTime: time.Time{},
 		clk:        clock.Deterministic(time.Time{}),
 		logs:       nil,
+		scratch:    make(map[string]any),
 	}
 }
 
@@ -140,6 +144,23 @@ func (s *State) Sleep(ctx context.Context, d time.Duration) error {
 // handle name across rows.
 func (s *State) RegisterStation(handle string, station api.Station) {
 	s.stations[handle] = station
+}
+
+// Stash stores value under key in the scenario scratch space.
+// Values are retrievable via [State.Pop] until consumed.
+func (s *State) Stash(key string, value any) {
+	s.scratch[key] = value
+}
+
+// Pop retrieves and removes the value stored under key.
+// Returns the value and true if the key exists; otherwise nil and false.
+func (s *State) Pop(key string) (any, bool) {
+	val, ok := s.scratch[key]
+	if ok {
+		delete(s.scratch, key)
+	}
+
+	return val, ok
 }
 
 // Logs returns a copy of all messages passed to [State.Logf] in the order

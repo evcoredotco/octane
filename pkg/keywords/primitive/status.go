@@ -63,6 +63,8 @@ func assertConnectionOpen(
 		)
 	}
 
+	// ctx is intentionally unused: IsOpen() is synchronous and never
+	// blocks, so no cancellation check is needed here.
 	_ = ctx
 
 	return nil
@@ -98,6 +100,8 @@ func assertConnectionClosed(
 		)
 	}
 
+	// ctx is intentionally unused: IsOpen() is synchronous and never
+	// blocks, so no cancellation check is needed here.
 	_ = ctx
 
 	return nil

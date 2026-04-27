@@ -50,6 +50,8 @@ func closeStation(
 
 	state.Logf("station %q closed", handle)
 
+	// ctx is intentionally unused: Close() is synchronous and never
+	// blocks, so no cancellation check is needed here.
 	_ = ctx
 
 	return nil
