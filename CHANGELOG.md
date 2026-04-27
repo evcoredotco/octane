@@ -9,6 +9,40 @@ This project adheres to [Keep a Changelog 1.1.0][kac] and
 
 ## [Unreleased]
 
+### Added — Spec 006: CLI and Action Surface
+
+- `cmd/octane/`: complete `octane` CLI built on `spf13/cobra` (ADR 0011).
+  Subcommands: `run`, `validate stories`, `keywords list/resolve`,
+  `cache info/prune/clear/key`, `completion bash|zsh|fish|powershell`,
+  and the hidden `gen-manpages` utility.
+- Configuration resolution chain: CLI flags override `OCTANE_*` env vars
+  override `octane.yml` override built-in defaults (ADR 0010, spec 006 §11).
+- Stable exit-code contract: codes 0 (`OK`), 1 (`TestFailed`),
+  64 (`ConfigError`), 74 (`IOError`), 125 (`InternalError`) are
+  documented and stability-tested (spec 006 §10).
+- `action/action.yml` updated with full input set: `stories`, `fail-on`,
+  `config`, `cache-dir`, `report-dir`, `ocpp-version`, `shard`,
+  `max-parallel`, `no-cache`, `insecure-skip-verify`.
+- `action/entrypoint.sh`: translates Action inputs to CLI flags; writes
+  `exit-code` and `report-path` outputs to `$GITHUB_OUTPUT`.
+- `action/Dockerfile`: alpine-based runtime (for bash entrypoint);
+  multi-arch build (`linux/amd64`, `linux/arm64`) via BuildKit `TARGETARCH`.
+- `.github/workflows/_test-action.yml`: build + binary-start smoke test.
+- `.github/workflows/_test-examples.yml`: example workflow structural
+  validation; guards against usage of pending-spec flags.
+- `scripts/test-gitlab-example.sh`: local structural validator for the
+  GitLab CI example.
+- `docs/distribution.md`: Docker image publishing guide (GHCR, multi-arch,
+  digest pinning).
+- Man pages generated via `make man` (`gen-manpages` hidden subcommand,
+  cobra `doc.GenManTree`). Shell completions via `make completions`.
+- Golden test for man pages (`testdata/man/`); bash/zsh completion syntax
+  smoke tests.
+- `docs/getting-started.md`: 5-minute first-run guide (T-006-70).
+- `docs/cli-reference.md`: complete command and flag reference (T-006-71).
+- `docs/configuration.md`: resolution chain, schema, env vars, exit codes,
+  and cache configuration reference (T-006-72).
+
 ### Added — Spec 005: Dependency Cache
 
 - `pkg/runner/`: story runner with DAG traversal, worker pool, shard
