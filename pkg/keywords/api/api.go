@@ -140,6 +140,67 @@ type State interface {
 	Logf(format string, args ...any)
 }
 
+// Func is the function signature every keyword author implements.
+// A non-nil return marks the step as failed; the error message
+// becomes the finding text in the run report. The
+// [context.Context] carries cancellation and the per-step timeout.
+// [State] provides runtime services (station lookup, deterministic
+// clock, logging). [Args] holds the named parameter values
+// extracted by the pattern matcher.
+//
+// Keyword bodies should not call [time.Now] directly; use
+// [State.Now] instead so that the runtime can inject a
+// deterministic clock (constitution principle IV).
+type Func func(ctx context.Context, state State, args Args) error
+
+// Keyword is the registration record for a single keyword. It
+// binds a human-readable [Pattern] to a [Func] and declares the
+// keyword's layer and optional OCPP version scope.
+//
+// Keywords are registered at package init() time via
+// registry.Register. The registry validates that no two keywords
+// share the same (Layer, OCPPVersion, Pattern) tuple; a collision
+// causes a startup panic.
+//
+// Example registration:
+//
+//	registry.Register(api.Keyword{
+//	    Pattern:     "station {station:string} sends BootNotification",
+//	    Layer:       api.LayerDomain,
+//	    OCPPVersion: api.OCPP201,
+//	    Func: func(ctx context.Context, s api.State, a api.Args) error {
+//	        // ... drives the wire ...
+//	        return nil
+//	    },
+//	})
+type Keyword struct {
+	// Pattern is the step-matching pattern using {name:type}
+	// placeholder syntax (e.g., "wait {d:duration}"). The
+	// pattern matcher compares step text against this string
+	// case-insensitively; whitespace in the pattern matches one
+	// or more whitespace characters in the step.
+	Pattern string
+
+	// Layer identifies whether this keyword belongs to the
+	// primitive (transport-level) or domain (OCPP-semantic)
+	// layer. Resolution order is domain first, then primitive.
+	Layer Layer
+
+	// OCPPVersion scopes the keyword to a specific OCPP
+	// version. Domain-layer keywords MUST set this to a
+	// non-zero value (OCPP16, OCPP201, or OCPP21).
+	// Primitive-layer keywords leave this as the zero value,
+	// indicating they are version-agnostic and visible to all
+	// stories regardless of the declared OCPP version.
+	OCPPVersion OCPPVersion
+
+	// Func is the Go function that executes the keyword's
+	// logic. It receives the runtime state and the bound
+	// arguments extracted from the step text by the pattern
+	// matcher. A non-nil return marks the step as failed.
+	Func Func
+}
+
 // Station is the wire-I/O surface for a single charging station
 // connection. Keywords use it to send OCPP-J frames to a CSMS
 // and to receive frames from the wire.
