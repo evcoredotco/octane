@@ -34,7 +34,9 @@ func TestScenariosParseClean(t *testing.T) {
 		t.Run(filepath.ToSlash(path), func(t *testing.T) {
 			t.Parallel()
 
-			src, err := os.ReadFile(path) //nolint:gosec // test fixture path from WalkDir
+			src, err := os.ReadFile(
+				path,
+			) //nolint:gosec // test fixture path from WalkDir
 			if err != nil {
 				t.Fatalf("read %s: %v", path, err)
 			}
@@ -81,7 +83,9 @@ func runGoldenCheck(
 ) {
 	t.Helper()
 
-	src, err := os.ReadFile(path) //nolint:gosec // test fixture path from WalkDir
+	src, err := os.ReadFile(
+		path,
+	) //nolint:gosec // test fixture path from WalkDir
 	if err != nil {
 		t.Fatalf("read %s: %v", path, err)
 	}
@@ -108,7 +112,9 @@ func runGoldenCheck(
 		return
 	}
 
-	existing, readErr := os.ReadFile(goldenPath) //nolint:gosec // known test data path
+	existing, readErr := os.ReadFile(
+		goldenPath,
+	) //nolint:gosec // known test data path
 	if os.IsNotExist(readErr) {
 		// First-run bootstrap: write the golden file.
 		writeGolden(t, goldenPath, got)
@@ -137,17 +143,20 @@ func collectStoryPaths(t *testing.T, root string) []string {
 
 	var paths []string
 
-	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
+	err := filepath.WalkDir(
+		root,
+		func(path string, d os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
 
-		if !d.IsDir() && filepath.Ext(path) == ".story" {
-			paths = append(paths, path)
-		}
+			if !d.IsDir() && filepath.Ext(path) == ".story" {
+				paths = append(paths, path)
+			}
 
-		return nil
-	})
+			return nil
+		},
+	)
 	if err != nil {
 		t.Fatalf("walk %s: %v", root, err)
 	}
