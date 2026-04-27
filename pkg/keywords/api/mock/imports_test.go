@@ -20,8 +20,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/octane-project/octane/pkg/keywords/api"
-	"github.com/octane-project/octane/pkg/keywords/api/mock"
+	"github.com/evcoreco/octane/pkg/keywords/api"
+	"github.com/evcoreco/octane/pkg/keywords/api/mock"
 )
 
 // ── interface-satisfaction compile-time checks ────────────────────────────────

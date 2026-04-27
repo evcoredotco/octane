@@ -12,7 +12,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/octane-project/octane/pkg/wire"
+	"github.com/evcoreco/octane/pkg/wire"
 )
 
 // TestJSONFloat64CoercionCall verifies that decoding a CALL frame JSON string

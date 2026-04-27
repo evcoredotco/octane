@@ -13,7 +13,7 @@ import (
 
 	"github.com/coder/websocket"
 
-	"github.com/octane-project/octane/pkg/transport"
+	"github.com/evcoreco/octane/pkg/transport"
 )
 
 // TestSubprotocolMismatch asserts that when the server negotiates a different

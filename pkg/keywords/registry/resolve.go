@@ -4,9 +4,9 @@ import (
 	"errors"
 	"sort"
 
-	"github.com/octane-project/octane/pkg/keywords/api"
-	"github.com/octane-project/octane/pkg/keywords/registry/internal/levenshtein"
-	"github.com/octane-project/octane/pkg/keywords/registry/internal/pattern"
+	"github.com/evcoreco/octane/pkg/keywords/api"
+	"github.com/evcoreco/octane/pkg/keywords/registry/internal/levenshtein"
+	"github.com/evcoreco/octane/pkg/keywords/registry/internal/pattern"
 )
 
 // maxLevenshteinSuggestion is the inclusive upper bound on the

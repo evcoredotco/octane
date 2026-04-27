@@ -10,9 +10,9 @@
 package story
 
 import (
-	"github.com/octane-project/octane/pkg/story/ast"
-	"github.com/octane-project/octane/pkg/story/diag"
-	"github.com/octane-project/octane/pkg/story/lex"
+	"github.com/evcoreco/octane/pkg/story/ast"
+	"github.com/evcoreco/octane/pkg/story/diag"
+	"github.com/evcoreco/octane/pkg/story/lex"
 )
 
 // parser holds the per-file lexer and the source path used in diagnostics.

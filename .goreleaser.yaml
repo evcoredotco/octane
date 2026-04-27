@@ -3,7 +3,7 @@
 # Produces (per ADR 0020):
 #   - Static binaries for linux/{amd64,arm64}, darwin/{amd64,arm64}, windows/amd64
 #   - .deb and .rpm packages via nfpm using packaging/nfpm.yaml
-#   - Homebrew formula update in the octane-project/homebrew-octane tap
+#   - Homebrew formula update in the evcoreco/homebrew-octane tap
 #   - SBOMs and cosign signatures
 #
 # Invoked by .github/workflows/release.yml on tag push.
@@ -102,7 +102,7 @@ nfpms:
 brews:
   - name: octane
     repository:
-      owner: octane-project
+      owner: evcoreco
       name: homebrew-octane
       branch: main
     homepage: "https://octane.dev"
@@ -154,7 +154,7 @@ changelog:
 
 release:
   github:
-    owner: octane-project
+    owner: evcoreco
     name: octane
   draft: false
   prerelease: auto
@@ -168,7 +168,7 @@ release:
     Verify release artifacts:
     ```
     cosign verify-blob \
-      --certificate-identity-regexp 'https://github.com/octane-project/' \
+      --certificate-identity-regexp 'https://github.com/evcoreco/' \
       --certificate-oidc-issuer https://token.actions.githubusercontent.com \
       --signature checksums.txt.sig \
       checksums.txt

@@ -558,9 +558,9 @@ OCTANE distributes through standard Linux/macOS/Windows channels:
 |---------|------|
 | Debian/Ubuntu | `apt install octane` (via APT repo) |
 | Fedora/RHEL | `dnf install octane` (via RPM repo) |
-| macOS | `brew install octane-project/octane/octane` |
+| macOS | `brew install evcoreco/octane/octane` |
 | Windows | `scoop install octane` |
-| Docker | `docker pull ghcr.io/octane-project/octane` |
+| Docker | `docker pull ghcr.io/evcoreco/octane` |
 | Direct | static binaries, signed via cosign, SBOM-attested |
 
 Packaging is orchestrated by `goreleaser` reading `.goreleaser.yaml`

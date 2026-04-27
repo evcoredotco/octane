@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/octane-project/octane/pkg/keywords/registry"
+	"github.com/evcoreco/octane/pkg/keywords/registry"
 )
 
 //nolint:exhaustruct // cobra.Command has many optional fields

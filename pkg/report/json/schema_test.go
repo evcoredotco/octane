@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/octane-project/octane/pkg/report"
-	reportjson "github.com/octane-project/octane/pkg/report/json"
-	"github.com/octane-project/octane/pkg/runner"
+	"github.com/evcoreco/octane/pkg/report"
+	reportjson "github.com/evcoreco/octane/pkg/report/json"
+	"github.com/evcoreco/octane/pkg/runner"
 )
 
 // requiredTopLevelKeys are the JSON keys that must appear at the top

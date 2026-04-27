@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	_ "github.com/octane-project/octane/pkg/keywords/primitive"
-	"github.com/octane-project/octane/pkg/runner"
+	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
+	"github.com/evcoreco/octane/pkg/runner"
 )
 
 // storyAlwaysFails uses an unrecognised step so the runner produces ErrNoMatch.

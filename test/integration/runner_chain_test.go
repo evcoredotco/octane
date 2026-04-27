@@ -12,8 +12,8 @@ import (
 	"testing"
 
 	// Registers wait {duration:duration} and other primitive keywords.
-	_ "github.com/octane-project/octane/pkg/keywords/primitive"
-	"github.com/octane-project/octane/pkg/runner"
+	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
+	"github.com/evcoreco/octane/pkg/runner"
 )
 
 // storyChainA is the root of a 4-deep chain: no dependencies.

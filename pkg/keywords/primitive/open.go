@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/octane-project/octane/pkg/keywords/api"
-	"github.com/octane-project/octane/pkg/keywords/registry"
-	"github.com/octane-project/octane/pkg/transport"
+	"github.com/evcoreco/octane/pkg/keywords/api"
+	"github.com/evcoreco/octane/pkg/keywords/registry"
+	"github.com/evcoreco/octane/pkg/transport"
 )
 
 func init() {

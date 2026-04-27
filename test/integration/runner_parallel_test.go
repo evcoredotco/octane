@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	_ "github.com/octane-project/octane/pkg/keywords/primitive"
-	"github.com/octane-project/octane/pkg/runner"
+	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
+	"github.com/evcoreco/octane/pkg/runner"
 )
 
 // parallelLeafStory produces a self-contained passing story for the given index.

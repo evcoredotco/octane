@@ -12,9 +12,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/octane-project/octane/pkg/report"
-	"github.com/octane-project/octane/pkg/report/model"
-	"github.com/octane-project/octane/pkg/runner"
+	"github.com/evcoreco/octane/pkg/report"
+	"github.com/evcoreco/octane/pkg/report/model"
+	"github.com/evcoreco/octane/pkg/runner"
 )
 
 // outputFileName is the name of the JSON report file written into the

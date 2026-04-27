@@ -3,7 +3,7 @@ package primitive
 import (
 	"context"
 
-	"github.com/octane-project/octane/pkg/transport"
+	"github.com/evcoreco/octane/pkg/transport"
 )
 
 // stationAdapter wraps a [transport.Station] so that it satisfies

@@ -6,7 +6,7 @@ import (
 	mrand "math/rand/v2"
 	"testing"
 
-	"github.com/octane-project/octane/pkg/report/internal/redact"
+	"github.com/evcoreco/octane/pkg/report/internal/redact"
 )
 
 // propertyIterations is the number of random inputs tested.

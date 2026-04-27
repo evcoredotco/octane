@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/octane-project/octane/pkg/cache"
+	"github.com/evcoreco/octane/pkg/cache"
 )
 
 // testKey returns a fully-populated Key whose Hash is deterministic

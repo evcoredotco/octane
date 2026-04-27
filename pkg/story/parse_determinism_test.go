@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/octane-project/octane/pkg/story"
-	"github.com/octane-project/octane/pkg/story/internal/serialize"
+	"github.com/evcoreco/octane/pkg/story"
+	"github.com/evcoreco/octane/pkg/story/internal/serialize"
 )
 
 // TestDeterminism parses every .story file under scenarios/ 1 000 times and

@@ -11,12 +11,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/octane-project/octane/cmd/octane/internal/config"
-	"github.com/octane-project/octane/cmd/octane/internal/exitcode"
-	reportpkg "github.com/octane-project/octane/pkg/report"
-	reportjson "github.com/octane-project/octane/pkg/report/json"
-	"github.com/octane-project/octane/pkg/report/robotxml"
-	"github.com/octane-project/octane/pkg/runner"
+	"github.com/evcoreco/octane/cmd/octane/internal/config"
+	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
+	reportpkg "github.com/evcoreco/octane/pkg/report"
+	reportjson "github.com/evcoreco/octane/pkg/report/json"
+	"github.com/evcoreco/octane/pkg/report/robotxml"
+	"github.com/evcoreco/octane/pkg/runner"
 )
 
 // runFlags holds the parsed values of the flags specific to the

@@ -5,7 +5,7 @@
 package json
 
 import (
-	"github.com/octane-project/octane/pkg/report/model"
+	"github.com/evcoreco/octane/pkg/report/model"
 )
 
 // walkCauseChain returns the cause chain for a story. When the

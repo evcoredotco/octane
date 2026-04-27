@@ -16,11 +16,11 @@ import (
 
 	"github.com/coder/websocket"
 
-	"github.com/octane-project/octane/pkg/keywords/api"
-	"github.com/octane-project/octane/pkg/keywords/api/mock"
+	"github.com/evcoreco/octane/pkg/keywords/api"
+	"github.com/evcoreco/octane/pkg/keywords/api/mock"
 	// Blank import registers all primitive keywords at init() time.
-	_ "github.com/octane-project/octane/pkg/keywords/primitive"
-	"github.com/octane-project/octane/pkg/keywords/registry"
+	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
+	"github.com/evcoreco/octane/pkg/keywords/registry"
 )
 
 // ── Named constants ───────────────────────────────────────────────────────────

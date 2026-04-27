@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/octane-project/octane/pkg/cache"
-	_ "github.com/octane-project/octane/pkg/keywords/primitive"
-	"github.com/octane-project/octane/pkg/runner"
+	"github.com/evcoreco/octane/pkg/cache"
+	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
+	"github.com/evcoreco/octane/pkg/runner"
 )
 
 // storyTTL is a single passing story used for the TTL expiry test.

@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/octane-project/octane/pkg/cache/internal/lock"
+	"github.com/evcoreco/octane/pkg/cache/internal/lock"
 )
 
 // ErrLockTimeout is returned by [AcquireLock] when the caller has

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/octane-project/octane/cmd/octane/internal/config"
+	"github.com/evcoreco/octane/cmd/octane/internal/config"
 )
 
 // ptr is a generic helper that returns a pointer to the given value.

@@ -12,8 +12,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/octane-project/octane/pkg/runner/internal/dag"
-	"github.com/octane-project/octane/pkg/story/ast"
+	"github.com/evcoreco/octane/pkg/runner/internal/dag"
+	"github.com/evcoreco/octane/pkg/story/ast"
 )
 
 // storyNode is the internal representation of a single DAG node

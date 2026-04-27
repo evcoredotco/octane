@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/octane-project/octane/pkg/report"
-	reportjson "github.com/octane-project/octane/pkg/report/json"
-	"github.com/octane-project/octane/pkg/runner"
+	"github.com/evcoreco/octane/pkg/report"
+	reportjson "github.com/evcoreco/octane/pkg/report/json"
+	"github.com/evcoreco/octane/pkg/runner"
 )
 
 // goroutineCount is the number of parallel writers exercised by the

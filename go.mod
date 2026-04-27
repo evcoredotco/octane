@@ -1,4 +1,4 @@
-module github.com/octane-project/octane
+module github.com/evcoreco/octane
 
 go 1.23
 

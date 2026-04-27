@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/octane-project/octane/pkg/story"
+	"github.com/evcoreco/octane/pkg/story"
 )
 
 // update is set by passing -update on the test command line. When true,
