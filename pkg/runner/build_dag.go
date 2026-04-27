@@ -356,7 +356,9 @@ func inShardFilter(testID string, shardIndex, shardTotal int) bool {
 
 	// Modulo result is in [0, shardTotal), which fits in int since
 	// shardTotal is a positive int. The conversion is safe.
-	assignedShard := int(shardNum%uint64(shardTotal)) //nolint:gosec // G115: value < shardTotal ≤ math.MaxInt
+	assignedShard := int(
+		shardNum % uint64(shardTotal),
+	) //nolint:gosec // G115: value < shardTotal ≤ math.MaxInt
 
 	return assignedShard == shardIndex
 }

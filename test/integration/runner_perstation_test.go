@@ -9,8 +9,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/octane-project/octane/pkg/runner"
 	_ "github.com/octane-project/octane/pkg/keywords/primitive"
+	"github.com/octane-project/octane/pkg/runner"
 )
 
 // storyPerStationPrereq is a per-station prereq story.
@@ -92,14 +92,21 @@ func Test_runner_RunPerStationPrereqRunsTwice(t *testing.T) {
 	expectedHandles := map[string]bool{"CP01": true, "CP02": true}
 	for _, sk := range scopeKeys {
 		if !expectedHandles[sk] {
-			t.Errorf("unexpected ScopeKey %q for ps_prereq; want CP01 or CP02", sk)
+			t.Errorf(
+				"unexpected ScopeKey %q for ps_prereq; want CP01 or CP02",
+				sk,
+			)
 		}
 	}
 
 	// Invariant: all prereq instances must have passed.
 	for _, sr := range prereqResults {
 		if sr.Status != runner.StatusPassed {
-			t.Errorf("ps_prereq/%s: want StatusPassed, got %s", sr.ScopeKey, sr.Status)
+			t.Errorf(
+				"ps_prereq/%s: want StatusPassed, got %s",
+				sr.ScopeKey,
+				sr.Status,
+			)
 		}
 	}
 }

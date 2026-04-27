@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/octane-project/octane/pkg/cache"
-	"github.com/octane-project/octane/pkg/runner"
 	_ "github.com/octane-project/octane/pkg/keywords/primitive"
+	"github.com/octane-project/octane/pkg/runner"
 )
 
 // storyTTL is a single passing story used for the TTL expiry test.
@@ -122,7 +122,10 @@ func Test_runner_CacheTTLRunnerSecondRunIsHit(t *testing.T) {
 
 	// Invariant: first run must be a cache miss.
 	if firstResult.Stories[0].CacheStatus != runner.CacheMiss {
-		t.Errorf("first run: want CacheMiss, got %s", firstResult.Stories[0].CacheStatus)
+		t.Errorf(
+			"first run: want CacheMiss, got %s",
+			firstResult.Stories[0].CacheStatus,
+		)
 	}
 
 	// Second run immediately: must be a cache hit since no TTL has been set.
@@ -139,7 +142,10 @@ func Test_runner_CacheTTLRunnerSecondRunIsHit(t *testing.T) {
 	isHit := secondResult.Stories[0].CacheStatus == runner.CacheHitPass ||
 		secondResult.Stories[0].CacheStatus == runner.CacheHitSkip
 	if !isHit {
-		t.Errorf("second run: want CacheHit*, got %s", secondResult.Stories[0].CacheStatus)
+		t.Errorf(
+			"second run: want CacheHit*, got %s",
+			secondResult.Stories[0].CacheStatus,
+		)
 	}
 
 	// Invariant: Summary.CacheHits must be 1.

@@ -93,7 +93,9 @@ func validateStories(_ *cobra.Command, storyPaths []string) error {
 // from CLI arguments and is therefore operator-controlled; the gosec
 // G304 warning is intentionally suppressed.
 func readStoryFile(path string) ([]byte, error) {
-	return os.ReadFile(path) //nolint:gosec // G304: path from CLI args; operator-controlled
+	return os.ReadFile(
+		path,
+	) //nolint:gosec // G304: path from CLI args; operator-controlled
 }
 
 // collectStoryFiles recursively collects all .story file paths under

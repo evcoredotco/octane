@@ -12,8 +12,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/octane-project/octane/pkg/runner"
 	_ "github.com/octane-project/octane/pkg/keywords/primitive"
+	"github.com/octane-project/octane/pkg/runner"
 )
 
 // leafStoryTemplate produces a self-contained passing story for the given
@@ -46,7 +46,10 @@ func Test_runner_RunPartialCache(t *testing.T) {
 
 	// Write 10 independent leaf stories.
 	for i := range totalStories {
-		name := filepath.Join(storyDir, fmt.Sprintf("partial_leaf_%02d.story", i))
+		name := filepath.Join(
+			storyDir,
+			fmt.Sprintf("partial_leaf_%02d.story", i),
+		)
 		writeFile(t, name, leafStoryTemplate(i))
 	}
 
@@ -63,7 +66,11 @@ func Test_runner_RunPartialCache(t *testing.T) {
 	}
 
 	if len(firstResult.Stories) != totalStories {
-		t.Fatalf("first run: want %d stories, got %d", totalStories, len(firstResult.Stories))
+		t.Fatalf(
+			"first run: want %d stories, got %d",
+			totalStories,
+			len(firstResult.Stories),
+		)
 	}
 
 	// Second run: all 10 are cache hits.
@@ -102,12 +109,20 @@ func Test_runner_RunPartialCache(t *testing.T) {
 
 	// Invariant: all 10 stories should still be present and pass.
 	if len(thirdResult.Stories) != totalStories {
-		t.Errorf("third run: want %d stories, got %d", totalStories, len(thirdResult.Stories))
+		t.Errorf(
+			"third run: want %d stories, got %d",
+			totalStories,
+			len(thirdResult.Stories),
+		)
 	}
 
 	for _, sr := range thirdResult.Stories {
 		if sr.Status != runner.StatusPassed {
-			t.Errorf("third run: story %q: want StatusPassed, got %s", sr.TestID, sr.Status)
+			t.Errorf(
+				"third run: story %q: want StatusPassed, got %s",
+				sr.TestID,
+				sr.Status,
+			)
 		}
 	}
 }

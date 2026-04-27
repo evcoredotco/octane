@@ -10,8 +10,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/octane-project/octane/pkg/runner"
 	_ "github.com/octane-project/octane/pkg/keywords/primitive"
+	"github.com/octane-project/octane/pkg/runner"
 )
 
 // storyPerRunPrereq is a per-run-scoped prereq used by three stories.
@@ -125,7 +125,10 @@ func Test_runner_RunPerRunPrereqRunsOnce(t *testing.T) {
 
 	// Invariant: prereq must have passed.
 	if prereqEntries[0].Status != runner.StatusPassed {
-		t.Errorf("pr_prereq: want StatusPassed, got %s", prereqEntries[0].Status)
+		t.Errorf(
+			"pr_prereq: want StatusPassed, got %s",
+			prereqEntries[0].Status,
+		)
 	}
 
 	// Invariant: all three dependents must have passed.
@@ -148,6 +151,10 @@ func Test_runner_RunPerRunPrereqRunsOnce(t *testing.T) {
 	// Invariant: exactly 4 stories total (1 prereq + 3 dependents).
 	const expectedTotal = 4
 	if len(result.Stories) != expectedTotal {
-		t.Errorf("total stories: want %d, got %d", expectedTotal, len(result.Stories))
+		t.Errorf(
+			"total stories: want %d, got %d",
+			expectedTotal,
+			len(result.Stories),
+		)
 	}
 }

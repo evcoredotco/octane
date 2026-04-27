@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/octane-project/octane/pkg/runner"
 	_ "github.com/octane-project/octane/pkg/keywords/primitive"
+	"github.com/octane-project/octane/pkg/runner"
 )
 
 // parallelLeafStory produces a self-contained passing story for the given index.
@@ -39,7 +39,10 @@ func Test_runner_RunParallelLeafStories(t *testing.T) {
 	storyDir := t.TempDir()
 
 	for i := range totalLeaves {
-		name := filepath.Join(storyDir, fmt.Sprintf("parallel_leaf_%02d.story", i))
+		name := filepath.Join(
+			storyDir,
+			fmt.Sprintf("parallel_leaf_%02d.story", i),
+		)
 		writeFile(t, name, parallelLeafStory(i))
 	}
 
@@ -56,26 +59,42 @@ func Test_runner_RunParallelLeafStories(t *testing.T) {
 
 	// Invariant: all 16 leaf stories must be present in results.
 	if len(result.Stories) != totalLeaves {
-		t.Fatalf("len(result.Stories): want %d, got %d", totalLeaves, len(result.Stories))
+		t.Fatalf(
+			"len(result.Stories): want %d, got %d",
+			totalLeaves,
+			len(result.Stories),
+		)
 	}
 
 	// Invariant: all stories must have passed.
 	for _, sr := range result.Stories {
 		if sr.Status != runner.StatusPassed {
-			t.Errorf("story %q: want StatusPassed, got %s", sr.TestID, sr.Status)
+			t.Errorf(
+				"story %q: want StatusPassed, got %s",
+				sr.TestID,
+				sr.Status,
+			)
 		}
 	}
 
 	// Invariant: cache status must be CacheBypassed for all stories.
 	for _, sr := range result.Stories {
 		if sr.CacheStatus != runner.CacheBypassed {
-			t.Errorf("story %q: want CacheBypassed, got %s", sr.TestID, sr.CacheStatus)
+			t.Errorf(
+				"story %q: want CacheBypassed, got %s",
+				sr.TestID,
+				sr.CacheStatus,
+			)
 		}
 	}
 
 	// Invariant: summary counts must match.
 	if result.Summary.Passed != totalLeaves {
-		t.Errorf("Summary.Passed: want %d, got %d", totalLeaves, result.Summary.Passed)
+		t.Errorf(
+			"Summary.Passed: want %d, got %d",
+			totalLeaves,
+			result.Summary.Passed,
+		)
 	}
 
 	if result.Summary.Failed != 0 {
