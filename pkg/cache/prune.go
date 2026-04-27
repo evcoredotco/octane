@@ -35,7 +35,7 @@ func (fc *FileCache) Prune(
 	maxAge time.Duration,
 ) error {
 	resultsDir := filepath.Join(fc.dir, "results")
-	now := time.Now()
+	now := fc.clk.Now()
 
 	// Walk fanout prefix directories (two-character, e.g. "ab/").
 	fanouts, err := os.ReadDir(resultsDir)

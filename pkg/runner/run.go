@@ -400,13 +400,7 @@ func makeExecFunc(
 		// Step 1: fast path — check cache without lock.
 		if !cfg.NoCache {
 			if entry, entryErr := storyCache.Get(ctx, cacheKey); entryErr == nil {
-				return cacheHitResult(
-					nodeID,
-					storyNodeVal,
-					entry,
-					startedAt,
-					clk,
-				)
+				return cacheHitResult(storyNodeVal, entry, startedAt, clk)
 			}
 		}
 
@@ -443,13 +437,7 @@ func makeExecFunc(
 		// If another goroutine ran the Once, re-read from cache.
 		if lockedResult.TestID == "" {
 			if entry, entryErr := storyCache.Get(ctx, cacheKey); entryErr == nil {
-				return cacheHitResult(
-					nodeID,
-					storyNodeVal,
-					entry,
-					startedAt,
-					clk,
-				)
+				return cacheHitResult(storyNodeVal, entry, startedAt, clk)
 			}
 
 			// Cache miss even after the Once: execute fresh.
@@ -515,7 +503,7 @@ func executeWithLock(
 
 	// Step 3: re-read after acquiring lock (double-checked locking).
 	if entry, entryErr := storyCache.Get(ctx, cacheKey); entryErr == nil {
-		return cacheHitResult(nodeID, storyNodeVal, entry, startedAt, clk)
+		return cacheHitResult(storyNodeVal, entry, startedAt, clk)
 	}
 
 	// Step 4: execute the story.
@@ -534,7 +522,6 @@ func executeWithLock(
 // cacheHitResult builds a StoryResult from a cache entry, mapping
 // the recorded status to the appropriate CacheStatus value.
 func cacheHitResult(
-	nodeID string,
 	storyNodeVal storyNode,
 	entry *cache.Entry,
 	startedAt time.Time,
