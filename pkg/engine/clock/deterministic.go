@@ -125,6 +125,11 @@ func (c *DeterministicClock) deregister(target *waiter) {
 
 // drainWaiters fires every waiter whose deadline is at or before c.now.
 // Must be called with c.mu held.
+//
+// The slice reuse (remaining = c.waiters[:0]) is intentional — it keeps
+// the backing array in place to avoid a per-Advance allocation. This is safe
+// because all sends to wtr.ch are non-blocking (buffered with capacity 1)
+// and c.waiters is only accessed while c.mu is held.
 func (c *DeterministicClock) drainWaiters() {
 	remaining := c.waiters[:0]
 

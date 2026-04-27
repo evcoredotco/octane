@@ -4,6 +4,7 @@ package wire_test
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/octane-project/octane/pkg/wire"
@@ -147,6 +148,10 @@ func callErrShape(
 	if fsErr.Reason == "" {
 		t.Error("ErrFrameShape.Reason must not be empty")
 	}
+
+	if wantSubstr != "" && !strings.Contains(fsErr.Reason, wantSubstr) {
+		t.Errorf("ErrFrameShape.Reason = %q, want substring %q", fsErr.Reason, wantSubstr)
+	}
 }
 
 // resultErrShape is a helper that asserts ParseResult returns an *ErrFrameShape.
@@ -200,12 +205,12 @@ func errorErrShape(
 func TestParseCallWrongLength(t *testing.T) {
 	t.Parallel()
 
-	callErrShape(t, []any{}, "empty frame")
-	callErrShape(t, []any{float64(2), "id"}, "too short")
+	callErrShape(t, []any{}, "got 0")
+	callErrShape(t, []any{float64(2), "id"}, "got 2")
 	callErrShape(
 		t,
 		[]any{float64(2), "id", "Act", map[string]any{}, "extra"},
-		"too long",
+		"got 5",
 	)
 }
 
@@ -220,7 +225,7 @@ func TestParseCallWrongMessageType(t *testing.T) {
 		"BootNotification",
 		map[string]any{},
 	}
-	callErrShape(t, frame, "wrong type code")
+	callErrShape(t, frame, "must be 2")
 }
 
 // TestParseCallNonNumericTypeCode verifies that a non-float64 type code is
@@ -234,7 +239,7 @@ func TestParseCallNonNumericTypeCode(t *testing.T) {
 		"BootNotification",
 		map[string]any{},
 	}
-	callErrShape(t, frame, "string type code")
+	callErrShape(t, frame, "must be 2")
 }
 
 // TestParseCallNonStringUniqueId verifies that a non-string uniqueId is
@@ -248,7 +253,7 @@ func TestParseCallNonStringUniqueId(t *testing.T) {
 		"BootNotification",
 		map[string]any{},
 	}
-	callErrShape(t, frame, "numeric uniqueId")
+	callErrShape(t, frame, "uniqueId")
 }
 
 // TestParseCallNonStringAction verifies that a non-string action is rejected.
@@ -261,7 +266,7 @@ func TestParseCallNonStringAction(t *testing.T) {
 		99,
 		map[string]any{},
 	}
-	callErrShape(t, frame, "numeric action")
+	callErrShape(t, frame, "action")
 }
 
 // TestParseCallNonMapPayload verifies that a non-map payload is rejected.
@@ -274,7 +279,7 @@ func TestParseCallNonMapPayload(t *testing.T) {
 		"BootNotification",
 		"not-a-map",
 	}
-	callErrShape(t, frame, "string payload")
+	callErrShape(t, frame, "payload")
 }
 
 // TestParseResultWrongLength verifies that frames with incorrect element
@@ -432,4 +437,63 @@ func TestErrFrameShapeRawCapped(t *testing.T) {
 	if len(fsErr.Raw) > maxRaw {
 		t.Errorf("Raw length %d exceeds cap of %d", len(fsErr.Raw), maxRaw)
 	}
+}
+
+// TestParseCallEmptyUniqueID verifies that an empty uniqueId string is rejected.
+// A CSMS could send [2, "", "Action", {}]; the empty string breaks correlation.
+func TestParseCallEmptyUniqueID(t *testing.T) {
+	t.Parallel()
+
+	frame := []any{
+		float64(wire.MessageTypeCall),
+		"",
+		"BootNotification",
+		map[string]any{},
+	}
+
+	callErrShape(t, frame, "uniqueId")
+}
+
+// TestParseCallEmptyAction verifies that an empty action string is rejected.
+func TestParseCallEmptyAction(t *testing.T) {
+	t.Parallel()
+
+	frame := []any{
+		float64(wire.MessageTypeCall),
+		"id1",
+		"",
+		map[string]any{},
+	}
+
+	callErrShape(t, frame, "action")
+}
+
+// TestParseResultEmptyUniqueID verifies that an empty uniqueId in a CALLRESULT
+// is rejected.
+func TestParseResultEmptyUniqueID(t *testing.T) {
+	t.Parallel()
+
+	frame := []any{
+		float64(wire.MessageTypeResult),
+		"",
+		map[string]any{},
+	}
+
+	resultErrShape(t, frame)
+}
+
+// TestParseErrorEmptyUniqueID verifies that an empty uniqueId in a CALLERROR
+// is rejected.
+func TestParseErrorEmptyUniqueID(t *testing.T) {
+	t.Parallel()
+
+	frame := []any{
+		float64(wire.MessageTypeError),
+		"",
+		"NotImplemented",
+		"desc",
+		map[string]any{},
+	}
+
+	errorErrShape(t, frame)
 }

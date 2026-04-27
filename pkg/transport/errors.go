@@ -93,11 +93,21 @@ func (e *ErrFrameTooLarge) Error() string {
 // ErrStationClosed is returned by Send or Expect when the Station has
 // already been closed.
 //
-// Callers that need to distinguish a graceful close from a transport error
-// can use errors.Is(err, &ErrStationClosed{}) or type-assert directly.
+// Use errors.As or errors.Is to detect this condition:
+//
+//	var closed *transport.ErrStationClosed
+//	if errors.As(err, &closed) { ... }
+//	// or
+//	if errors.Is(err, &transport.ErrStationClosed{}) { ... }
 type ErrStationClosed struct{}
 
 // Error implements the error interface.
 func (e *ErrStationClosed) Error() string {
 	return "transport: station is closed"
+}
+
+// Is reports whether target is an *ErrStationClosed, enabling errors.Is matching.
+func (e *ErrStationClosed) Is(target error) bool {
+	_, ok := target.(*ErrStationClosed)
+	return ok
 }
