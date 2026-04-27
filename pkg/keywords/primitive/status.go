@@ -9,12 +9,12 @@ import (
 	"github.com/octane-project/octane/pkg/keywords/registry"
 )
 
-// errConnectionNotOpen is returned when the connection-is-open assertion
-// fails: the station exists but is no longer connected.
+// errConnectionNotOpen is the sentinel wrapped by assertConnectionOpen when
+// the station exists but [api.Station.IsOpen] reports false.
 var errConnectionNotOpen = errors.New("connection is not open")
 
-// errConnectionNotClosed is returned when the connection-is-closed
-// assertion fails: the station exists and is still connected.
+// errConnectionNotClosed is the sentinel wrapped by assertConnectionClosed
+// when the station exists but [api.Station.IsOpen] reports true.
 var errConnectionNotClosed = errors.New("connection is not closed")
 
 func init() {
