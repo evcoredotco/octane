@@ -12,7 +12,17 @@
 // functions. Domain-layer keywords scoped to a specific OCPP
 // version take precedence over primitive-layer keywords; see
 // ADR 0007 for the full resolution rules.
+//
+// The [State] and [Station] interfaces are the runtime's surface
+// as seen by keyword functions. Both are interfaces (not concrete
+// types) so that keyword libraries can be unit-tested against
+// mocks without importing the runtime or transport packages.
 package api
+
+import (
+	"context"
+	"time"
+)
 
 // Layer identifies the keyword library layer. OCTANE has exactly
 // two layers per ADR 0007 and constitution principle XII (no
@@ -85,4 +95,80 @@ func (v OCPPVersion) String() string {
 	default:
 		return "unknown"
 	}
+}
+
+// State is the runtime's surface as seen by keyword functions.
+// It exposes exactly three capabilities: station lookup, a
+// deterministic clock, and structured logging.
+//
+// State is an interface so that keyword libraries can be
+// unit-tested against a mock (see pkg/keywords/api/mock) without
+// importing pkg/runner/ or any network library. The runtime's
+// concrete implementation satisfies this interface and is injected
+// by the runner at execution time.
+//
+// Keywords MUST call [State.Now] instead of [time.Now] so that
+// the runtime can inject a deterministic clock and produce
+// byte-identical reports across runs (constitution principle IV).
+//
+// The surface is intentionally minimal per ADR 0007. New methods
+// require an ADR amendment and reviewer approval.
+//
+// TODO(spec-003): Spec 003 §10 proposes StashPendingCallId and
+// PopPendingCallId methods for the request/response keyword
+// pairing pattern. ADR 0007 does not include them. If adopted,
+// an ADR amendment must land first. See spec 003 OQ discussion.
+type State interface {
+	// Station returns the [Station] handle identified by the
+	// given name. The name corresponds to the station handle
+	// declared in the story's Given block (e.g., "CP01").
+	//
+	// An error is returned if the station handle is not known
+	// to the current scenario — typically because it was not
+	// declared or has already been torn down.
+	Station(handle string) (Station, error)
+
+	// Now returns the current time from the runtime's clock.
+	// Keywords MUST use this instead of [time.Now] to preserve
+	// determinism across runs (constitution principle IV).
+	Now() time.Time
+
+	// Logf emits a structured log line scoped to the current
+	// step execution. The format string and arguments follow
+	// [fmt.Sprintf] conventions. Log output appears in the
+	// run report under the step that produced it.
+	Logf(format string, args ...any)
+}
+
+// Station is the wire-I/O surface for a single charging station
+// connection. Keywords use it to send OCPP-J frames to a CSMS
+// and to receive frames from the wire.
+//
+// Station is an interface so that keyword unit tests can supply
+// a mock without importing pkg/transport/ or any network library
+// (spec 003 AC8). The runtime's concrete implementation wraps
+// the WebSocket transport and is obtained via [State.Station].
+//
+// Frames are represented as []any — the decoded Go form of an
+// OCPP-J JSON array (per ADR 0006: arrays decode to []any,
+// numbers to float64). For example, a CALL frame is:
+//
+//	[]any{2, "messageId", "BootNotification", map[string]any{...}}
+type Station interface {
+	// Send transmits an OCPP-J frame to the CSMS over the
+	// station's WebSocket connection. The frame must be a valid
+	// OCPP-J JSON array in its decoded Go form ([]any).
+	//
+	// The context carries the per-step timeout. Send returns an
+	// error if the write fails or the context expires.
+	Send(ctx context.Context, frame []any) error
+
+	// Expect blocks until an OCPP-J frame arrives on the
+	// station's WebSocket connection or the context expires.
+	//
+	// The returned frame is the decoded Go form of the JSON
+	// array received from the wire. An error is returned if the
+	// read fails, the connection is closed, or the context
+	// expires before a frame arrives.
+	Expect(ctx context.Context) ([]any, error)
 }
