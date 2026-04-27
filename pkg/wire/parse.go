@@ -35,7 +35,7 @@ func frameShape(frame []any, reason string) *ErrFrameShape {
 }
 
 // stringAt asserts that frame[idx] is a non-empty string and returns it.
-// If the assertion fails it returns a non-nil *ErrFrameShape.
+// If the assertion fails or the value is empty it returns a non-nil *ErrFrameShape.
 func stringAt(
 	frame []any,
 	idx int,
@@ -45,7 +45,14 @@ func stringAt(
 	if !ok {
 		return "", frameShape(
 			frame,
-			fmt.Sprintf("element %d (%s) must be a string", idx, name),
+			fmt.Sprintf("element %d (%s) must be a non-empty string", idx, name),
+		)
+	}
+
+	if val == "" {
+		return "", frameShape(
+			frame,
+			fmt.Sprintf("element %d (%s) must be a non-empty string", idx, name),
 		)
 	}
 

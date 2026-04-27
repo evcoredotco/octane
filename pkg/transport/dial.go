@@ -18,8 +18,8 @@ const (
 	// zero.
 	defaultHandshakeTimeout = 30 * time.Second
 
-	// defaultMaxFrameBytes is used when DialOptions.MaxFrameBytes is zero.
-	// 1 MiB matches common OCPP-J server defaults.
+	// defaultMaxFrameBytes is used when DialOptions.MaxFrameBytes is zero
+	// or negative. 1 MiB matches common OCPP-J server defaults.
 	defaultMaxFrameBytes = int64(1 << 20)
 
 	// inboundBufSize is the capacity of the inbound frame channel.
@@ -56,21 +56,22 @@ func Dial(
 ) (Station, error) {
 	parsed, err := url.Parse(rawURL)
 	if err != nil {
-		return nil, fmt.Errorf("transport: invalid URL %q: %w", rawURL, err)
+		return nil, fmt.Errorf("transport: invalid URL: %w", err)
 	}
 
 	if _, ok := allowedSchemes[parsed.Scheme]; !ok {
 		return nil, fmt.Errorf(
-			"transport: unsupported scheme %q in %q (want ws or wss)",
+			"transport: unsupported scheme %q (want ws or wss)",
 			parsed.Scheme,
-			rawURL,
 		)
 	}
 
-	tlsCfg := buildTLSConfig(rawURL, opts)
+	safeURL := sanitizeURL(parsed)
+
+	tlsCfg := buildTLSConfig(safeURL, opts)
 	maxBytes := opts.MaxFrameBytes
 
-	if maxBytes == 0 {
+	if maxBytes <= 0 {
 		maxBytes = defaultMaxFrameBytes
 	}
 
@@ -90,7 +91,7 @@ func Dial(
 
 	conn, _, err := websocket.Dial(dialCtx, rawURL, wsOpts)
 	if err != nil {
-		return nil, wrapDialError(rawURL, err)
+		return nil, wrapDialError(safeURL, err)
 	}
 
 	conn.SetReadLimit(maxBytes)
@@ -101,7 +102,17 @@ func Dial(
 		return nil, err
 	}
 
-	return newStationHandle(conn), nil
+	return newStationHandle(conn, maxBytes), nil
+}
+
+// sanitizeURL strips userinfo (credentials) from the parsed URL so that the
+// result is safe to embed in log messages and error strings. This prevents
+// credential leakage (CWE-532 / constitution principle X).
+func sanitizeURL(parsed *url.URL) string {
+	safe := *parsed
+	safe.User = nil
+
+	return safe.String()
 }
 
 // validateSubprotocol checks that the server chose a subprotocol from the
@@ -129,30 +140,40 @@ func validateSubprotocol(
 
 // buildTLSConfig derives the *tls.Config to use for the dial.
 //
+// A TLS 1.2 minimum version floor is always enforced — if the caller supplies
+// a config with a lower MinVersion, it is raised to tls.VersionTLS12 per NIST
+// SP 800-52 Rev. 2 and the OCA Security Profile 2 (OCPP 2.0.1 Part 2, §3.1).
+//
 // If opts.InsecureSkipVerify is true a warning is logged and the config's
 // InsecureSkipVerify field is set. The original config is cloned to avoid
 // mutating a value shared by the caller.
-func buildTLSConfig(rawURL string, opts DialOptions) *tls.Config {
-	if !opts.InsecureSkipVerify {
-		return opts.TLSConfig
+func buildTLSConfig(safeURL string, opts DialOptions) *tls.Config {
+	if !opts.InsecureSkipVerify && opts.TLSConfig == nil {
+		return nil // nil → system defaults, always TLS 1.2+ in modern Go
 	}
-
-	slog.Warn(
-		"TLS certificate verification is disabled",
-		"url", rawURL,
-		"note", "insecure-skip-verify is set; every report will carry a "+
-			"banner-level finding",
-	)
 
 	base := opts.TLSConfig
 	if base == nil {
-		base = &tls.Config{
-			MinVersion: tls.VersionTLS12,
-		}
+		base = &tls.Config{}
 	}
 
 	cfg := base.Clone()
-	cfg.InsecureSkipVerify = true //nolint:gosec // G402: intentional operator opt-in
+
+	// Enforce TLS 1.2 floor regardless of caller-supplied value.
+	if cfg.MinVersion < tls.VersionTLS12 {
+		cfg.MinVersion = tls.VersionTLS12
+	}
+
+	if opts.InsecureSkipVerify {
+		slog.Warn(
+			"TLS certificate verification is disabled",
+			"url", safeURL,
+			"note", "insecure-skip-verify is set; every report will carry a "+
+				"banner-level finding",
+		)
+
+		cfg.InsecureSkipVerify = true //nolint:gosec // G402: operator opt-in
+	}
 
 	return cfg
 }
@@ -172,22 +193,22 @@ func buildHTTPClient(tlsCfg *tls.Config) *http.Client {
 }
 
 // wrapDialError converts a raw dial error into a typed transport error where
-// the cause is recognisable as a TLS failure.
-func wrapDialError(rawURL string, cause error) error {
+// the cause is recognisable as a TLS failure. safeURL has userinfo stripped.
+func wrapDialError(safeURL string, cause error) error {
 	if isTLSError(cause) {
 		return &ErrTLSValidation{
-			URL:   rawURL,
+			URL:   safeURL,
 			Cause: cause,
 		}
 	}
 
-	return fmt.Errorf("transport: dial %q: %w", rawURL, cause)
+	return fmt.Errorf("transport: dial %q: %w", safeURL, cause)
 }
 
 // isTLSError reports whether err originates from a TLS or x509 failure.
-// It performs a substring heuristic on the error text because the
-// crypto/tls package does not expose a stable exported error type for every
-// handshake failure path.
+// Prefixes "tls: " and "x509: " are checked first; "handshake failure" is
+// kept as a fallback for older library versions. The broad "certificate"
+// marker was removed to avoid false positives from CSMS error bodies.
 func isTLSError(err error) bool {
 	if err == nil {
 		return false
@@ -204,12 +225,12 @@ func isTLSError(err error) bool {
 	return false
 }
 
-// tlsErrorMarkers is the set of substrings that identify a TLS or x509
-// failure in an error message returned by crypto/tls or net/http.
+// tlsErrorMarkers identifies TLS/x509 errors by error-string prefix.
+// Deliberately narrow: "certificate" was removed (too broad — a CSMS could
+// return "certificate" in an HTTP 400 body, causing a false ErrTLSValidation).
 var tlsErrorMarkers = []string{
-	"tls:",
-	"x509:",
-	"certificate",
+	"tls: ",
+	"x509: ",
 	"handshake failure",
 }
 
