@@ -22,17 +22,20 @@ func TestDeterminism(t *testing.T) {
 
 	var storyPaths []string
 
-	err := filepath.WalkDir(root, func(path string, d os.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
+	err := filepath.WalkDir(
+		root,
+		func(path string, d os.DirEntry, walkErr error) error {
+			if walkErr != nil {
+				return walkErr
+			}
 
-		if !d.IsDir() && filepath.Ext(path) == ".story" {
-			storyPaths = append(storyPaths, path)
-		}
+			if !d.IsDir() && filepath.Ext(path) == ".story" {
+				storyPaths = append(storyPaths, path)
+			}
 
-		return nil
-	})
+			return nil
+		},
+	)
 	if err != nil {
 		t.Fatalf("walking scenarios/: %v", err)
 	}
@@ -57,7 +60,9 @@ func TestDeterminism(t *testing.T) {
 func runDeterminismCheck(t *testing.T, path string) {
 	t.Helper()
 
-	src, readErr := os.ReadFile(path) //nolint:gosec // test file, path from walk
+	src, readErr := os.ReadFile(
+		path,
+	) //nolint:gosec // test file, path from walk
 	if readErr != nil {
 		t.Fatalf("reading %s: %v", path, readErr)
 	}

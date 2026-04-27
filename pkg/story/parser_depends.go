@@ -41,8 +41,8 @@ func (de *dependsEntry) toDependency() ast.Dependency {
 // colon, and (empty) value tokens. This function reads subsequent indented
 // lines of the form:
 //
-//	    - id:    <story-id>
-//	      scope: <per-station|per-run|global>
+//   - id:    <story-id>
+//     scope: <per-station|per-run|global>
 //
 // Each bullet (lines whose MetaKey literal starts with "-") begins a new
 // Dependency entry. The scope field defaults to ScopePerStation when absent.
@@ -89,9 +89,12 @@ func (p *parser) parseDepends() ([]ast.Dependency, error) {
 			entryIndex++
 
 			cur = &dependsEntry{
-				id:       "",
-				scope:    ast.ScopePerStation,
-				pos:      ast.Position{Line: keyTok.Line, Column: keyTok.Column},
+				id:    "",
+				scope: ast.ScopePerStation,
+				pos: ast.Position{
+					Line:   keyTok.Line,
+					Column: keyTok.Column,
+				},
 				idSet:    false,
 				scopeSet: false,
 			}
@@ -214,7 +217,11 @@ func applySubKey(
 
 // flushEntry validates a completed dependsEntry and converts it to an
 // ast.Dependency. If cur is nil (no entry has started) it returns nil, nil.
-func flushEntry(file string, cur *dependsEntry, entryIndex int) (*ast.Dependency, error) {
+func flushEntry(
+	file string,
+	cur *dependsEntry,
+	entryIndex int,
+) (*ast.Dependency, error) {
 	if cur == nil {
 		return nil, nil
 	}

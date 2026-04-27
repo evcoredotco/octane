@@ -57,7 +57,12 @@ func TestLexer(t *testing.T) {
 			name:  "section_keyword_Background",
 			input: "Background\n",
 			want: []lex.Token{
-				{Kind: lex.TokenBackground, Literal: litBackground, Line: 1, Column: 1},
+				{
+					Kind:    lex.TokenBackground,
+					Literal: litBackground,
+					Line:    1,
+					Column:  1,
+				},
 			},
 		},
 		{
@@ -73,7 +78,12 @@ func TestLexer(t *testing.T) {
 			name:  "section_keyword_Scenario",
 			input: "Scenario\n",
 			want: []lex.Token{
-				{Kind: lex.TokenScenario, Literal: litScenario, Line: 1, Column: 1},
+				{
+					Kind:    lex.TokenScenario,
+					Literal: litScenario,
+					Line:    1,
+					Column:  1,
+				},
 			},
 		},
 		{
@@ -81,7 +91,12 @@ func TestLexer(t *testing.T) {
 			name:  "section_keyword_Teardown",
 			input: "Teardown\n",
 			want: []lex.Token{
-				{Kind: lex.TokenTeardown, Literal: litTeardown, Line: 1, Column: 1},
+				{
+					Kind:    lex.TokenTeardown,
+					Literal: litTeardown,
+					Line:    1,
+					Column:  1,
+				},
 			},
 		},
 		{
@@ -89,7 +104,12 @@ func TestLexer(t *testing.T) {
 			name:  "section_keyword_Parallel",
 			input: "Parallel\n",
 			want: []lex.Token{
-				{Kind: lex.TokenParallel, Literal: litParallel, Line: 1, Column: 1},
+				{
+					Kind:    lex.TokenParallel,
+					Literal: litParallel,
+					Line:    1,
+					Column:  1,
+				},
 			},
 		},
 		{
@@ -97,7 +117,12 @@ func TestLexer(t *testing.T) {
 			name:  "section_keyword_EndParallel",
 			input: "End-Parallel\n",
 			want: []lex.Token{
-				{Kind: lex.TokenEndParallel, Literal: litEndParallel, Line: 1, Column: 1},
+				{
+					Kind:    lex.TokenEndParallel,
+					Literal: litEndParallel,
+					Line:    1,
+					Column:  1,
+				},
 			},
 		},
 
@@ -196,7 +221,12 @@ func TestLexer(t *testing.T) {
 			name:  "comment_line",
 			input: "# this is a comment\n",
 			want: []lex.Token{
-				{Kind: lex.TokenComment, Literal: "# this is a comment", Line: 1, Column: 1},
+				{
+					Kind:    lex.TokenComment,
+					Literal: "# this is a comment",
+					Line:    1,
+					Column:  1,
+				},
 			},
 		},
 
@@ -386,19 +416,39 @@ func TestLexer(t *testing.T) {
 				got := l.Next()
 
 				if got.Kind != want.Kind {
-					t.Errorf("token[%d]: kind = %v, want %v", i, got.Kind, want.Kind)
+					t.Errorf(
+						"token[%d]: kind = %v, want %v",
+						i,
+						got.Kind,
+						want.Kind,
+					)
 				}
 
 				if want.Literal != "" && got.Literal != want.Literal {
-					t.Errorf("token[%d]: literal = %q, want %q", i, got.Literal, want.Literal)
+					t.Errorf(
+						"token[%d]: literal = %q, want %q",
+						i,
+						got.Literal,
+						want.Literal,
+					)
 				}
 
 				if want.Line != 0 && got.Line != want.Line {
-					t.Errorf("token[%d]: line = %d, want %d", i, got.Line, want.Line)
+					t.Errorf(
+						"token[%d]: line = %d, want %d",
+						i,
+						got.Line,
+						want.Line,
+					)
 				}
 
 				if want.Column != 0 && got.Column != want.Column {
-					t.Errorf("token[%d]: column = %d, want %d", i, got.Column, want.Column)
+					t.Errorf(
+						"token[%d]: column = %d, want %d",
+						i,
+						got.Column,
+						want.Column,
+					)
 				}
 			}
 		})
@@ -420,11 +470,19 @@ func TestLexerPeek(t *testing.T) {
 	second := l.Peek()
 
 	if first.Kind != second.Kind {
-		t.Errorf("Peek[0].Kind = %v, Peek[1].Kind = %v; want identical", first.Kind, second.Kind)
+		t.Errorf(
+			"Peek[0].Kind = %v, Peek[1].Kind = %v; want identical",
+			first.Kind,
+			second.Kind,
+		)
 	}
 
 	if first.Literal != second.Literal {
-		t.Errorf("Peek[0].Literal = %q, Peek[1].Literal = %q; want identical", first.Literal, second.Literal)
+		t.Errorf(
+			"Peek[0].Literal = %q, Peek[1].Literal = %q; want identical",
+			first.Literal,
+			second.Literal,
+		)
 	}
 
 	// Invariant: Next after Peek returns the same token (consumes the peek).
@@ -435,7 +493,11 @@ func TestLexerPeek(t *testing.T) {
 	}
 
 	if consumed.Literal != first.Literal {
-		t.Errorf("Next() after Peek() literal = %q, want %q", consumed.Literal, first.Literal)
+		t.Errorf(
+			"Next() after Peek() literal = %q, want %q",
+			consumed.Literal,
+			first.Literal,
+		)
 	}
 
 	// Invariant: Peek does not advance the stream; Next after consuming
@@ -443,7 +505,9 @@ func TestLexerPeek(t *testing.T) {
 	next := l.Next()
 
 	if next.Kind == first.Kind && next.Literal == first.Literal {
-		t.Errorf("Next() returned the same token twice; Peek appears to have consumed ahead")
+		t.Errorf(
+			"Next() returned the same token twice; Peek appears to have consumed ahead",
+		)
 	}
 }
 
@@ -463,7 +527,11 @@ func TestLexerPeek_AfterEOF(t *testing.T) {
 	// Invariant: Next after Peek at EOF also returns TokenEOF.
 	n := l.Next()
 	if n.Kind != lex.TokenEOF {
-		t.Errorf("Next() after Peek() at EOF = %v, want %v", n.Kind, lex.TokenEOF)
+		t.Errorf(
+			"Next() after Peek() at EOF = %v, want %v",
+			n.Kind,
+			lex.TokenEOF,
+		)
 	}
 }
 
@@ -508,7 +576,11 @@ func TestLexer_TokenKindString(t *testing.T) {
 			}
 
 			if s == "Unknown" {
-				t.Errorf("TokenKind(%d).String() = %q; add a case to TokenKind.String()", int(k), s)
+				t.Errorf(
+					"TokenKind(%d).String() = %q; add a case to TokenKind.String()",
+					int(k),
+					s,
+				)
 			}
 		})
 	}

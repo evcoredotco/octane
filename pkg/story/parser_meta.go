@@ -30,20 +30,20 @@ func (p *parser) parseMeta() (ast.Meta, error) {
 	tok := p.lex.Next()
 	if tok.Kind != lex.TokenMeta {
 		return ast.Meta{
-			Name:       "",
-			ID:         "",
-			SpecRef:    nil,
-			Tags:       nil,
-			Stations:   0,
-			Timeout:    0,
-			Parameters: nil,
-			CacheTTL:   nil,
-			Depends:    nil,
-			Position:   ast.Position{Line: tok.Line, Column: tok.Column},
-		}, fmt.Errorf(
-			"%s:%d:%d: expected Meta section at top of file, got %s",
-			p.file, tok.Line, tok.Column, tok.Kind,
-		)
+				Name:       "",
+				ID:         "",
+				SpecRef:    nil,
+				Tags:       nil,
+				Stations:   0,
+				Timeout:    0,
+				Parameters: nil,
+				CacheTTL:   nil,
+				Depends:    nil,
+				Position:   ast.Position{Line: tok.Line, Column: tok.Column},
+			}, fmt.Errorf(
+				"%s:%d:%d: expected Meta section at top of file, got %s",
+				p.file, tok.Line, tok.Column, tok.Kind,
+			)
 	}
 
 	meta := ast.Meta{
@@ -174,7 +174,10 @@ func (p *parser) applyMetaEntry(
 		if count < 1 || count > 10000 {
 			return fmt.Errorf(
 				"%s:%d:%d: Stations value %d is out of range; must be between 1 and 10000",
-				p.file, entry.line, entry.column, count,
+				p.file,
+				entry.line,
+				entry.column,
+				count,
 			)
 		}
 
@@ -310,40 +313,44 @@ func (p *parser) parseMetaEntry() (metaEntry, error) {
 	keyTok := p.lex.Next()
 	if keyTok.Kind != lex.TokenMetaKey {
 		return metaEntry{
-			key:    "",
-			value:  "",
-			line:   keyTok.Line,
-			column: keyTok.Column,
-		}, fmt.Errorf(
-			"%s:%d:%d: expected meta key, got %s",
-			p.file, keyTok.Line, keyTok.Column, keyTok.Kind,
-		)
+				key:    "",
+				value:  "",
+				line:   keyTok.Line,
+				column: keyTok.Column,
+			}, fmt.Errorf(
+				"%s:%d:%d: expected meta key, got %s",
+				p.file, keyTok.Line, keyTok.Column, keyTok.Kind,
+			)
 	}
 
 	colonTok := p.lex.Next()
 	if colonTok.Kind != lex.TokenColon {
 		return metaEntry{
-			key:    "",
-			value:  "",
-			line:   colonTok.Line,
-			column: colonTok.Column,
-		}, fmt.Errorf(
-			"%s:%d:%d: expected ':' after meta key %q, got %s",
-			p.file, colonTok.Line, colonTok.Column, keyTok.Literal, colonTok.Kind,
-		)
+				key:    "",
+				value:  "",
+				line:   colonTok.Line,
+				column: colonTok.Column,
+			}, fmt.Errorf(
+				"%s:%d:%d: expected ':' after meta key %q, got %s",
+				p.file,
+				colonTok.Line,
+				colonTok.Column,
+				keyTok.Literal,
+				colonTok.Kind,
+			)
 	}
 
 	valTok := p.lex.Next()
 	if valTok.Kind != lex.TokenValue {
 		return metaEntry{
-			key:    "",
-			value:  "",
-			line:   valTok.Line,
-			column: valTok.Column,
-		}, fmt.Errorf(
-			"%s:%d:%d: expected value after ':', got %s",
-			p.file, valTok.Line, valTok.Column, valTok.Kind,
-		)
+				key:    "",
+				value:  "",
+				line:   valTok.Line,
+				column: valTok.Column,
+			}, fmt.Errorf(
+				"%s:%d:%d: expected value after ':', got %s",
+				p.file, valTok.Line, valTok.Column, valTok.Kind,
+			)
 	}
 
 	return metaEntry{

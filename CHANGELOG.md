@@ -9,6 +9,14 @@ This project adheres to [Keep a Changelog 1.1.0][kac] and
 
 ## [Unreleased]
 
+### Added — Spec 002: Wire Engine
+
+- `pkg/transport`: WebSocket client with TLS, subprotocol negotiation, and configurable timeouts (`Station`, `Dial`, `DialOptions`)
+- `pkg/wire`: OCPP-J frame parsing and serialization for CALL (type 2), CALLRESULT (type 3), CALLERROR (type 4)
+- `pkg/engine/clock`: `Clock` interface with real-clock and deterministic test-double implementations
+- `pkg/engine/rand`: `Rand` interface with crypto-seeded and fixed-seed (PCG) implementations
+- ADR 0018: Clock/Rand injection model for reproducible test execution
+
 ### Added
 - **Story DSL parser** (`pkg/story`): recursive-descent parser for `.story`
   files implementing the grammar from ADR 0006. Produces a typed AST
