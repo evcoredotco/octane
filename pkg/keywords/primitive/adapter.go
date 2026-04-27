@@ -11,7 +11,7 @@ import (
 // buffering or logic of its own.
 //
 // The adapter is not exported. Callers interact only with the
-// [api.Station] interface returned by [State.Station].
+// [api.Station] interface returned by [api.State.Station].
 type stationAdapter struct {
 	inner transport.Station
 }

@@ -9,6 +9,26 @@ This project adheres to [Keep a Changelog 1.1.0][kac] and
 
 ## [Unreleased]
 
+### Added — Spec 004: Primitive Keywords
+
+- `pkg/keywords/primitive/`: ten transport-level primitive keywords covering
+  WebSocket open (with and without subprotocol negotiation), close, send raw
+  frame, send raw bytes, expect any frame, expect frame of type, wait, assert
+  connection open, and assert connection closed (spec 004 §10).
+- Self-registration at `init()` time under `api.LayerPrimitive` with a zero
+  `OCPPVersion`; importing the package is sufficient to activate all primitives
+  (spec 004 G2).
+- `primitive.ErrTimeout`: typed error returned by the expect keywords when no
+  matching frame arrives within the configured deadline. Carries `Station`,
+  `Timeout`, and `Deadline` fields; `Deadline` is derived from
+  `state.Now().Add(timeout)` so the deterministic clock governs it
+  (spec 004 AC4, constitution principle IV).
+- `docs/keywords/primitives.md`: full primitive catalog with pattern syntax,
+  argument types, error behavior, and example story steps (T-004-41).
+- Unit tests in `pkg/keywords/primitive/` exercising every keyword via
+  `mock.MockState` and `mock.MockStation` with no network dependency
+  (spec 004 G3).
+
 ### Added — Spec 003: Keyword API and Registry
 
 - `pkg/keywords/api`: public contract package for keyword authors — `Func`,

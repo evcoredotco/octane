@@ -20,10 +20,33 @@
 //   - "the connection on station {station:string} is open"
 //   - "the connection on station {station:string} is closed"
 //
+// # Send primitives (spec 004 §10, items 4–5)
+//
+//   - "send raw frame {frame:any} on station {station:string}"
+//   - "send raw bytes {bytes:string} on station {station:string}"
+//
+// The frame primitive accepts a []any value (the decoded Go form of an
+// OCPP-J JSON array). The bytes primitive accepts a hex-encoded string
+// and is intended for negative-path conformance testing of malformed or
+// extension frames (spec 004 OQ1).
+//
+// # Expect primitives (spec 004 §10, items 6–7)
+//
+//   - "expect any frame on station {station:string} within {timeout:duration}"
+//   - "expect a frame of type {messageType:int} on station {station:string} within {timeout:duration}"
+//
+// Both expect keywords derive their deadline from [api.State.Now] so that
+// deterministic-clock scenarios never advance real wall time. When the
+// deadline elapses before a matching frame arrives, they return [*ErrTimeout].
+//
+// # Wait primitive (spec 004 §10, item 8)
+//
+//   - "wait {duration:duration}"
+//
 // # Determinism
 //
-// Connection primitives do not consume the deterministic clock or PRNG;
-// they have no timing behaviour of their own. The wait primitive
-// (spec 004 §10, item 8) consumes [api.State.Now] and is implemented in
-// the sibling file wait.go (T-004-20).
+// All timing in this package is routed through [api.State.Now] and
+// [api.State.Sleep]; neither [time.Now] nor [time.Sleep] is called
+// directly. This satisfies constitution principle IV: deterministic clock
+// injection produces byte-identical reports across runs.
 package primitive
