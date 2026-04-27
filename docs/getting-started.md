@@ -15,7 +15,7 @@ endpoint and want to verify its OCPP wire behavior.
 ### Option A: Go toolchain
 
 ```bash
-go install github.com/octane-project/octane/cmd/octane@latest
+go install github.com/evcoreco/octane/cmd/octane@latest
 ```
 
 The binary is placed in `$GOPATH/bin/octane` (or `$HOME/go/bin/octane`).
@@ -23,19 +23,19 @@ The binary is placed in `$GOPATH/bin/octane` (or `$HOME/go/bin/octane`).
 ### Option B: Docker
 
 ```bash
-docker pull ghcr.io/octane-project/octane:latest
+docker pull ghcr.io/evcoreco/octane:latest
 ```
 
 Use the image in place of the binary:
 
 ```bash
-docker run --rm ghcr.io/octane-project/octane:latest octane --version
+docker run --rm ghcr.io/evcoreco/octane:latest octane --version
 ```
 
 ### Option C: Build from source
 
 ```bash
-git clone https://github.com/octane-project/octane
+git clone https://github.com/evcoreco/octane
 cd octane
 make build          # binary lands at ./bin/octane
 ```

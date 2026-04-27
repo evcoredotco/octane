@@ -6,8 +6,8 @@ Container Registry (GHCR).
 ## Image coordinates
 
 ```
-ghcr.io/octane-project/octane:<version>
-ghcr.io/octane-project/octane:latest
+ghcr.io/evcoreco/octane:<version>
+ghcr.io/evcoreco/octane:latest
 ```
 
 Use a versioned tag (e.g. `v0.1.0`) in any automated pipeline. The `latest`
@@ -46,7 +46,7 @@ silently change the binary your pipeline runs:
 
 ```yaml
 variables:
-  OCTANE_IMAGE: "ghcr.io/octane-project/octane:v0.1.0"
+  OCTANE_IMAGE: "ghcr.io/evcoreco/octane:v0.1.0"
   OCTANE_CACHE_DIR: "${CI_PROJECT_DIR}/.octane-cache"
 
 conformance:
@@ -70,7 +70,7 @@ To bypass the entrypoint and invoke the binary directly:
 ```
 docker run --rm \
   --entrypoint /usr/local/bin/octane \
-  ghcr.io/octane-project/octane:v0.1.0 \
+  ghcr.io/evcoreco/octane:v0.1.0 \
   run scenarios/
 ```
 
@@ -98,7 +98,7 @@ For fully reproducible CI where even a tag re-push must not change the image,
 pull by digest:
 
 ```
-docker pull ghcr.io/octane-project/octane@sha256:<digest>
+docker pull ghcr.io/evcoreco/octane@sha256:<digest>
 ```
 
 Digests are stable across architectures for a given manifest list. Record the

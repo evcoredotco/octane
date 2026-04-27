@@ -4,7 +4,7 @@ package rand_test
 import (
 	"testing"
 
-	"github.com/octane-project/octane/pkg/engine/rand"
+	"github.com/evcoreco/octane/pkg/engine/rand"
 )
 
 // goldenSeed is the fixed seed used for cross-platform golden comparisons.

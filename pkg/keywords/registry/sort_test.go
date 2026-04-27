@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/octane-project/octane/pkg/engine/rand"
-	"github.com/octane-project/octane/pkg/keywords/api"
+	"github.com/evcoreco/octane/pkg/engine/rand"
+	"github.com/evcoreco/octane/pkg/keywords/api"
 )
 
 // ── constants ─────────────────────────────────────────────────────────────────

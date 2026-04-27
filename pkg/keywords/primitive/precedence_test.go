@@ -17,11 +17,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/octane-project/octane/pkg/keywords/api"
+	"github.com/evcoreco/octane/pkg/keywords/api"
 	// Blank import ensures all production primitives are registered at
 	// init() time before the test-local keywords are registered.
-	_ "github.com/octane-project/octane/pkg/keywords/primitive"
-	"github.com/octane-project/octane/pkg/keywords/registry"
+	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
+	"github.com/evcoreco/octane/pkg/keywords/registry"
 )
 
 // ── Named constants ───────────────────────────────────────────────────────────

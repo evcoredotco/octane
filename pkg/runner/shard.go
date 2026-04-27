@@ -6,7 +6,7 @@
 // shard assignment, per ADR 0019 §"Sharding: --shard N/M".
 package runner
 
-import "github.com/octane-project/octane/pkg/story/ast"
+import "github.com/evcoreco/octane/pkg/story/ast"
 
 // applyShardFilter returns the subset of stories whose test_id
 // belongs to shardIndex (zero-based) out of shardTotal shards.

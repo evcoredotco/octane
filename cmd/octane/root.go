@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/octane-project/octane/cmd/octane/internal/exitcode"
-	_ "github.com/octane-project/octane/pkg/keywords/primitive" // register primitive keywords
+	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
+	_ "github.com/evcoreco/octane/pkg/keywords/primitive" // register primitive keywords
 )
 
 // version is the binary version string, injected at build time by goreleaser

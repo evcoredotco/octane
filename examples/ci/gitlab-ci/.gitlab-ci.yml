@@ -19,7 +19,7 @@ variables:
   # Pin the OCTANE image tag explicitly; "latest" defeats cache
   # invalidation by version because the binary identity changes
   # silently.
-  OCTANE_IMAGE: "ghcr.io/octane-project/octane:0.1.0"
+  OCTANE_IMAGE: "ghcr.io/evcoreco/octane:0.1.0"
 
 # Reusable cache fragment. The key includes:
 #   - the GitLab runner tags (so caches don't collide across

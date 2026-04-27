@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/octane-project/octane/pkg/story/ast"
-	"github.com/octane-project/octane/pkg/story/diag"
-	"github.com/octane-project/octane/pkg/story/lex"
+	"github.com/evcoreco/octane/pkg/story/ast"
+	"github.com/evcoreco/octane/pkg/story/diag"
+	"github.com/evcoreco/octane/pkg/story/lex"
 )
 
 // dependsEntry accumulates the fields for a single Depends bullet while it

@@ -14,11 +14,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/octane-project/octane/pkg/keywords/api"
-	"github.com/octane-project/octane/pkg/keywords/api/mock"
+	"github.com/evcoreco/octane/pkg/keywords/api"
+	"github.com/evcoreco/octane/pkg/keywords/api/mock"
 	// Named import registers all primitive keywords at init() time and
 	// provides access to primitive.ErrTimeout for typed error assertions.
-	"github.com/octane-project/octane/pkg/keywords/primitive"
+	"github.com/evcoreco/octane/pkg/keywords/primitive"
 )
 
 // ── Named constants ───────────────────────────────────────────────────────────

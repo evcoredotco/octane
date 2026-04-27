@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	_ "github.com/octane-project/octane/pkg/keywords/primitive"
-	"github.com/octane-project/octane/pkg/runner"
+	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
+	"github.com/evcoreco/octane/pkg/runner"
 )
 
 // stressPrereqStory is the single shared prerequisite for all stress leaves.

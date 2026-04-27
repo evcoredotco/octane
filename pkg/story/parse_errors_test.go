@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/octane-project/octane/pkg/story"
-	"github.com/octane-project/octane/pkg/story/diag"
+	"github.com/evcoreco/octane/pkg/story"
+	"github.com/evcoreco/octane/pkg/story/diag"
 )
 
 func readFixture(t *testing.T, name string) []byte {

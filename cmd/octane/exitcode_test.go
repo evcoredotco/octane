@@ -3,7 +3,7 @@ package main_test
 import (
 	"testing"
 
-	"github.com/octane-project/octane/cmd/octane/internal/exitcode"
+	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
 )
 
 // TestExitCodesUnique asserts that each exit code constant is a

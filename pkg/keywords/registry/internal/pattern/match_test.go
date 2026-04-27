@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/octane-project/octane/pkg/keywords/registry/internal/pattern"
+	"github.com/evcoreco/octane/pkg/keywords/registry/internal/pattern"
 )
 
 // ── Named test-value constants ────────────────────────────────────────────────

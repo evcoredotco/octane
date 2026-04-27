@@ -8,7 +8,7 @@ for identical inputs (constitutional principle IV).
 
 ```yaml
 - name: OCPP conformance
-  uses: octane-project/octane-action@v0
+  uses: evcoreco/octane-action@v0
   with:
     csms: wss://csms.example.org/ocpp/CP01
     ocpp-version: "2.0.1"
@@ -45,8 +45,8 @@ for identical inputs (constitutional principle IV).
 
 This Action follows the GitHub convention of a movable major-version tag:
 
-- `octane-project/octane-action@v0` — latest in the v0.x line (recommended)
-- `octane-project/octane-action@v0.1.0` — exact version (most reproducible)
+- `evcoreco/octane-action@v0` — latest in the v0.x line (recommended)
+- `evcoreco/octane-action@v0.1.0` — exact version (most reproducible)
 
 Both forms are signed and attested via SLSA provenance.
 

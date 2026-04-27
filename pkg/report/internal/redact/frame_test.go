@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/octane-project/octane/pkg/report/internal/redact"
+	"github.com/evcoreco/octane/pkg/report/internal/redact"
 )
 
 func Test_redact_Frame_credentialField(t *testing.T) {

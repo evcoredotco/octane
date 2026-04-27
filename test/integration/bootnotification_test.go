@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/octane-project/octane/pkg/transport"
-	"github.com/octane-project/octane/pkg/wire"
+	"github.com/evcoreco/octane/pkg/transport"
+	"github.com/evcoreco/octane/pkg/wire"
 )
 
 // TestBootNotificationHandshake asserts that a BootNotification CALL sent to

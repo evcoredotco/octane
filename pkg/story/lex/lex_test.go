@@ -5,7 +5,7 @@ package lex_test
 import (
 	"testing"
 
-	"github.com/octane-project/octane/pkg/story/lex"
+	"github.com/evcoreco/octane/pkg/story/lex"
 )
 
 // TestLexer covers every token kind and every error path in one

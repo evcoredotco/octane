@@ -5,7 +5,7 @@ package redact_test
 import (
 	"testing"
 
-	"github.com/octane-project/octane/pkg/report/internal/redact"
+	"github.com/evcoreco/octane/pkg/report/internal/redact"
 )
 
 // TestAuthBlock_redactsToken verifies that a token field in an auth

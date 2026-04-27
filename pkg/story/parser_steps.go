@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/octane-project/octane/pkg/story/ast"
-	"github.com/octane-project/octane/pkg/story/lex"
+	"github.com/evcoreco/octane/pkg/story/ast"
+	"github.com/evcoreco/octane/pkg/story/lex"
 )
 
 // parseBackground implements T-001-24: expects TokenBackground followed by

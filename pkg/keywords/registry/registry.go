@@ -24,7 +24,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/octane-project/octane/pkg/keywords/api"
+	"github.com/evcoreco/octane/pkg/keywords/api"
 )
 
 // entry pairs a keyword with the formatted call site at which it

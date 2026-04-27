@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 
-	"github.com/octane-project/octane/cmd/octane/internal/exitcode"
+	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
 )
 
 // genManPagesFlags holds the parsed flag values for the gen-manpages

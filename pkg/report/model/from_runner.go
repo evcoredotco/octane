@@ -7,8 +7,8 @@ package model
 import (
 	"sort"
 
-	"github.com/octane-project/octane/pkg/report/internal/redact"
-	"github.com/octane-project/octane/pkg/runner"
+	"github.com/evcoreco/octane/pkg/report/internal/redact"
+	"github.com/evcoreco/octane/pkg/runner"
 )
 
 // schemaVersion is the integer version of the report schema.

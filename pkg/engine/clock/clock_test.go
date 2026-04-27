@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/octane-project/octane/pkg/engine/clock"
+	"github.com/evcoreco/octane/pkg/engine/clock"
 )
 
 var seed = time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)

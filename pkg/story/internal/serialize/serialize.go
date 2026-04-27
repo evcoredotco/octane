@@ -10,7 +10,7 @@ package serialize
 import (
 	"encoding/json"
 
-	"github.com/octane-project/octane/pkg/story/ast"
+	"github.com/evcoreco/octane/pkg/story/ast"
 )
 
 // Serialize returns a compact, byte-deterministic JSON encoding of story.

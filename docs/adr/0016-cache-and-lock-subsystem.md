@@ -295,7 +295,7 @@ jobs:
             octane-${{ runner.os }}-
 
       - name: Run OCTANE
-        uses: octane-project/octane-action@v0
+        uses: evcoreco/octane-action@v0
         with:
           stories: scenarios/v16/
           fail-on: major
@@ -332,7 +332,7 @@ variables:
 
 conformance:
   stage: conformance
-  image: ghcr.io/octane-project/octane:latest
+  image: ghcr.io/evcoreco/octane:latest
   cache:
     key:
       files:

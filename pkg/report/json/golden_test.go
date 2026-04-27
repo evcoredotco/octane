@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/octane-project/octane/pkg/report"
-	reportjson "github.com/octane-project/octane/pkg/report/json"
-	"github.com/octane-project/octane/pkg/runner"
+	"github.com/evcoreco/octane/pkg/report"
+	reportjson "github.com/evcoreco/octane/pkg/report/json"
+	"github.com/evcoreco/octane/pkg/runner"
 )
 
 // updateFlag controls whether the golden file is regenerated.

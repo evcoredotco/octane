@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/octane-project/octane/pkg/cache/internal/lock"
+	"github.com/evcoreco/octane/pkg/cache/internal/lock"
 )
 
 // lockPath returns a per-test temp-file path suitable for use as a

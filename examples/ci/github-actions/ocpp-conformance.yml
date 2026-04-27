@@ -75,7 +75,7 @@ jobs:
       # use either this or `octane run` directly via the CLI step
       # below.
       - name: Run OCTANE
-        uses: octane-project/octane-action@v0
+        uses: evcoreco/octane-action@v0
         with:
           stories: scenarios/v${{ matrix.ocpp-version }}/
           fail-on: major

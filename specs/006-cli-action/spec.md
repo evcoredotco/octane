@@ -61,7 +61,7 @@ This spec defines:
   `octane run scenarios/v16/` to do the right thing with sensible
   defaults, then offer flags for every override I might need.
 - **As a CI maintainer using GitHub Actions**, I want a single
-  `uses: octane-project/octane-action@v0` block with named inputs
+  `uses: evcoreco/octane-action@v0` block with named inputs
   that hide the CLI surface entirely.
 - **As a GitLab CI user**, I want a published Docker image I can
   drop into my pipeline with environment-variable configuration.
@@ -96,12 +96,12 @@ This spec defines:
        wins. **Given** both are absent, **when** `octane.yml`
        sets the value, **then** the YAML value wins.
 - AC4. **Given** the GitHub Action used as
-       `uses: octane-project/octane-action@v0` with inputs
+       `uses: evcoreco/octane-action@v0` with inputs
        `stories: scenarios/v16/` and `fail-on: major`, **when**
        the workflow runs, **then** the binary executes with
        equivalent CLI flags and the action's `report-path`
        output is set.
-- AC5. **Given** the Docker image `ghcr.io/octane-project/octane`,
+- AC5. **Given** the Docker image `ghcr.io/evcoreco/octane`,
        **when** invoked from a GitLab CI job with
        `OCTANE_CACHE_DIR` set, **then** the cache directory is
        used and the cache mechanism in spec 005 / ADR 0016

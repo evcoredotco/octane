@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/octane-project/octane/pkg/keywords/api"
-	"github.com/octane-project/octane/pkg/keywords/registry"
+	"github.com/evcoreco/octane/pkg/keywords/api"
+	"github.com/evcoreco/octane/pkg/keywords/registry"
 )
 
 func init() {

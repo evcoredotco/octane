@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/octane-project/octane/pkg/report"
-	"github.com/octane-project/octane/pkg/report/robotxml"
-	"github.com/octane-project/octane/pkg/runner"
+	"github.com/evcoreco/octane/pkg/report"
+	"github.com/evcoreco/octane/pkg/report/robotxml"
+	"github.com/evcoreco/octane/pkg/runner"
 )
 
 // rebotImage is the Docker image used to run rebot for Robot Framework XML

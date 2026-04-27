@@ -17,7 +17,7 @@ no code changes, no sidecar service, no privileged admin API.
 
 ```bash
 # Install via Go toolchain
-go install github.com/octane-project/octane/cmd/octane@latest
+go install github.com/evcoreco/octane/cmd/octane@latest
 
 # Run the full OCPP 1.6J suite against your CSMS
 octane run scenarios/v16/
@@ -61,9 +61,9 @@ precise scope of OCTANE's conformance assertion.
 |---------|---------|
 | Debian/Ubuntu | `sudo apt install octane` |
 | Fedora/RHEL/CentOS | `sudo dnf install octane` |
-| macOS | `brew install octane-project/octane/octane` |
+| macOS | `brew install evcoreco/octane/octane` |
 | Windows | `scoop install octane` |
-| Docker | `docker pull ghcr.io/octane-project/octane` |
+| Docker | `docker pull ghcr.io/evcoreco/octane` |
 | From source | `git clone … && make build` |
 
 > Distribution channels are defined and packaged but the public APT
@@ -119,7 +119,7 @@ jobs:
         ports: ["8081:8081"]
     steps:
       - uses: actions/checkout@v4
-      - uses: octane-project/octane-action@v0
+      - uses: evcoreco/octane-action@v0
         with:
           config: octane.yml
           stories: scenarios/v16/

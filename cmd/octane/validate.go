@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/octane-project/octane/cmd/octane/internal/exitcode"
-	"github.com/octane-project/octane/pkg/story"
+	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
+	"github.com/evcoreco/octane/pkg/story"
 )
 
 //nolint:exhaustruct // cobra.Command has many optional fields

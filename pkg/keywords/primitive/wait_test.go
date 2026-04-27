@@ -13,11 +13,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/octane-project/octane/pkg/engine/clock"
-	"github.com/octane-project/octane/pkg/keywords/api"
-	"github.com/octane-project/octane/pkg/keywords/api/mock"
+	"github.com/evcoreco/octane/pkg/engine/clock"
+	"github.com/evcoreco/octane/pkg/keywords/api"
+	"github.com/evcoreco/octane/pkg/keywords/api/mock"
 	// Blank import registers all primitive keywords at init() time.
-	_ "github.com/octane-project/octane/pkg/keywords/primitive"
+	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
 )
 
 // ── Named constants ───────────────────────────────────────────────────────────
