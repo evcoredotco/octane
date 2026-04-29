@@ -95,7 +95,7 @@ func validateStories(_ *cobra.Command, storyPaths []string) error {
 func readStoryFile(path string) ([]byte, error) {
 	return os.ReadFile(
 		path,
-	) //nolint:gosec // G304: path from CLI args; operator-controlled
+	)
 }
 
 // collectStoryFiles recursively collects all .story file paths under

@@ -1,6 +1,7 @@
 // T-006-53: completion syntax smoke tests.
 // Verifies that the bash and zsh completion scripts produced by cobra
 // are syntactically valid by running the shell's own -n checker.
+
 package main
 
 import (

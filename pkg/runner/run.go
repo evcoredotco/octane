@@ -8,6 +8,7 @@
 // are plumbed through to the cache lock subsystem on every story
 // execution (ADR 0016 §"Lock timeout and fast-fail", ADR 0019
 // §"Lock timeout and fast-fail").
+
 package runner
 
 import (
@@ -917,7 +918,7 @@ func walkStoryFiles(root string) ([]*ast.Story, error) {
 
 			data, readErr := os.ReadFile(
 				path,
-			) //nolint:gosec // G304: paths from cfg.StoryPaths
+			)
 			if readErr != nil {
 				return fmt.Errorf("read %q: %w", path, readErr)
 			}

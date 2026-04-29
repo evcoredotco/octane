@@ -3,6 +3,7 @@
 // This file uses package registry (not registry_test) so that reset() is
 // accessible to isolate this test from the global registry state populated
 // by other _test.go files or init() registrations.
+
 package registry
 
 import (

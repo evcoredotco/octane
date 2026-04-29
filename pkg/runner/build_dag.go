@@ -5,6 +5,7 @@
 // encode the Depends: prerequisites declared in each story's Meta
 // section. The function returns ErrCycle (wrapping *dag.ErrCycle)
 // when a cycle is detected.
+
 package runner
 
 import (
@@ -358,7 +359,7 @@ func inShardFilter(testID string, shardIndex, shardTotal int) bool {
 	// shardTotal is a positive int. The conversion is safe.
 	assignedShard := int(
 		shardNum % uint64(shardTotal),
-	) //nolint:gosec // G115: value < shardTotal ≤ math.MaxInt
+	)
 
 	return assignedShard == shardIndex
 }

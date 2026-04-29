@@ -10,6 +10,7 @@
 // used by any production keyword).  Alongside it, register a primitive keyword
 // with the same pattern.  This avoids calling the unexported reset() function
 // from the registry package while keeping the test deterministic and parallel.
+
 package primitive_test
 
 import (

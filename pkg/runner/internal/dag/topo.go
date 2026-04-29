@@ -2,6 +2,7 @@
 //
 // This file is intentionally separate from dag.go so that the DAG
 // construction and traversal concerns stay in distinct source units.
+
 package dag
 
 import "sort"

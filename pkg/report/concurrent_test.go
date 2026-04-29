@@ -36,8 +36,6 @@ func Test_report_WriteJSON_ConcurrentDistinctRunIDs(t *testing.T) {
 	wg.Add(goroutineCount)
 
 	for i := range goroutineCount {
-		i := i // capture loop variable for Go < 1.22 compatibility
-
 		go func() {
 			defer wg.Done()
 
@@ -99,7 +97,7 @@ func Test_report_WriteJSON_ConcurrentDistinctRunIDs(t *testing.T) {
 
 		data, readErr := os.ReadFile(
 			reportPath,
-		) //nolint:gosec // G304: t.TempDir path
+		)
 		if readErr != nil {
 			t.Errorf("reading %s: %v", reportPath, readErr)
 

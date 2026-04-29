@@ -12,6 +12,7 @@
 // wraps whatever error state.Station returns, but the mock cannot exercise
 // that branch without a real runtime State.  See the hand-off note at the
 // end of this file.
+
 package primitive_test
 
 import (

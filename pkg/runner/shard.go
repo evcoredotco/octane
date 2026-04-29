@@ -4,6 +4,7 @@
 // whose test_id does not belong to the current shard. Prerequisites
 // required by remaining stories are preserved regardless of their
 // shard assignment, per ADR 0019 §"Sharding: --shard N/M".
+
 package runner
 
 import "github.com/evcoreco/octane/pkg/story/ast"

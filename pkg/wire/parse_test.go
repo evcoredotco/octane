@@ -1,5 +1,6 @@
 // Package wire_test contains black-box unit tests for wire frame parsing
 // (T-002-12).
+
 package wire_test
 
 import (

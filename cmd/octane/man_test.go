@@ -1,5 +1,6 @@
 // T-006-51: golden man-page test.
 // Run with -update to generate or refresh the testdata/man/ golden files.
+
 package main
 
 import (

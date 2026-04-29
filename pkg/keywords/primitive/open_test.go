@@ -5,6 +5,7 @@
 // Task: T-004-05
 // AC1: A registered Station handle appears in mock.State after the open
 // keyword's Func executes successfully.
+
 package primitive_test
 
 import (

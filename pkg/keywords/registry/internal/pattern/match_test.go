@@ -225,7 +225,6 @@ func Test_pattern_Parse_allSupportedTypes(t *testing.T) {
 	}
 
 	for _, testCase := range cases {
-		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -271,7 +270,6 @@ func Test_pattern_Parse_malformedPlaceholders(t *testing.T) {
 	}
 
 	for _, testCase := range cases {
-		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -732,7 +730,6 @@ func Test_pattern_Coerce_boolTypeSuccess(t *testing.T) {
 	}
 
 	for _, testCase := range cases {
-		testCase := testCase
 		t.Run(testCase.input, func(t *testing.T) {
 			t.Parallel()
 

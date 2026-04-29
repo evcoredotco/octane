@@ -43,5 +43,5 @@ func Load(path string) (Config, error) {
 func readConfigFile(path string) ([]byte, error) {
 	return os.ReadFile(
 		path,
-	) //nolint:gosec // G304: path from --config flag; operator-controlled
+	)
 }

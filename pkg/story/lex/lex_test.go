@@ -565,7 +565,6 @@ func TestLexer_TokenKindString(t *testing.T) {
 	}
 
 	for _, k := range kinds {
-		k := k
 		t.Run(k.String(), func(t *testing.T) {
 			t.Parallel()
 

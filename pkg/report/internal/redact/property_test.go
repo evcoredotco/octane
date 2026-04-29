@@ -1,4 +1,5 @@
 // Task: T-007-13.
+
 package redact_test
 
 import (

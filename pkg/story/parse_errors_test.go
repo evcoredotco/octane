@@ -1,6 +1,7 @@
 // Package story_test — negative-case tests for the story parser.
 // Each test loads a fixture from testdata/negative/ and asserts that
 // the parser returns the correct typed error (AC2–AC7).
+
 package story_test
 
 import (
@@ -28,6 +29,8 @@ func readFixture(t *testing.T, name string) []byte {
 
 // TestNegative_MissingName covers AC2: missing required Meta key "Name".
 func TestNegative_MissingName(t *testing.T) {
+	t.Parallel()
+
 	src := readFixture(t, "missing_name.story")
 
 	_, err := story.Parse("missing_name.story", src)
@@ -47,6 +50,8 @@ func TestNegative_MissingName(t *testing.T) {
 
 // TestNegative_MissingID covers AC2: missing required Meta key "Id".
 func TestNegative_MissingID(t *testing.T) {
+	t.Parallel()
+
 	src := readFixture(t, "missing_id.story")
 
 	_, err := story.Parse("missing_id.story", src)
@@ -66,6 +71,8 @@ func TestNegative_MissingID(t *testing.T) {
 
 // TestNegative_MissingStations covers AC2: missing required Meta key "Stations".
 func TestNegative_MissingStations(t *testing.T) {
+	t.Parallel()
+
 	src := readFixture(t, "missing_stations.story")
 
 	_, err := story.Parse("missing_stations.story", src)
@@ -85,6 +92,8 @@ func TestNegative_MissingStations(t *testing.T) {
 
 // TestNegative_SpecRefOnHelper covers AC4: helper story with Spec-Ref present.
 func TestNegative_SpecRefOnHelper(t *testing.T) {
+	t.Parallel()
+
 	src := readFixture(t, "spec_ref_on_helper.story")
 
 	_, err := story.Parse("spec_ref_on_helper.story", src)
@@ -100,6 +109,8 @@ func TestNegative_SpecRefOnHelper(t *testing.T) {
 
 // TestNegative_MissingSpecRef covers AC3: conformance story without Spec-Ref.
 func TestNegative_MissingSpecRef(t *testing.T) {
+	t.Parallel()
+
 	src := readFixture(t, "missing_spec_ref.story")
 
 	_, err := story.Parse("missing_spec_ref.story", src)
@@ -115,6 +126,8 @@ func TestNegative_MissingSpecRef(t *testing.T) {
 
 // TestNegative_MalformedDependsNoID covers AC6: Depends entry missing id field.
 func TestNegative_MalformedDependsNoID(t *testing.T) {
+	t.Parallel()
+
 	src := readFixture(t, "malformed_depends_no_id.story")
 
 	_, err := story.Parse("malformed_depends_no_id.story", src)
@@ -130,6 +143,8 @@ func TestNegative_MalformedDependsNoID(t *testing.T) {
 
 // TestNegative_MalformedDependsBadScope covers AC6: Depends entry with unknown scope.
 func TestNegative_MalformedDependsBadScope(t *testing.T) {
+	t.Parallel()
+
 	src := readFixture(t, "malformed_depends_bad_scope.story")
 
 	_, err := story.Parse("malformed_depends_bad_scope.story", src)

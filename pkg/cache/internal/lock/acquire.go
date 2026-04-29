@@ -1,4 +1,5 @@
 // Package lock is documented in errors.go.
+
 package lock
 
 import (

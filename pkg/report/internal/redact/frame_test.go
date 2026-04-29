@@ -1,4 +1,5 @@
 // Task: T-007-10 (security review fix).
+
 package redact_test
 
 import (

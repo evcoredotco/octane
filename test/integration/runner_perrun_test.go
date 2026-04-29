@@ -4,6 +4,7 @@
 // AC6: Per-run prereq runs exactly once regardless of how many dependents
 // reference it. Three dependents sharing a per-run prereq produce exactly
 // one prereq StoryResult entry.
+
 package integration_test
 
 import (

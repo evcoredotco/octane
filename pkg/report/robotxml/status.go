@@ -4,6 +4,7 @@
 // that conforms to the Robot Framework 7.x output schema.
 //
 // Task: T-007-31.
+
 package robotxml
 
 import (

@@ -6,6 +6,7 @@
 // frame and emits it on the station's wire.
 // AC2: "send raw bytes {bytes:string} on station {station:string}" decodes a
 // hex string and sends the resulting frame.
+
 package primitive_test
 
 import (

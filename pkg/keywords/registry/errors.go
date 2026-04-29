@@ -3,6 +3,7 @@
 // This file defines [ErrNoMatch] and [ErrTypeMismatch], the two
 // typed errors returned by [Resolve] when step resolution fails.
 // See registry.go for the package-level documentation.
+
 package registry
 
 import "fmt"

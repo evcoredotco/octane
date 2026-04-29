@@ -1,4 +1,5 @@
 // Task: T-007-24.
+
 package json_test
 
 import (

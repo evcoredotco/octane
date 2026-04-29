@@ -12,6 +12,7 @@
 // Tests use package registry (white-box) to access the unexported reset().
 // Tests that mutate the global registry must NOT call t.Parallel() to
 // prevent interference. Tests that construct local state only may parallel.
+
 package registry
 
 import (
@@ -131,6 +132,8 @@ func registerDomain16(version api.OCPPVersion) api.Keyword {
 // primitive-layer keyword is matched when the step text satisfies its pattern
 // and a Duration argument is correctly bound (AC3 primitive path).
 func Test_registry_Resolve_primitiveKeywordResolvesByStepText(t *testing.T) {
+	t.Parallel()
+
 	// Invariant: Resolve returns the primitive keyword and correct Args for a
 	// step text that matches its pattern.
 	reset()
@@ -177,6 +180,8 @@ func Test_registry_Resolve_primitiveKeywordResolvesByStepText(t *testing.T) {
 func Test_registry_Resolve_domainKeywordResolvesForMatchingVersion(
 	t *testing.T,
 ) {
+	t.Parallel()
+
 	// Invariant: Resolve returns the domain keyword when OCPPVersion matches.
 	reset()
 
@@ -216,6 +221,8 @@ func Test_registry_Resolve_domainKeywordResolvesForMatchingVersion(
 // when both a domain-layer and a primitive-layer keyword share the same
 // pattern, the domain keyword wins for the matching OCPP version (AC6).
 func Test_registry_Resolve_domainWinsOverPrimitiveForSamePattern(t *testing.T) {
+	t.Parallel()
+
 	// Invariant: domain layer keyword takes precedence over primitive layer
 	// keyword for the same pattern when OCPP version matches (AC6).
 	reset()
@@ -249,6 +256,8 @@ func Test_registry_Resolve_domainWinsOverPrimitiveForSamePattern(t *testing.T) {
 // domain-layer keyword registered with OCPPVersion=0 (version-agnostic) is
 // matched when the resolver runs with OCPP 1.6.
 func Test_registry_Resolve_domainVersionAgnosticMatchesOCPP16(t *testing.T) {
+	t.Parallel()
+
 	// Invariant: a domain keyword with OCPPVersion=0 is eligible for any
 	// OCPP version — it is version-agnostic.
 	reset()
@@ -284,12 +293,13 @@ func Test_registry_Resolve_domainVersionAgnosticMatchesOCPP16(t *testing.T) {
 	}
 }
 
-
 // ── AC4: no match → ErrNoMatch; Closest populated when near pattern exists ───
 
 // Test_registry_Resolve_noMatchReturnsErrNoMatch verifies that Resolve returns
 // *ErrNoMatch when the step text matches no registered pattern (AC4).
 func Test_registry_Resolve_noMatchReturnsErrNoMatch(t *testing.T) {
+	t.Parallel()
+
 	// Invariant: Resolve wraps the unmatched step in *ErrNoMatch (AC4).
 	reset()
 
@@ -310,6 +320,8 @@ func Test_registry_Resolve_noMatchReturnsErrNoMatch(t *testing.T) {
 // Test_registry_Resolve_noMatchStepTextPreserved verifies that ErrNoMatch
 // carries the original unmatched step text verbatim (AC4).
 func Test_registry_Resolve_noMatchStepTextPreserved(t *testing.T) {
+	t.Parallel()
+
 	// Invariant: ErrNoMatch.StepText equals the input step string.
 	reset()
 
@@ -337,6 +349,8 @@ func Test_registry_Resolve_noMatchStepTextPreserved(t *testing.T) {
 func Test_registry_Resolve_noMatchClosestPopulatedWhenNearPatternExists(
 	t *testing.T,
 ) {
+	t.Parallel()
+
 	// Invariant: ErrNoMatch.Closest carries the near pattern when within
 	// edit distance 5 (AC4).
 	reset()
@@ -366,6 +380,8 @@ func Test_registry_Resolve_noMatchClosestPopulatedWhenNearPatternExists(
 // ErrNoMatch.Closest is empty when no registered pattern is within
 // Levenshtein distance 5 of the failed step text (AC4).
 func Test_registry_Resolve_noMatchClosestEmptyWhenNoNearPattern(t *testing.T) {
+	t.Parallel()
+
 	// Invariant: ErrNoMatch.Closest is empty when no pattern is within
 	// edit distance 5 (AC4).
 	reset()
@@ -394,6 +410,8 @@ func Test_registry_Resolve_noMatchClosestEmptyWhenNoNearPattern(t *testing.T) {
 // Resolve returns *ErrTypeMismatch when the step text supplies a non-integer
 // token for an {n:int} placeholder (AC5).
 func Test_registry_Resolve_typeMismatchReturnedForBadIntToken(t *testing.T) {
+	t.Parallel()
+
 	// Invariant: a non-integer token for an int placeholder causes
 	// *ErrTypeMismatch with the correct ArgName, Expected, and Got (AC5).
 	reset()
@@ -439,6 +457,8 @@ func Test_registry_Resolve_typeMismatchReturnedForBadIntToken(t *testing.T) {
 // Test_registry_Resolve_goodIntTokenResolves verifies that the same int
 // placeholder resolves correctly when the step text supplies a valid integer.
 func Test_registry_Resolve_goodIntTokenResolves(t *testing.T) {
+	t.Parallel()
+
 	// Invariant: a valid integer token for an int placeholder resolves
 	// without error and the bound Args value is correct.
 	reset()
@@ -462,6 +482,8 @@ func Test_registry_Resolve_goodIntTokenResolves(t *testing.T) {
 // step with four placeholders (int, string, station, duration) is correctly
 // resolved and each placeholder value is accessible by name from Args (AC3).
 func Test_registry_Resolve_multiPlaceholderStepBindsAllArgs(t *testing.T) {
+	t.Parallel()
+
 	// Invariant: Resolve correctly binds all four named placeholders from the
 	// step text into the returned Args (AC3).
 	reset()
@@ -531,6 +553,8 @@ func Test_registry_Resolve_multiPlaceholderStepBindsAllArgs(t *testing.T) {
 // Test_registry_Resolve_emptyRegistryReturnsErrNoMatch verifies that Resolve
 // against an empty registry always returns ErrNoMatch.
 func Test_registry_Resolve_emptyRegistryReturnsErrNoMatch(t *testing.T) {
+	t.Parallel()
+
 	// Invariant: an empty registry produces ErrNoMatch for any step text.
 	reset()
 
@@ -552,6 +576,8 @@ func Test_registry_Resolve_emptyRegistryReturnsErrNoMatch(t *testing.T) {
 // within the same layer, a longer (more specific) pattern is tried before a
 // shorter one and wins when both could structurally match.
 func Test_registry_Resolve_longerPatternPreferredWithinSameLayer(t *testing.T) {
+	t.Parallel()
+
 	// Invariant: among eligible patterns of the same layer, the longer pattern
 	// (by character count) is tried first and wins on a match.
 	reset()

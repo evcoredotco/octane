@@ -1,4 +1,5 @@
 // Package story_test — black-box tests for the story parser (T-001-31).
+
 package story_test
 
 import (
@@ -45,8 +46,6 @@ func TestDeterminism(t *testing.T) {
 	}
 
 	for _, p := range storyPaths {
-		p := p // capture for sub-test
-
 		t.Run(filepath.ToSlash(p), func(t *testing.T) {
 			t.Parallel()
 			runDeterminismCheck(t, p)
@@ -62,7 +61,7 @@ func runDeterminismCheck(t *testing.T, path string) {
 
 	src, readErr := os.ReadFile(
 		path,
-	) //nolint:gosec // test file, path from walk
+	)
 	if readErr != nil {
 		t.Fatalf("reading %s: %v", path, readErr)
 	}

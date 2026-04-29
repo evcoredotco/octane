@@ -6,6 +6,7 @@
 // AC2: Given two keyword registrations with the same (Layer, OCPPVersion,
 // Pattern) tuple, when the second Register call executes, then the program
 // panics with a message naming both registration sites.
+
 package registry
 
 import (
@@ -78,6 +79,8 @@ func mustPanic(t *testing.T, callFunc func()) string {
 // Tests in this file mutate the global registry and must NOT call
 // t.Parallel() to prevent interference between test cases.
 func Test_registry_Register_collisionPanics(t *testing.T) {
+	t.Parallel()
+
 	// Invariant: second Register on same (Pattern, Layer, OCPPVersion) panics.
 	reset()
 
@@ -102,6 +105,8 @@ func Test_registry_Register_collisionPanics(t *testing.T) {
 // panic message contains a non-empty "existing registrant at" location,
 // which corresponds to the first Register call site (the original registrant).
 func Test_registry_Register_collisionPanicNamesOriginalSite(t *testing.T) {
+	t.Parallel()
+
 	// Invariant: panic message references the original registrant's call site.
 	reset()
 
@@ -136,6 +141,8 @@ func Test_registry_Register_collisionPanicNamesOriginalSite(t *testing.T) {
 // panic message contains a non-empty "new registrant at" location,
 // which corresponds to the second (colliding) Register call site.
 func Test_registry_Register_collisionPanicNamesNewSite(t *testing.T) {
+	t.Parallel()
+
 	// Invariant: panic message references the new (duplicate) registrant's call site.
 	reset()
 
@@ -173,6 +180,8 @@ func Test_registry_Register_collisionPanicNamesNewSite(t *testing.T) {
 func Test_registry_Register_collisionPanicMessageContainsBothSites(
 	t *testing.T,
 ) {
+	t.Parallel()
+
 	// Invariant: panic message carries both call-site strings simultaneously.
 	reset()
 
@@ -217,6 +226,8 @@ func Test_registry_Register_collisionPanicMessageContainsBothSites(
 func Test_registry_Register_differentLayerSamePatternDoesNotPanic(
 	t *testing.T,
 ) {
+	t.Parallel()
+
 	// Invariant: (Pattern, Layer=Primitive, OCPPVersion) and
 	// (Pattern, Layer=Domain, OCPPVersion) are distinct keys — no panic.
 	reset()

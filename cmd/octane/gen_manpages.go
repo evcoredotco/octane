@@ -1,6 +1,7 @@
 // T-006-50: hidden gen-manpages subcommand invoked by `make man`.
 // It generates Section 1 roff man pages for every cobra subcommand
 // via github.com/spf13/cobra/doc.
+
 package main
 
 import (

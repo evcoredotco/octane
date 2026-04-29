@@ -2,6 +2,7 @@
 //
 // Task: T-005-51
 // AC2: Cache hit on second run: both stories are served from cache on re-run.
+
 package integration_test
 
 import (

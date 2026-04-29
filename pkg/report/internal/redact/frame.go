@@ -2,6 +2,7 @@
 // This file implements OCPP-J wire frame redaction.
 //
 // Task: T-007-10 (security review fix).
+
 package redact
 
 import (

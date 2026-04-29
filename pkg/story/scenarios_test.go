@@ -4,6 +4,7 @@
 // TestScenariosParseClean covers AC8: every story under scenarios/ must parse
 // without error. TestScenariosGolden compares serialized ASTs against golden
 // JSON fixtures, catching unintended AST structure changes.
+
 package story_test
 
 import (
@@ -29,14 +30,12 @@ func TestScenariosParseClean(t *testing.T) {
 	paths := collectStoryPaths(t, filepath.Join("..", "..", "scenarios"))
 
 	for _, path := range paths {
-		path := path // capture
-
 		t.Run(filepath.ToSlash(path), func(t *testing.T) {
 			t.Parallel()
 
 			src, err := os.ReadFile(
 				path,
-			) //nolint:gosec // test fixture path from WalkDir
+			)
 			if err != nil {
 				t.Fatalf("read %s: %v", path, err)
 			}
@@ -63,8 +62,6 @@ func TestScenariosGolden(t *testing.T) {
 	paths := collectStoryPaths(t, scenariosRoot)
 
 	for _, path := range paths {
-		path := path // capture
-
 		t.Run(filepath.ToSlash(path), func(t *testing.T) {
 			t.Parallel()
 			runGoldenCheck(t, path, scenariosRoot, goldenRoot)
@@ -85,7 +82,7 @@ func runGoldenCheck(
 
 	src, err := os.ReadFile(
 		path,
-	) //nolint:gosec // test fixture path from WalkDir
+	)
 	if err != nil {
 		t.Fatalf("read %s: %v", path, err)
 	}
@@ -114,7 +111,7 @@ func runGoldenCheck(
 
 	existing, readErr := os.ReadFile(
 		goldenPath,
-	) //nolint:gosec // known test data path
+	)
 	if os.IsNotExist(readErr) {
 		// First-run bootstrap: write the golden file.
 		writeGolden(t, goldenPath, got)

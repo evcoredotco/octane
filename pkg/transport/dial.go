@@ -172,7 +172,7 @@ func buildTLSConfig(safeURL string, opts DialOptions) *tls.Config {
 				"banner-level finding",
 		)
 
-		cfg.InsecureSkipVerify = true //nolint:gosec // G402: operator opt-in
+		cfg.InsecureSkipVerify = true
 	}
 
 	return cfg

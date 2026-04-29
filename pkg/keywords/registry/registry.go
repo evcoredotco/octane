@@ -76,7 +76,7 @@ var global = struct { //nolint:exhaustruct // zero value is correct initial stat
 func Register(keyword api.Keyword) {
 	caller := callerLocation(
 		2,
-	) //nolint:mnd // 2 = skip runtime.Callers + this func
+	)
 
 	key := registryKey{
 		layer:   keyword.Layer,

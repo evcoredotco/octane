@@ -4,6 +4,7 @@
 // that consume story execution requests from a channel and report
 // their results back to the scheduler via a completion channel.
 // The model follows ADR 0019 §"Worker-pool model".
+
 package runner
 
 import (
