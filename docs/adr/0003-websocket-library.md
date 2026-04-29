@@ -72,5 +72,5 @@ WebSocket dependency for OCTANE. Pin to a specific minor version in
 ## References
 
 - Constitution: principles V, X
-- nhooyr.io/websocket: https://github.com/coder/websocket
+- nhooyr.io/websocket: <https://github.com/coder/websocket>
 - OCPP-J transport spec: OCA OCPP-J 1.6 §3 / OCPP-J 1.6 §3 / OCPP-J 2.1 §3

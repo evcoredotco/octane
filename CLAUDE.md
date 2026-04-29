@@ -1,14 +1,23 @@
 # CLAUDE.md — OCTANE
 
-> Claude Code project memory. Loaded automatically at session start.
-> See `AGENTS.md` for the cross-tool agent contract; this file adds
-> Claude-specific guidance only.
+> **What this file is:** Claude Code-specific dispatch rules, tool
+> shortcuts, file-scope reminders, and domain refusals that extend the
+> cross-tool agent contract in `AGENTS.md`.
+>
+> **What this file is not:** a substitute for `AGENTS.md`. Every rule in
+> `AGENTS.md` is binding here. Where this file and `AGENTS.md`
+> contradict, `AGENTS.md` wins. When in doubt about agent scope,
+> responsibility, or workflow, read `AGENTS.md` first.
+>
+> **When NOT to use this file:** if you need the binding agent contract,
+> lane definitions, or spec-driven workflow — use `AGENTS.md`. This file
+> adds Claude-specific shortcuts on top, it does not replace anything.
 
 ## Loading order
 
 1. `.specify/memory/constitution.md` — binding principles
-2. `AGENTS.md` — agent contract (read first)
-3. This file — Claude-specific overrides and shortcuts
+2. `AGENTS.md` — agent contract (read first, always authoritative)
+3. This file — Claude Code-specific overrides and shortcuts
 4. Active spec under `specs/<current-branch>/`
 
 ## Default agent dispatch
@@ -57,14 +66,20 @@ intermediate result.
 
 ## File scope reminders for the main thread
 
-The main Claude session (no subagent) may **read** anything but should
-**write** only:
+The main Claude session (no subagent) may **read** anything.
 
-- `specs/<active>/` — when the user is in spec/plan/tasks mode
-- `docs/adr/` — when drafting an ADR
-- this file (`CLAUDE.md`) and `AGENTS.md` — only on explicit user request
+**Write targets** (main thread only — no subagent needed):
 
-For everything else, delegate to the appropriate subagent.
+| Condition | Write target |
+|-----------|-------------|
+| User is in spec/plan/tasks mode | `specs/<active>/` |
+| User asks to draft an ADR | `docs/adr/` |
+| User explicitly requests | `CLAUDE.md`, `AGENTS.md` |
+
+**Everything else is delegated.** If a task touches `cmd/`, `internal/`,
+`pkg/`, `.github/`, `action/`, `*_test.go`, or `docs/` prose, delegate
+to the appropriate subagent per the roster in `AGENTS.md §5`. Do not
+write to those paths directly from the main thread.
 
 ## Things Claude should refuse to do
 
@@ -77,6 +92,42 @@ For everything else, delegate to the appropriate subagent.
   All OCPP 1.6 types **must** come from `github.com/evcoreco/ocpp16types`
   (ADR 0020). If the required type is missing from that module, stop and
   instruct the user to contribute it upstream first.
+- Construct any OCPP 1.6 request or response message outside of the
+  constructors exported by `github.com/evcoreco/ocpp16messages` (ADR 0020).
+  Raw struct literals for OCPP 1.6 messages are forbidden. If the required
+  message sub-package is missing, stop and instruct the user to contribute
+  it upstream first.
+- Parse, construct, or marshal any OCPP-J JSON message (Call, CallResult,
+  CallError) outside of `github.com/evcoreco/ocpp16j` (ADR 0020).
+  Specifically forbidden: calling `json.Unmarshal` directly against OCPP-J
+  arrays, hand-assembling `[2,"id","Action",{...}]` literals, and building
+  `UniqueId` values via raw string casts. All JSON framing **must** go through
+  `ocpp16json.Parse()`, `ocpp16json.NewCall()`, `ocpp16json.NewCallResult()`,
+  `ocpp16json.NewCallError()`, and `ocpp16json.NewUniqueId()`. Payload decode
+  **must** use `ocpp16json.Registry` + `ocpp16json.JSONDecoder[Input, Output]`.
+  If the required feature is missing from `ocpp16j`, stop and instruct the
+  user to contribute it upstream first.
+
+## EVCore OCPP 1.6 three-layer standard
+
+> **Why this is here:** The three rules in "Things Claude should refuse"
+> above all reference this standard. Every agent working in OCTANE must
+> know the layer boundaries. Canonical reference: ADR 0020.
+
+```
+JSON bytes  →  ocpp16j (Parse/Marshal/Validate)  →  ocpp16messages (Req/Conf)
+                                                          ↓
+                                                     ocpp16types (field types, enums)
+```
+
+| Layer | Module | Scope |
+|-------|--------|-------|
+| JSON framing | `github.com/evcoreco/ocpp16j` | Call / CallResult / CallError envelopes, UniqueId, ErrorCode, Registry |
+| Message construction | `github.com/evcoreco/ocpp16messages` | `Req()` / `Conf()` constructor pairs per OCPP action |
+| Data types | `github.com/evcoreco/ocpp16types` | CiString, DateTime, enums, sub-objects |
+
+All three are first-party EVCore infrastructure and must be pinned as direct
+`go.mod` dependencies (never `// indirect`).
 
 ## Quick references
 

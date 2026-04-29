@@ -10,15 +10,15 @@ subsequent pipeline runs skip those stories when nothing has changed.
 
 Each story execution produces a cache entry keyed by the SHA-256 of:
 
-| Field              | Source                                                         |
-|--------------------|----------------------------------------------------------------|
-| `test_id`          | Story `Id` Meta key                                           |
-| `scope_key`        | Station handle, run ID, or empty string (per scope type)      |
-| `csms_endpoint_sha`| SHA-256 of the CSMS URL, subprotocol, and auth mode           |
-| `octane_version`   | Build version of the `octane` binary                          |
-| `ocpp_version`     | OCPP version from story Meta or run config                    |
-| `story_content_sha`| SHA-256 of the story file and all transitive prerequisites    |
-| `parameter_sha`    | SHA-256 of bound parameter values                             |
+| Field               | Source                                                     |
+|---------------------|------------------------------------------------------------|
+| `test_id`           | Story `Id` Meta key                                        |
+| `scope_key`         | Station handle, run ID, or empty string (per scope type)   |
+| `csms_endpoint_sha` | SHA-256 of the CSMS URL, subprotocol, and auth mode        |
+| `octane_version`    | Build version of the `octane` binary                       |
+| `ocpp_version`      | OCPP version from story Meta or run config                 |
+| `story_content_sha` | SHA-256 of the story file and all transitive prerequisites |
+| `parameter_sha`     | SHA-256 of bound parameter values                          |
 
 Any change to any field produces a different key, so a modified story, a new
 CSMS endpoint, or an OCTANE upgrade automatically invalidates relevant entries.

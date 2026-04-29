@@ -29,12 +29,12 @@ Two design choices need pinning:
 
 ### Shells supported in v1
 
-| Shell | Status | Install path |
-|-------|--------|--------------|
-| bash  | first-class | `/usr/share/bash-completion/completions/octane` |
-| zsh   | first-class | `/usr/share/zsh/vendor-completions/_octane` |
-| fish  | tracked, not v1 | follow-up ADR |
-| PowerShell | tracked, not v1 | follow-up ADR |
+| Shell      | Status          | Install path                                    |
+|------------|-----------------|-------------------------------------------------|
+| bash       | first-class     | `/usr/share/bash-completion/completions/octane` |
+| zsh        | first-class     | `/usr/share/zsh/vendor-completions/_octane`     |
+| fish       | tracked, not v1 | follow-up ADR                                   |
+| PowerShell | tracked, not v1 | follow-up ADR                                   |
 
 The `octane completion <shell>` subcommand emits the script for any
 of bash, zsh, fish, or PowerShell — cobra produces them all
@@ -54,14 +54,14 @@ These are free; cobra emits them from the CLI definition.
 
 The following arguments and flag values are completed dynamically:
 
-| Token | Source | Example |
-|-------|--------|---------|
-| `octane run <PATH>` | filesystem walk for `*.story` files | `octane run scenarios/<TAB>` |
-| `--profile <NAME>` | local cache + Go module index | `octane run --profile <TAB>` |
-| `octane keywords show <NAME>` | registered keyword library | `octane keywords show station<TAB>` |
-| `--config <PATH>` | filesystem walk for `*.yml`/`*.yaml` | `octane run --config <TAB>` |
-| `octane validate <SUBJECT>` | enum: `config`, `story`, `profile` | `octane validate <TAB>` |
-| `--ocpp-version <VERSION>` | enum: `1.6`, `1.6`, `2.1` | `--ocpp-version <TAB>` |
+| Token                         | Source                               | Example                             |
+|-------------------------------|--------------------------------------|-------------------------------------|
+| `octane run <PATH>`           | filesystem walk for `*.story` files  | `octane run scenarios/<TAB>`        |
+| `--profile <NAME>`            | local cache + Go module index        | `octane run --profile <TAB>`        |
+| `octane keywords show <NAME>` | registered keyword library           | `octane keywords show station<TAB>` |
+| `--config <PATH>`             | filesystem walk for `*.yml`/`*.yaml` | `octane run --config <TAB>`         |
+| `octane validate <SUBJECT>`   | enum: `config`, `story`, `profile`   | `octane validate <TAB>`             |
+| `--ocpp-version <VERSION>`    | enum: `1.6`, `1.6`, `2.1`            | `--ocpp-version <TAB>`              |
 
 ### Security boundary — read-only and side-effect-free
 
@@ -168,4 +168,4 @@ or `database/sql`. The vettool ships in `internal/tools/`.
 - ADR 0020 (distribution)
 - ADR 0011 (manual pages)
 - Cobra completion docs:
-  https://github.com/spf13/cobra/blob/main/site/content/completions/_index.md
+  <https://github.com/spf13/cobra/blob/main/site/content/completions/_index.md>
