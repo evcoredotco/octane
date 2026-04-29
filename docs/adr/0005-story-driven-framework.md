@@ -32,15 +32,15 @@ Adopt a **story-driven conformance framework** modeled on the
 architecture of Robot Framework but implemented natively in Go.
 OCTANE becomes a runner over three layered concepts:
 
-| Layer | Artifact | Owner |
-|-------|----------|-------|
-| Specification | `.story` files (Gherkin-flavored DSL, ADR 0006) | OCTANE project |
-| Execution | Two-layer keyword library: primitive + domain (ADR 0007) | OCTANE project |
-| Connection | YAML metadata describing how to reach the CSMS (ADR 0010) | Operator (user) |
+| Layer         | Artifact                                                  | Owner           |
+|---------------|-----------------------------------------------------------|-----------------|
+| Specification | `.story` files (Gherkin-flavored DSL, ADR 0006)           | OCTANE project  |
+| Execution     | Two-layer keyword library: primitive + domain (ADR 0007)  | OCTANE project  |
+| Connection    | YAML metadata describing how to reach the CSMS (ADR 0010) | Operator (user) |
 
 The runtime contract is:
 
-```
+```text
 octane run \
   --connection citrineos \
   --story scenarios/TC_B_01_CS.story
@@ -73,7 +73,7 @@ runnable interactively, skipped automatically in CI mode.
 This bounded claim is documented prominently in the published
 report:
 
-```
+```text
 Wire conformance:        87/120 scenarios (PASS: 84, FAIL: 3)
 Operator-assisted:       12 scenarios skipped (CI mode)
 Overall conformance:     wire-tier
@@ -139,4 +139,4 @@ Overall conformance:     wire-tier
 - ADR 0008 (multi-station orchestration)
 - ADR 0009 (Robot Framework output.xml compatibility)
 - ADR 0010 (connection profiles)
-- Robot Framework: https://robotframework.org/
+- Robot Framework: <https://robotframework.org/>

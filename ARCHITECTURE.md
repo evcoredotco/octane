@@ -1,18 +1,27 @@
 # OCTANE — Architecture
 
-> **Audience:** engineers, certification reviewers, and contributors who
-> want a single document explaining how OCTANE is designed and why. It
-> consolidates the ratified ADRs and the constitution into a coherent
-> narrative. Where this document and an ADR disagree, the ADR wins —
-> this is summary, not specification.
+> **What this document is:** a design narrative that consolidates the
+> ratified ADRs and constitution into a single readable reference. It is
+> a *summary*, not a specification — where this document and an ADR
+> disagree, the ADR wins.
 >
-> **Scope:** OCTANE v0 (pre-alpha). Decisions tracked through ADR 0013.
+> **What this document is not:** a specification, a test plan, or an
+> implementation guide. For binding rules read the constitution
+> (`.specify/memory/constitution.md`) and the individual ADRs in
+> `docs/adr/`. For agent operating rules read `AGENTS.md`.
 >
-> **Last reviewed:** 2026-04-26
+> **Audience:** engineers, certification reviewers, and contributors.
+>
+> **Scope:** OCTANE v0 (pre-alpha). Decisions tracked through ADR 0020.
+> **Last reviewed:** 2026-04-29
 
 ---
 
 ## 1. What OCTANE is
+
+**In one sentence:** OCTANE drives an unmodified CSMS over OCPP-J 1.6
+and validates wire-level protocol conformance against the published
+specification — without requiring any changes to the CSMS under test.
 
 OCTANE — *OCPP Conformance Testing & Network Evaluation* — is an
 open-source conformance harness for OCPP 1.6J
@@ -38,20 +47,20 @@ OCTANE's constitution (`.specify/memory/constitution.md`, currently at
 v1.2.0) is the only document that overrides the rest. Every spec, ADR,
 and design decision must comply with it. The principles, in summary:
 
-| # | Principle | Operational meaning |
-|---|-----------|---------------------|
-| I | Conformance Above Convenience | Every conformance test traces to a section of the OCPP specification. |
-| II | Two Distribution Surfaces, One Engine | CLI and Action expose the same engine; no surface-only features. |
-| III | Reference-Validated | Every test passes against a pinned CitrineOS commit before being marked stable. |
-| IV | Determinism and Reproducibility | Same inputs, same outputs (modulo timestamps). Seeded RNG, injected clock, sorted serializers. |
-| V | Go-First, Stdlib-Heavy | Go 1.23. Third-party deps require an ADR. WebSocket is the single allowed exception. |
-| VI | Test Cases Are Code, Not Configuration | Stories are a declarative *surface*; the keyword library that executes them is typed Go. |
-| VII | Public API Stability | `pkg/` follows semver. `internal/` does not. |
-| VIII | Spec-Driven Development | Code does not land before its spec merges. |
-| IX | AI Agents Are Bounded Contributors | Agents have declared scopes; agent commits get human sign-off. |
-| X | Security and Compliance Are Continuous | TLS on by default, secrets never in artefacts, dependencies scanned on every PR. |
-| XI | Conformance Is Verified On the Wire | OCTANE never demands changes to the CSMS, never uses admin APIs, never depends on a vendor adapter. |
-| XII | Scenarios Are Declarative; Adaptation Lives in Profiles | Stories carry no CSMS-specific assumptions; profiles carry no conformance logic. |
+| #    | Principle                                               | Operational meaning                                                                                 |
+|------|---------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
+| I    | Conformance Above Convenience                           | Every conformance test traces to a section of the OCPP specification.                               |
+| II   | Two Distribution Surfaces, One Engine                   | CLI and Action expose the same engine; no surface-only features.                                    |
+| III  | Reference-Validated                                     | Every test passes against a pinned CitrineOS commit before being marked stable.                     |
+| IV   | Determinism and Reproducibility                         | Same inputs, same outputs (modulo timestamps). Seeded RNG, injected clock, sorted serializers.      |
+| V    | Go-First, Stdlib-Heavy                                  | Go 1.26. Third-party deps require an ADR. WebSocket is the single allowed exception.                |
+| VI   | Test Cases Are Code, Not Configuration                  | Stories are a declarative *surface*; the keyword library that executes them is typed Go.            |
+| VII  | Public API Stability                                    | `pkg/` follows semver. `internal/` does not.                                                        |
+| VIII | Spec-Driven Development                                 | Code does not land before its spec merges.                                                          |
+| IX   | AI Agents Are Bounded Contributors                      | Agents have declared scopes; agent commits get human sign-off.                                      |
+| X    | Security and Compliance Are Continuous                  | TLS on by default, secrets never in artefacts, dependencies scanned on every PR.                    |
+| XI   | Conformance Is Verified On the Wire                     | OCTANE never demands changes to the CSMS, never uses admin APIs, never depends on a vendor adapter. |
+| XII  | Scenarios Are Declarative; Adaptation Lives in Profiles | Stories carry no CSMS-specific assumptions; profiles carry no conformance logic.                    |
 
 Principles XI and XII are the two pivots that distinguish the current
 design from earlier drafts. They emerged from a deliberate rejection
@@ -59,15 +68,31 @@ of an adapter-based model (see §12) and align OCTANE with a
 **zero-cooperation-cost** adoption philosophy: any CSMS team can
 run OCTANE against an unmodified deployment with one CLI command.
 
+## 2.1 What OCTANE does NOT do
+
+These non-responsibilities are architectural constants, not temporary
+limitations. They will not change without a constitution amendment.
+
+| OCTANE does NOT… | Responsibility delegated to |
+|------------------|-----------------------------|
+| Modify CSMS state or call CSMS admin APIs | Ruled out by principle XI; OCTANE is read-only on the wire |
+| Accept per-CSMS keyword overrides or behavioral tolerance layers | Ruled out by principle XII; adaptation belongs in connection profiles |
+| Guarantee distributed cross-machine cache coherence | Delegated to CI infrastructure (cache artifacts, shared runners) |
+| Validate CSMS-internal business logic beyond the wire spec | Out of scope; OCTANE tests OCPP-J protocol conformance only |
+| Require any deployment changes on the CSMS side | Zero-cooperation-cost adoption is a hard constraint, not a goal |
+| Encode OCPP payload types or message constructors locally | Delegated to `github.com/evcoreco/ocpp16types` and `ocpp16messages` (ADR 0020) |
+| Parse or frame OCPP-J JSON arrays inline | Delegated to `github.com/evcoreco/ocpp16j` (ADR 0020) |
+| Implement OCPP 2.0.1 or 2.1 | Out of scope; OCTANE targets OCPP 1.6J only |
+
 ## 3. The three-layer model
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────┐
 │  Layer 1 — Stories (.story files)                                │
 │  ──────────────────────────────────────────────────────────────  │
-│  Declarative Gherkin-flavored scenarios. One per OCPP section/  │
-│  protocol behavior under test.                                  │
-│  Live in scenarios/v16/, scenarios/, scenarios/v21/.        │
+│  Declarative Gherkin-flavored scenarios. One per OCPP section/   │
+│  protocol behavior under test.                                   │
+│  Live in scenarios/v16/, scenarios/, scenarios/v21/.             │
 │  Read by certification reviewers. Version-controlled. ADR 0006.  │
 └──────────────────────────────────────────────────────────────────┘
                               ▼  resolves keywords against
@@ -109,7 +134,7 @@ A `.story` file declares one OCPP scenario in three required sections
 Indentation is whitespace-significant; tabs are forbidden; the parser
 is recursive-descent with no third-party dependency.
 
-```
+```yml
 Meta
     Spec-Ref:    OCPP-1.6 / TC_048_1_CSMS
     Title:       Reservation of a Connector — Faulted
@@ -144,7 +169,7 @@ schema is sketched but not yet ratified into an ADR.
 
 The grammar is small enough to fit a recursive-descent parser in
 ~600–800 lines of Go (target). Diagnostic quality (line + column
-+ Levenshtein-suggested keyword on resolution failure) is where most
+\+ Levenshtein-suggested keyword on resolution failure) is where most
 of the engineering goes.
 
 Defined in **ADR 0006**.
@@ -158,7 +183,7 @@ caught in CI, never at runtime.
 
 ### Two layers, deterministic resolution
 
-```
+```yml
 Step text:
     "the CSMS sends ReserveNow with connectorId 1
      and idTag "VID:0001" to station "CP01" within 30 seconds"
@@ -202,59 +227,102 @@ a startup panic.
 The keyword library is the architectural equivalent of a Robot
 Framework Python library:
 
-| Robot Framework | OCTANE |
-|---|---|
-| `@keyword("Pattern ${arg}")` decorator | `registry.Register(api.Keyword{Pattern: "..."})` |
-| Library file (single layer) | `LayerDomain` for OCPP semantics, `LayerPrimitive` for transport |
-| `types={"count": int}` | `{name:int}` placeholders |
-| `raise AssertionError` | `return fmt.Errorf(...)` |
-| `from robot.api import logger` | `state.Logf(...)` |
-| Per-test scope | `api.State` per-scenario by construction |
+| Robot Framework                        | OCTANE                                                           |
+|----------------------------------------|------------------------------------------------------------------|
+| `@keyword("Pattern ${arg}")` decorator | `registry.Register(api.Keyword{Pattern: "..."})`                 |
+| Library file (single layer)            | `LayerDomain` for OCPP semantics, `LayerPrimitive` for transport |
+| `types={"count": int}`                 | `{name:int}` placeholders                                        |
+| `raise AssertionError`                 | `return fmt.Errorf(...)`                                         |
+| `from robot.api import logger`         | `state.Logf(...)`                                                |
+| Per-test scope                         | `api.State` per-scenario by construction                         |
 
 OCTANE does not use Robot Framework at runtime, but borrows its
 mental model and emits its `output.xml` format (see §8).
 
 Defined in **ADR 0007**.
 
-## 6. Shared OCPP 1.6 data types
+## 6. Shared OCPP 1.6 data types and messages
 
-All OCPP 1.6 message structs, field types, and enumeration constants used
-anywhere in OCTANE **must** be imported from the EVCore shared type module:
+Two first-party EVCore modules are the **exclusive** source of all OCPP 1.6
+data structures in OCTANE. Neither module carries external transitive
+dependencies.
 
+```text
+github.com/evcoreco/ocpp16types     — field types, enumerations, sub-objects
+github.com/evcoreco/ocpp16messages  — request / response message constructors
 ```
-github.com/evcoreco/ocpp16types
-```
 
-This is a **hard architectural rule**, not a convention. The intent is
-that every EVCore application that speaks OCPP 1.6 operates on identical
-Go types — same field names, same JSON tags, same enum values, same
-validation logic — so that a protocol-level discrepancy can never hide
-behind a local type variant.
+These are **hard architectural rules**, not conventions. Every EVCore
+application that speaks OCPP 1.6 operates on identical Go types and
+identical constructor paths — same field names, same JSON tags, same enum
+values, same validation logic — so that a protocol-level discrepancy can
+never hide behind a local type variant or a hand-rolled struct literal.
 
-| Category | Examples |
-|----------|---------|
-| Request / response structs | `BootNotificationRequest`, `BootNotificationResponse`, `HeartbeatRequest` |
-| Notification structs | `MeterValuesRequest`, `StatusNotificationRequest` |
-| Enumerations | `RegistrationStatus`, `ChargePointStatus`, `AuthorizationStatus` |
-| Sub-objects | `IdTagInfo`, `MeterValue`, `SampledValue` |
-| Field-level types | `CiString20Type`, `CiString50Type` |
+### `ocpp16types` — primitive data types
 
-Local re-declarations — even for test packages — are **forbidden**. When
-`ocpp16types` does not yet expose a needed type, the correct action is to
-contribute the type to the upstream module first, then unblock the OCTANE
-task once the release is tagged.
+Use for field-level constrained types, enumerations, and composite
+sub-objects whenever no message construction is involved.
+
+| Category                      | Examples                                                                                                                                                                                |
+|-------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Field-level constrained types | `CiString20Type`, `CiString50Type`, `CiString255Type`, `CiString500Type`, `DateTime`, `Integer`                                                                                         |
+| Enumerations                  | `AuthorizationStatus`, `ChargePointStatus`, `RegistrationStatus`, `DiagnosticsStatus`, `ChargingProfileKindType`, `ChargingRateUnit`, `Measurand`, `Phase`, `Location`, `UnitOfMeasure` |
+| Composite sub-objects         | `IdTagInfo`, `IDToken`, `MeterValue`, `SampledValue`, `ChargingSchedule`, `ChargingSchedulePeriod`, `ChargingProfile`, `AuthorizationData`, `KeyValue`                                  |
+| Error sentinels               | `ErrEmptyValue`, `ErrInvalidValue`                                                                                                                                                      |
 
 ```go
 import ocpp16 "github.com/evcoreco/ocpp16types"
 
-// Keyword function bodies reference types as:
-//   ocpp16.BootNotificationRequest
-//   ocpp16.RegistrationStatus
+// Usage in keyword functions:
 //   ocpp16.AuthorizationStatus
+//   ocpp16.NewIDTagInfo(ocpp16.AuthorizationStatusAccepted)
+//   ocpp16.RegistrationStatus
 ```
 
-This rule is enforced at code-review time. The `reviewer` agent rejects
-any PR that introduces a locally-declared OCPP 1.6 data type.
+### `ocpp16messages` — message construction
+
+Use for building every OCPP 1.6 request and confirmation frame. Each
+message lives in its own sub-package and exports a `Req(ReqInput)` /
+`Conf(ConfInput)` constructor pair. Constructors validate all fields and
+return a joined error for every violation — catching malformed messages at
+construction time, not on the wire.
+
+```go
+import "github.com/evcoreco/ocpp16messages/bootnotification"
+import "github.com/evcoreco/ocpp16messages/authorize"
+import "github.com/evcoreco/ocpp16messages/starttransaction"
+// ... one import per message sub-package as needed
+
+// Building a request:
+req, err := bootnotification.Req(bootnotification.ReqInput{
+    ChargePointModel:  "Model-X",
+    ChargePointVendor: "VendorCo",
+})
+
+// Building a confirmation:
+conf, err := bootnotification.Conf(bootnotification.ConfInput{
+    CurrentTime: ocpp16.DateTime(time.Now()),
+    Interval:    300,
+    Status:      ocpp16.RegistrationStatusAccepted,
+})
+```
+
+`ocpp16messages` re-exports the `ocpp16types` types package internally. A
+file that uses both message constructors and field types may reach the types
+through that re-export, but a direct `ocpp16types` import is preferred for
+files that only need enumerations or field types.
+
+### What is forbidden
+
+- Local re-declarations of any OCPP 1.6 type, even in test packages.
+- Raw struct literals that construct request or response message bodies
+  without using the `Req` / `Conf` constructors from `ocpp16messages`.
+- Type aliases or shadow copies of spec-defined types anywhere in OCTANE.
+
+When either module does not yet expose a needed type or message, the correct
+action is to contribute it upstream first, then unblock the OCTANE task once
+the release is tagged. The `reviewer` agent rejects any PR that violates
+either rule.
 
 Defined in **ADR 0020**.
 
@@ -309,7 +377,7 @@ OCTANE models the test suite as a **directed acyclic graph of test
 cases**. Every story can be a prerequisite for another via the
 `Depends:` Meta key:
 
-```
+```yml
 Meta
     Name:     Connector reservation faulted
     Id:       connector_reservation_faulted
@@ -325,7 +393,7 @@ prerequisites in topological order, then executes the requested
 story. Each prerequisite is itself a story that may have its own
 dependencies. For the example above, the resolved chain is:
 
-```
+```text
 connector_reservation_faulted
   └── connector_status_available
         └── station_boot_accepted
@@ -349,10 +417,10 @@ live alongside each other under `scenarios/`; there is no separate
 When a prerequisite fails, dependent stories are **skipped**, not
 failed. The report distinguishes:
 
-| Status | Meaning |
-|--------|---------|
-| `passed` | Story ran and all assertions held. |
-| `failed` | Story ran and at least one assertion failed. |
+| Status    | Meaning                                          |
+|-----------|--------------------------------------------------|
+| `passed`  | Story ran and all assertions held.               |
+| `failed`  | Story ran and at least one assertion failed.     |
 | `skipped` | Story did not run because a prerequisite failed. |
 
 A skipped story carries a pointer to the failing prerequisite in its
@@ -379,7 +447,7 @@ file tree** at `$XDG_CACHE_HOME/octane/cache/` (overridable via
 `result.json` and an optional sibling `trace.json` with the wire
 frames.
 
-```
+```text
 $XDG_CACHE_HOME/octane/cache/
 ├── results/
 │   ├── ab/ab12cd34.../
@@ -398,15 +466,15 @@ inspection trivial.
 
 Each cache entry is keyed by the SHA-256 of the tuple:
 
-| Field | Source |
-|-------|--------|
-| `test_id` | story `Id` Meta key |
-| `scope_key` | station handle for `per-station`, run ID for `per-run`, empty for `global` |
-| `csms_endpoint_sha` | SHA-256 of (URL + subprotocol + auth-mode) |
-| `octane_version` | from build info |
-| `ocpp_version` | from story Meta or config |
-| `story_content_sha` | SHA-256 of story file + transitively all prerequisites' content |
-| `parameter_sha` | SHA-256 of bound parameters |
+| Field               | Source                                                                     |
+|---------------------|----------------------------------------------------------------------------|
+| `test_id`           | story `Id` Meta key                                                        |
+| `scope_key`         | station handle for `per-station`, run ID for `per-run`, empty for `global` |
+| `csms_endpoint_sha` | SHA-256 of (URL + subprotocol + auth-mode)                                 |
+| `octane_version`    | from build info                                                            |
+| `ocpp_version`      | from story Meta or config                                                  |
+| `story_content_sha` | SHA-256 of story file + transitively all prerequisites' content            |
+| `parameter_sha`     | SHA-256 of bound parameters                                                |
 
 A cached result is valid only if all fields match the current
 invocation. Editing any file in the dependency chain, upgrading
@@ -486,7 +554,7 @@ GitLab CI is analogous; full examples live in ADR 0016.
 
 ### Operator commands
 
-```
+```shell
 octane cache info     # cache directory, total size, entry count
 octane cache prune    # remove entries older than --max-age (default 30d)
 octane cache clear    # remove all cache content
@@ -504,7 +572,7 @@ Defined in **ADR 0016**.
 Many stateful OCPP scenarios are reachable on the wire by coordinating
 two or more simulated stations. A story declares the count in `Meta`:
 
-```
+```yml
 Meta
     Spec-Ref:    OCPP-1.6 / TC_E_07_CS
     Stations:    2
@@ -515,7 +583,7 @@ Steps reference stations by handle. Steps run sequentially in
 declared order; concurrency is opt-in via `Parallel ... End-Parallel`
 blocks:
 
-```
+```yml
 Parallel
     When  station "CP01" sends StartTransaction
     When  station "CP02" sends StartTransaction
@@ -533,10 +601,10 @@ Defined in **ADR 0008**.
 
 Every run produces two artefacts:
 
-| File | Format | Purpose |
-|------|--------|---------|
-| `report.json` | OCTANE-native JSON, byte-deterministic | Source of truth for certification |
-| `output.xml` | Robot Framework 7.x output schema | Ecosystem reporting (Allure, ReportPortal, Jenkins, GitLab, GitHub Actions) |
+| File          | Format                                 | Purpose                                                                     |
+|---------------|----------------------------------------|-----------------------------------------------------------------------------|
+| `report.json` | OCTANE-native JSON, byte-deterministic | Source of truth for certification                                           |
+| `output.xml`  | Robot Framework 7.x output schema      | Ecosystem reporting (Allure, ReportPortal, Jenkins, GitLab, GitHub Actions) |
 
 Both files are produced from the same in-memory report tree. They
 agree by construction.
@@ -559,7 +627,7 @@ Defined in **ADR 0009**.
 
 The canonical invocation is:
 
-```
+```shell
 octane run scenarios/v16/TC_048_1_CSMS.story
 octane run scenarios/                     # whole directory
 octane run scenarios/                           # everything
@@ -596,14 +664,14 @@ report:
 
 OCTANE distributes through standard Linux/macOS/Windows channels:
 
-| Channel | Path |
-|---------|------|
-| Debian/Ubuntu | `apt install octane` (via APT repo) |
-| Fedora/RHEL | `dnf install octane` (via RPM repo) |
-| macOS | `brew install evcoreco/octane/octane` |
-| Windows | `scoop install octane` |
-| Docker | `docker pull ghcr.io/evcoreco/octane` |
-| Direct | static binaries, signed via cosign, SBOM-attested |
+| Channel       | Path                                              |
+|---------------|---------------------------------------------------|
+| Debian/Ubuntu | `apt install octane` (via APT repo)               |
+| Fedora/RHEL   | `dnf install octane` (via RPM repo)               |
+| macOS         | `brew install evcoreco/octane/octane`             |
+| Windows       | `scoop install octane`                            |
+| Docker        | `docker pull ghcr.io/evcoreco/octane`             |
+| Direct        | static binaries, signed via cosign, SBOM-attested |
 
 Packaging is orchestrated by `goreleaser` reading `.goreleaser.yaml`
 and `packaging/nfpm.yaml`. Release artefacts include man pages, shell
@@ -613,12 +681,12 @@ completions, and the LICENSE.
 
 OCTANE ships professional Unix-style documentation (ADR 0011):
 
-| Section | Content | Tool |
-|---------|---------|------|
-| `man 1 octane`, `man 1 octane-run`, ... | Per-subcommand reference | Generated from cobra |
-| `man 5 octane.yml` | Config file reference | Hand-written via scdoc |
-| `man 5 octane.story` | Story DSL reference | Hand-written via scdoc |
-| `man 7 octane` | Concepts overview | Hand-written via scdoc |
+| Section                                 | Content                  | Tool                   |
+|-----------------------------------------|--------------------------|------------------------|
+| `man 1 octane`, `man 1 octane-run`, ... | Per-subcommand reference | Generated from cobra   |
+| `man 5 octane.yml`                      | Config file reference    | Hand-written via scdoc |
+| `man 5 octane.story`                    | Story DSL reference      | Hand-written via scdoc |
+| `man 7 octane`                          | Concepts overview        | Hand-written via scdoc |
 
 Shell completion (ADR 0012) ships for bash and zsh, with both static
 (subcommands, flags) and dynamic completion (story file paths,
@@ -681,7 +749,7 @@ ecosystem compatibility while keeping the core in Go.
 
 ## 14. Repository layout
 
-```
+```text
 octane/
 ├── .specify/
 │   ├── memory/
@@ -723,69 +791,69 @@ octane/
 └── .golangci.yaml                   # lint config (activates with code)
 ```
 
-> The `pkg/` directory tree and `go.mod` are intentionally absent.
-> All Go code is specced (ADRs 0007, 0015, 0016, 0017; specs 001
+The `pkg/` directory tree and `go.mod` are intentionally absent.
+All Go code is specced (ADRs 0007, 0015, 0016, 0017; specs 001
 > and 002) but not yet written. Implementation follows the
 > Spec-Kit workflow.
-
-## 15. ADR index
+> 
+> ## 15. ADR index
 
 All ADRs are active and accepted. The numbering is sequential without
 gaps; superseded design history was removed during a 2026-04-26
 cleanup so that new contributors see only the current design.
 
-| # | Title |
-|---|-------|
-| 0001 | Adopt Apache-2.0 License |
-| 0002 | Go as the Engine Language |
-| 0003 | WebSocket Library (`nhooyr.io/websocket`) |
-| 0004 | CitrineOS as the Reference CSMS |
-| 0005 | Story-Driven Conformance Framework |
-| 0006 | `.story` Gherkin-Flavored DSL |
-| 0007 | Keyword Library Layering — Primitive and Domain |
-| 0008 | Multi-Station Orchestration |
-| 0009 | Robot Framework `output.xml` Compatibility |
-| 0010 | Connection Profiles — User-Owned YAML |
-| 0011 | Manual Pages (Cobra + scdoc) |
-| 0012 | Shell Completion (bash + zsh, dynamic) |
-| 0013 | Web Documentation (Docusaurus) |
-| 0014 | Intellectual Property and Authoring Guidelines |
-| 0015 | Test Dependency Graph |
-| 0016 | Cache and Lock Subsystem — Content-Addressed File Tree |
-| 0018 | Determinism Primitives (Clock and Rand interfaces) |
-| 0019 | Runner Concurrency Model |
-| 0020 | Shared OCPP 1.6 Data Types via `ocpp16types` |
+| #    | Title                                                                          |
+|------|--------------------------------------------------------------------------------|
+| 0001 | Adopt Apache-2.0 License                                                       |
+| 0002 | Go as the Engine Language                                                      |
+| 0003 | WebSocket Library (`nhooyr.io/websocket`)                                      |
+| 0004 | CitrineOS as the Reference CSMS                                                |
+| 0005 | Story-Driven Conformance Framework                                             |
+| 0006 | `.story` Gherkin-Flavored DSL                                                  |
+| 0007 | Keyword Library Layering — Primitive and Domain                                |
+| 0008 | Multi-Station Orchestration                                                    |
+| 0009 | Robot Framework `output.xml` Compatibility                                     |
+| 0010 | Connection Profiles — User-Owned YAML                                          |
+| 0011 | Manual Pages (Cobra + scdoc)                                                   |
+| 0012 | Shell Completion (bash + zsh, dynamic)                                         |
+| 0013 | Web Documentation (Docusaurus)                                                 |
+| 0014 | Intellectual Property and Authoring Guidelines                                 |
+| 0015 | Test Dependency Graph                                                          |
+| 0016 | Cache and Lock Subsystem — Content-Addressed File Tree                         |
+| 0018 | Determinism Primitives (Clock and Rand interfaces)                             |
+| 0019 | Runner Concurrency Model                                                       |
+| 0020 | Shared OCPP 1.6 Data Types and Messages via `ocpp16types` and `ocpp16messages` |
 
 Forthcoming (sketched in conversation, not yet written):
 
-| Title | Notes |
-|-------|-------|
+| Title                                | Notes                                        |
+|--------------------------------------|----------------------------------------------|
 | CLI Surface and Subcommand Structure | Locks `octane run`, exit codes, global flags |
-| Configuration Resolution and Schema | XDG chain, YAML schema, validation |
-| Distribution Channels | `.deb`, `.rpm`, Homebrew, Scoop, signing |
-| Story Parameters | Project-supplied inputs in story Meta |
+| Configuration Resolution and Schema  | XDG chain, YAML schema, validation           |
+| Distribution Channels                | `.deb`, `.rpm`, Homebrew, Scoop, signing     |
+| Story Parameters                     | Project-supplied inputs in story Meta        |
 
 ## 16. What is implemented today
 
 This is honest scaffolding inventory, not aspirational marketing.
 
-| Component | Status |
-|-----------|--------|
-| Constitution v1.4.0 | Done |
-| ADRs 0001–0016 | Done |
-| Spec 001 (bootstrap engine), Spec 002 (story framework) | Specs merged, implementation pending |
-| `.specify/` Spec-Kit scaffolding | Done |
-| `.claude/agents/` (8 subagents) and `/slash` commands | Done |
-| Example `.story` files: 7 conformance stories (`boot_notification_accepted`, `boot_notification_malformed`, `authorize_concurrent_rejected`, `boot_sequence_accepted`, `connector_reservation_faulted`, `transaction_pluginfirst_accepted`, `transaction_identificationfirst_accepted`) and 3 helpers | Done |
-| All Go code (`pkg/keywords`, `pkg/wire`, `pkg/cache`, `pkg/engine`, `pkg/transport`, `pkg/story` parser, `cmd/octane`) | Specced, not implemented |
-| Sample connection profile YAML files (`connections/citrineos.yaml`, etc.) | Specced, not bootstrapped |
-| `CONTRIBUTING.md` and `docs/conformance-claim.md` | Done |
-| Man-page sources (§5, §7) | Done |
-| Man-page generation script + scdoc + cobra hooks | Done (cobra hooks fire when binary exists) |
-| Shell completion script | Done (depends on binary) |
-| Packaging (`.goreleaser.yaml`, `packaging/nfpm.yaml`) | Done (depends on binary) |
-| Docusaurus website skeleton | Done |
-| CI workflows (ci, reference, release, docs) | Done (Go jobs activate when code lands) |
+| Component                                                                                                                                                                                                                                                                                             | Status                                     |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------|
+| Constitution v1.4.0                                                                                                                                                                                                                                                                                   | Done                                       |
+| ADRs 0001–0016                                                                                                                                                                                                                                                                                        | Done                                       |
+| Spec 001 (bootstrap engine), Spec 002 (story framework)                                                                                                                                                                                                                                               | Specs merged, implementation pending       |
+| `.specify/` Spec-Kit scaffolding                                                                                                                                                                                                                                                                      | Done                                       |
+| `.claude/agents/` (8 subagents) and `/slash` commands                                                                                                                                                                                                                                                 | Done                                       |
+| Example `.story` files: 7 conformance stories (`boot_notification_accepted`, `boot_notification_malformed`, `authorize_concurrent_rejected`, `boot_sequence_accepted`, `connector_reservation_faulted`, `transaction_pluginfirst_accepted`, `transaction_identificationfirst_accepted`) and 3 helpers | Done                                       |
+| All Go code (`pkg/keywords`, `pkg/wire`, `pkg/cache`, `pkg/engine`, `pkg/transport`, `pkg/story` parser, `cmd/octane`)                                                                                                                                                                                | Specced, not implemented                   |
+| Sample connection profile YAML files (`connections/citrineos.yaml`, etc.)                                                                                                                                                                                                                             | Specced, not bootstrapped                  |
+| `CONTRIBUTING.md` and `docs/conformance-claim.md`                                                                                                                                                                                                                                                     | Done                                       |
+| Man-page sources (§5, §7)                                                                                                                                                                                                                                                                             | Done                                       |
+| Man-page generation script + scdoc + cobra hooks                                                                                                                                                                                                                                                      | Done (cobra hooks fire when binary exists) |
+| Shell completion script                                                                                                                                                                                                                                                                               | Done (depends on binary)                   |
+| Packaging (`.goreleaser.yaml`, `packaging/nfpm.yaml`)                                                                                                                                                                                                                                                 | Done (depends on binary)                   |
+| Docusaurus website skeleton                                                                                                                                                                                                                                                                           | Done                                       |
+| CI workflows (ci, reference, release, docs)                                                                                                                                                                                                                                                           | Done (Go jobs activate when code lands)    |
 
 The project is in a deliberate **design-complete, code-empty** state.
 All architectural decisions are committed in ADRs and specs; no Go

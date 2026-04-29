@@ -23,7 +23,7 @@ open-core CSMS), giving us shared idioms and pre-vetted Go conventions
 
 ## Decision
 
-OCTANE's engine, CLI, and Action entrypoint are written in **Go 1.23**.
+OCTANE's engine, CLI, and Action entrypoint are written in **Go 1.26**.
 
 ## Consequences
 

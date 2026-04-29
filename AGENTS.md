@@ -18,7 +18,7 @@ content here is binding for all of them.
 - **Reference CSMS during dev:** CitrineOS (pinned commit in
   `test/reference/citrineos.version`); a sample connection profile
   ships at `connections/citrineos.yaml`.
-- **Language:** Go 1.23
+- **Language:** Go 1.26
 - **License target:** Apache-2.0
 
 ## Non-negotiable rules
@@ -50,7 +50,7 @@ content here is binding for all of them.
 
 ## Spec-driven workflow
 
-```
+```text
 /specify "feature description"   → specs/NNN-feature/spec.md
 /plan                            → specs/NNN-feature/plan.md
 /tasks                           → specs/NNN-feature/tasks.md
@@ -63,16 +63,16 @@ out to them).
 
 ## Agent roster
 
-| Role | File | Scope |
-|------|------|-------|
-| Architect / Spec author | `.claude/agents/architect.md` | `specs/`, `docs/adr/`, `.specify/` |
-| Backend implementer    | `.claude/agents/backend.md`   | `cmd/`, `internal/`, `pkg/` (excluding `pkg/story/` and `pkg/keywords/`) |
-| Keyword author         | `.claude/agents/keyword-author.md` | `pkg/story/`, `pkg/keywords/`, `scenarios/`, `docs/keywords/` |
-| DevOps / Platform      | `.claude/agents/devops.md`    | `.github/`, `action/`, `Dockerfile`, `Makefile` |
-| QA / Test author       | `.claude/agents/qa.md`        | `*_test.go`, `test/`, fuzz corpora |
-| Security reviewer      | `.claude/agents/security.md`  | read-only across the repo; opens issues only |
-| Code reviewer          | `.claude/agents/reviewer.md`  | comments on diffs; no direct commits |
-| Documentation writer   | `.claude/agents/docs.md`      | `docs/` (excluding `docs/keywords/`), `README.md`, `CHANGELOG.md`, doc comments |
+| Role                    | File                               | Scope                                                                           |
+|-------------------------|------------------------------------|---------------------------------------------------------------------------------|
+| Architect / Spec author | `.claude/agents/architect.md`      | `specs/`, `docs/adr/`, `.specify/`                                              |
+| Backend implementer     | `.claude/agents/backend.md`        | `cmd/`, `internal/`, `pkg/` (excluding `pkg/story/` and `pkg/keywords/`)        |
+| Keyword author          | `.claude/agents/keyword-author.md` | `pkg/story/`, `pkg/keywords/`, `scenarios/`, `docs/keywords/`                   |
+| DevOps / Platform       | `.claude/agents/devops.md`         | `.github/`, `action/`, `Dockerfile`, `Makefile`                                 |
+| QA / Test author        | `.claude/agents/qa.md`             | `*_test.go`, `test/`, fuzz corpora                                              |
+| Security reviewer       | `.claude/agents/security.md`       | read-only across the repo; opens issues only                                    |
+| Code reviewer           | `.claude/agents/reviewer.md`       | comments on diffs; no direct commits                                            |
+| Documentation writer    | `.claude/agents/docs.md`           | `docs/` (excluding `docs/keywords/`), `README.md`, `CHANGELOG.md`, doc comments |
 
 ## Build and test
 

@@ -6,7 +6,7 @@ endpoint and want to verify its OCPP wire behavior.
 
 ## Prerequisites
 
-- **Go 1.23 or later** — required for the `go install` path.
+- **Go 1.26 or later** — required for the `go install` path.
 - Or **Docker** — the GHCR image includes the binary; no Go toolchain needed.
 - A reachable CSMS WebSocket endpoint (local or remote).
 

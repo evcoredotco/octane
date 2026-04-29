@@ -31,14 +31,14 @@ MODULE := github.com/evcoreco/octane
 .DEFAULT_GOAL := help
 
 .PHONY: help
-help: ## Show this help.
-	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} \
-		/^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+help: ## Display this help message, listing all available targets and their descriptions.
+	@awk 'BEGIN {FS = ":.*##"; printf "\n\033[1;34m${DOCKER_NAMESPACE}\033[0m\tCopyright (c) ${DATE} Alexis Sanchez\n \n\033[1;32mUsage:\033[0m\n  make \033[1;34m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[1;34m%-18s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1;33m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
 # ----------------------------------------------------------------------
 # Format / lint / test
 # ----------------------------------------------------------------------
 
+##@ Format / lint / test
 .PHONY: format
 format: ## Run gofmt, gofumpt, golines, gci.
 	$(GO) fmt $(PKG)
@@ -75,6 +75,7 @@ fuzz: ## Run fuzz targets for 30 seconds each.
 # Build
 # ----------------------------------------------------------------------
 
+##@ Build
 .PHONY: build
 build: ## Build the octane CLI.
 	mkdir -p bin
@@ -90,6 +91,7 @@ build-static: ## Build a static linux/amd64 binary for the Action image.
 # Action image
 # ----------------------------------------------------------------------
 
+##@ Action image
 .PHONY: action-image
 action-image: ## Build the published octane-action Docker image locally.
 	docker build -t octane-action:dev -f action/Dockerfile .
@@ -98,6 +100,7 @@ action-image: ## Build the published octane-action Docker image locally.
 # Spec helpers
 # ----------------------------------------------------------------------
 
+##@ Spec helpers
 .PHONY: spec-check
 spec-check: ## Validate every spec under specs/.
 	@for d in specs/*/; do \
@@ -132,6 +135,7 @@ pin-ocpp16types: ## Pin github.com/evcoreco/ocpp16types to its latest release (A
 # Documentation: man pages, shell completions, web site
 # ----------------------------------------------------------------------
 
+##@ Documentation: man pages, shell completions, web site
 .PHONY: man
 man: build ## Generate man pages (Section 1 from cobra, 5 and 7 from scdoc).
 	bash ./scripts/gen-manpages.sh
@@ -152,6 +156,7 @@ docs-serve: ## Run the Docusaurus dev server on http://localhost:3000.
 # Packaging
 # ----------------------------------------------------------------------
 
+##@ Packaging
 .PHONY: package
 package: build man completions ## Snapshot release: binaries + .deb + .rpm + Homebrew formula.
 	goreleaser release --snapshot --clean

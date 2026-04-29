@@ -21,11 +21,11 @@ Values above 1 trade strict ordering for throughput.
 
 Concurrency interacts with three other runner subsystems:
 
-| Subsystem | Interaction |
-|-----------|-------------|
-| **Dependency graph (ADR 0015)** | A story is eligible for execution only after every transitive prerequisite has completed successfully. Parallelism is bounded by the graph's width at any given level, not just by N. |
-| **Cache lock protocol (ADR 0016)** | Two goroutines (or two processes) racing on the same cache key must serialize through `flock(LOCK_EX)` with the double-checked acquire pattern. |
-| **Sharding (`--shard N/M`)** | CI fan-out partitions the story set across M parallel jobs. Each shard executes an independent subset; the runner's in-process parallelism applies within each shard. |
+| Subsystem                          | Interaction                                                                                                                                                                           |
+|------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Dependency graph (ADR 0015)**    | A story is eligible for execution only after every transitive prerequisite has completed successfully. Parallelism is bounded by the graph's width at any given level, not just by N. |
+| **Cache lock protocol (ADR 0016)** | Two goroutines (or two processes) racing on the same cache key must serialize through `flock(LOCK_EX)` with the double-checked acquire pattern.                                       |
+| **Sharding (`--shard N/M`)**       | CI fan-out partitions the story set across M parallel jobs. Each shard executes an independent subset; the runner's in-process parallelism applies within each shard.                 |
 
 This ADR formalises the concurrency model so that the backend
 implementation (T-005-44), the lock subsystem (T-005-30 through
@@ -40,7 +40,7 @@ The runner maintains a pool of at most N goroutines (set by
 `--max-parallel N`, default 1). A scheduler goroutine feeds eligible
 stories into a buffered work channel; worker goroutines consume from it.
 
-```
+```text
                       +-----------+
                       | Scheduler |
                       +-----+-----+
@@ -81,11 +81,11 @@ time, not at completion time.
 
 The scheduler maintains three sets:
 
-| Set | Contents |
-|-----|----------|
-| `pending` | Stories not yet dispatched. |
-| `running` | Stories dispatched to a worker but not yet complete. |
-| `done` | Stories with a terminal status (passed, failed, skipped, cached). |
+| Set       | Contents                                                          |
+|-----------|-------------------------------------------------------------------|
+| `pending` | Stories not yet dispatched.                                       |
+| `running` | Stories dispatched to a worker but not yet complete.              |
+| `done`    | Stories with a terminal status (passed, failed, skipped, cached). |
 
 On each tick (triggered by a worker completion or at startup):
 
@@ -124,10 +124,10 @@ additional fast path before the filesystem lock is consulted.
 
 ### Lock timeout and fast-fail
 
-| Flag | Default | Behavior |
-|------|---------|----------|
-| `--lock-timeout` | `60s` | Maximum time a worker blocks on `flock(LOCK_EX)` before returning an error. The error propagates as a story failure and triggers skip cascading for dependents. |
-| `--no-wait` | off | Equivalent to `--lock-timeout 0`. The worker calls `flock(LOCK_EX \| LOCK_NB)` and fails immediately if the lock is held. Intended for CI scripts that do not expect concurrent local runs. |
+| Flag             | Default | Behavior                                                                                                                                                                                    |
+|------------------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--lock-timeout` | `60s`   | Maximum time a worker blocks on `flock(LOCK_EX)` before returning an error. The error propagates as a story failure and triggers skip cascading for dependents.                             |
+| `--no-wait`      | off     | Equivalent to `--lock-timeout 0`. The worker calls `flock(LOCK_EX \| LOCK_NB)` and fails immediately if the lock is held. Intended for CI scripts that do not expect concurrent local runs. |
 
 When `--no-wait` is set, the runner assumes it is the sole writer. Any
 lock contention indicates a configuration error and the run aborts with
@@ -138,7 +138,7 @@ exit code 9.
 Sharding partitions the story set for CI fan-out. Story `s` belongs to
 shard `i` (zero-indexed) if and only if:
 
-```
+```text
 binary.BigEndian.Uint64(sha256(s.id)[:8]) % M == i
 ```
 

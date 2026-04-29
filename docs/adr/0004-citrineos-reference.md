@@ -23,7 +23,7 @@ The reference CSMS must be:
 
 ## Decision
 
-Use **CitrineOS** (https://citrineos.github.io/) as the reference CSMS
+Use **CitrineOS** (<https://citrineos.github.io/>) as the reference CSMS
 during OCTANE's own development. Pin a specific upstream commit in
 `test/reference/citrineos.version`; bumping that pin is a deliberate,
 reviewed action, not an automatic update.
@@ -68,5 +68,5 @@ reviewed action, not an automatic update.
 ## References
 
 - Constitution: principle III
-- CitrineOS: https://github.com/citrineos/citrineos-core
-- OCA OCPP versions: https://www.openchargealliance.org/protocols/
+- CitrineOS: <https://github.com/citrineos/citrineos-core>
+- OCA OCPP versions: <https://www.openchargealliance.org/protocols/>

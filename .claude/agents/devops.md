@@ -39,7 +39,7 @@ You may not write to: `cmd/`, `internal/`, `pkg/`, `*_test.go`, `specs/`,
 - **Reusable workflows** under `.github/workflows/_*.yml` for anything used
   by more than one job (lint, build, container publish).
 - **Matrix testing** across Go versions only when the constitution permits
-  multiple Go versions; at present, only Go 1.23 is supported.
+  multiple Go versions; at present, only Go 1.26 is supported.
 - **Reference job is mandatory.** Every PR runs `make test-reference`
   against the pinned CitrineOS commit. A green reference job is a merge gate.
 - **Action surface parity.** Every CLI flag added in `cmd/octane/` must have

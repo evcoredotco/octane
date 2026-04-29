@@ -35,11 +35,11 @@ prose where generation buys nothing.
 
 Adopt a **hybrid toolchain**:
 
-| Section | Tool | Rationale |
-|---------|------|-----------|
-| §1 | `spf13/cobra` `doc.GenManTree` | Auto-generated from CLI definitions; zero drift between `--help` and the man page. |
-| §5 | `scdoc` | Hand-written; minimal mdoc-flavored input; no runtime dependency. |
-| §7 | `scdoc` | Same. |
+| Section | Tool                           | Rationale                                                                          |
+|---------|--------------------------------|------------------------------------------------------------------------------------|
+| §1      | `spf13/cobra` `doc.GenManTree` | Auto-generated from CLI definitions; zero drift between `--help` and the man page. |
+| §5      | `scdoc`                        | Hand-written; minimal mdoc-flavored input; no runtime dependency.                  |
+| §7      | `scdoc`                        | Same.                                                                              |
 
 ### Section 1 — generated
 
@@ -153,6 +153,6 @@ concepts.
 - ADR 0020 (distribution channels)
 - ADR 0012 (shell completion)
 - ADR 0013 (website)
-- scdoc: https://git.sr.ht/~sircmpwn/scdoc
+- scdoc: <https://git.sr.ht/~sircmpwn/scdoc>
 - cobra/doc.GenManTree:
-  https://pkg.go.dev/github.com/spf13/cobra/doc#GenManTree
+  <https://pkg.go.dev/github.com/spf13/cobra/doc#GenManTree>

@@ -53,15 +53,15 @@ In practice this means:
 
 Story IDs and filenames follow a structured three-slot schema:
 
-```
+```text
 <resource>_<function>_<desire>
 ```
 
-| Slot | Meaning | Examples |
-|------|---------|----------|
-| `resource` | The OCPP entity under test | `connector`, `station`, `transaction`, `reservation`, `boot`, `heartbeat`, `authorize` |
-| `function` | What the resource does or what is being asserted | `notification`, `start`, `stop`, `reservation`, `authorize`, `status`, `update` |
-| `desire` | The expected outcome or scenario flavor | `accepted`, `rejected`, `faulted`, `available`, `concurrent`, `malformed`, `timeout`, `success`, `failure` |
+| Slot       | Meaning                                          | Examples                                                                                                   |
+|------------|--------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+| `resource` | The OCPP entity under test                       | `connector`, `station`, `transaction`, `reservation`, `boot`, `heartbeat`, `authorize`                     |
+| `function` | What the resource does or what is being asserted | `notification`, `start`, `stop`, `reservation`, `authorize`, `status`, `update`                            |
+| `desire`   | The expected outcome or scenario flavor          | `accepted`, `rejected`, `faulted`, `available`, `concurrent`, `malformed`, `timeout`, `success`, `failure` |
 
 All lowercase, snake_case, underscores between slots. Multi-word
 slot values use no separators (`idtoken`, not `id_token`).

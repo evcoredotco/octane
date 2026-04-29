@@ -33,10 +33,10 @@ GitHub Actions all consume it transparently.
 
 OCTANE emits two report artifacts per run by default:
 
-| File | Format | Purpose |
-|------|--------|---------|
+| File          | Format                                 | Purpose                                    |
+|---------------|----------------------------------------|--------------------------------------------|
 | `report.json` | OCTANE-native JSON, byte-deterministic | Source of truth, certification submissions |
-| `output.xml` | Robot Framework 7.x output schema | Ecosystem integration |
+| `output.xml`  | Robot Framework 7.x output schema      | Ecosystem integration                      |
 
 The XML emitter:
 
@@ -130,5 +130,5 @@ upgrade.
 - Constitution: principle II
 - ADR 0005 (story framework)
 - Robot Framework output schema:
-  https://github.com/robotframework/robotframework/tree/master/doc/schema
+  <https://github.com/robotframework/robotframework/tree/master/doc/schema>
 - pytest JUnit XML emission as prior art

@@ -29,11 +29,11 @@ Scenario: TTL story passes
     When  wait 0s
 `
 
-// valueTTLOneSec is the 1-second TTL used in the expiry assertions.
-const valueTTLOneSec = 1 * time.Second
+// valueTTLOne is the 1-second TTL used in the expiry assertions.
+const valueTTLOne = 1 * time.Second
 
-// valueTTLWaitMs is the wait period (1100ms) that guarantees the 1s TTL has expired.
-const valueTTLWaitMs = 1100 * time.Millisecond
+// valueTTLWait is the wait period (1100ms) that guarantees the 1s TTL has expired.
+const valueTTLWait = 1100 * time.Millisecond
 
 // Test_runner_CacheTTLDirectExpiry validates that a cache entry written with a
 // 1-second TTL is treated as ErrCacheMiss after the TTL elapses. This test
@@ -68,7 +68,7 @@ func Test_runner_CacheTTLDirectExpiry(t *testing.T) {
 	entry := cache.Entry{
 		Result:    resultJSON,
 		WrittenAt: time.Now().UTC(),
-		TTL:       valueTTLOneSec,
+		TTL:       valueTTLOne,
 	}
 
 	if err = storyCache.Put(context.Background(), key, entry); err != nil {
@@ -81,7 +81,7 @@ func Test_runner_CacheTTLDirectExpiry(t *testing.T) {
 	}
 
 	// Wait for the TTL to expire.
-	time.Sleep(valueTTLWaitMs)
+	time.Sleep(valueTTLWait)
 
 	// Invariant: after TTL expiry, Get must return ErrCacheMiss.
 	_, getErrAfter := storyCache.Get(context.Background(), key)

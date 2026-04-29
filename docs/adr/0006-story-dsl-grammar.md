@@ -33,7 +33,7 @@ The grammar must:
 A `.story` file has three required sections in fixed order, each
 introduced by a top-level keyword on its own line:
 
-```
+```text
 Meta
     Name:        Boot notification with accepted registration
     Id:          boot_notification_accepted
@@ -58,7 +58,7 @@ the last `Scenario`, respectively.
 
 ### Grammar (BNF, condensed)
 
-```
+```text
 story        = meta_section background? setup? scenario+ teardown?
 meta_section = "Meta" NEWLINE meta_entry+
 meta_entry   = INDENT IDENT ":" value NEWLINE
@@ -76,15 +76,15 @@ keep diffs deterministic.
 
 ### Meta keys
 
-| Key | Required | Format | Purpose |
-|-----|----------|--------|---------|
-| `Name` | yes | free text | Human-readable test name |
-| `Id` | yes | snake_case slug | Stable identifier for `Depends:` references |
-| `Spec-Ref` | conformance only | `OCPP-<version> §<section> <message>` | OCPP specification traceability (constitution principle I) |
-| `Tags` | yes | comma list | At least one of `wire-only`, `multi-station`, `operator-assisted`, `helper` |
-| `Stations` | yes | integer ≥ 1 | Declared station count for preflight resource allocation |
-| `Timeout` | no | duration | Default per-step timeout; overrides `--default-timeout` |
-| `Depends` | no | YAML list | Other story IDs this story depends on (per ADR 0015) |
+| Key        | Required         | Format                                | Purpose                                                                     |
+|------------|------------------|---------------------------------------|-----------------------------------------------------------------------------|
+| `Name`     | yes              | free text                             | Human-readable test name                                                    |
+| `Id`       | yes              | snake_case slug                       | Stable identifier for `Depends:` references                                 |
+| `Spec-Ref` | conformance only | `OCPP-<version> §<section> <message>` | OCPP specification traceability (constitution principle I)                  |
+| `Tags`     | yes              | comma list                            | At least one of `wire-only`, `multi-station`, `operator-assisted`, `helper` |
+| `Stations` | yes              | integer ≥ 1                           | Declared station count for preflight resource allocation                    |
+| `Timeout`  | no               | duration                              | Default per-step timeout; overrides `--default-timeout`                     |
+| `Depends`  | no               | YAML list                             | Other story IDs this story depends on (per ADR 0015)                        |
 
 `Spec-Ref` is required for conformance tests and forbidden for helper
 stories tagged `helper`. The parser enforces this distinction.
@@ -102,7 +102,7 @@ Keyword: "the CSMS responds with status {status:string} within {timeout:duration
 
 A story line:
 
-```
+```text
 Then the CSMS responds with status "Accepted" within 30 seconds
 ```
 
@@ -172,4 +172,4 @@ permitted (forces clean, diffable lines).
 - Constitution: principles VI, XII
 - ADR 0005 (story-driven framework)
 - ADR 0007 (keyword library)
-- Robot Framework `.robot` syntax: https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#test-data-syntax
+- Robot Framework `.robot` syntax: <https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#test-data-syntax>

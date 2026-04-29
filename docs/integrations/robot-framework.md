@@ -60,12 +60,12 @@ cause `rebot` to nest the shard suites rather than flatten them.
 
 OCTANE story statuses map to Robot Framework statuses as follows:
 
-| OCTANE status        | Robot Framework status | Meaning                                                   |
-|----------------------|------------------------|-----------------------------------------------------------|
-| `passed`             | `PASS`                 | All assertions succeeded.                                 |
-| `failed`             | `FAIL`                 | At least one assertion failed or an error was raised.     |
-| `skipped`            | `SKIP`                 | A prerequisite story failed; this story was not executed. |
-| any other (e.g. cache bypass edge cases) | `NOT RUN` | Story was not attempted.                    |
+| OCTANE status                            | Robot Framework status | Meaning                                                   |
+|------------------------------------------|------------------------|-----------------------------------------------------------|
+| `passed`                                 | `PASS`                 | All assertions succeeded.                                 |
+| `failed`                                 | `FAIL`                 | At least one assertion failed or an error was raised.     |
+| `skipped`                                | `SKIP`                 | A prerequisite story failed; this story was not executed. |
+| any other (e.g. cache bypass edge cases) | `NOT RUN`              | Story was not attempted.                                  |
 
 The `SKIP` status propagates through `rebot`'s summary counts exactly as it
 does in a native Robot Framework run, so existing dashboards and CI gates that

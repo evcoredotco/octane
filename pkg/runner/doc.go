@@ -38,4 +38,11 @@
 // sha256(test_id)[:8] mod ShardTotal == ShardIndex are executed
 // (spec 005 OQ1). Prerequisites outside the shard are still
 // included and may produce cache hits from prior shard runs.
+//
+// # Non-responsibilities
+//
+// This package does NOT parse .story files (that is pkg/story),
+// emit report artefacts (that is pkg/report, spec 007), manage
+// WebSocket sessions (that is pkg/transport), or validate OCPP
+// payload fields (that is github.com/evcoreco/ocpp16messages).
 package runner
