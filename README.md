@@ -4,8 +4,6 @@
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](./LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-1.23+-00ADD8.svg)](https://go.dev)
-[![Constitution](https://img.shields.io/badge/Constitution-v1.2.0-green.svg)](./.specify/memory/constitution.md)
-[![Status](https://img.shields.io/badge/Status-Pre--Alpha-orange.svg)]()
 
 OCTANE is an open-source, AI-native conformance harness for OCPP 1.6J,
  Charging Station Management Systems (CSMS). It runs

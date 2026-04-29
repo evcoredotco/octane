@@ -57,4 +57,4 @@ Adopt **Apache License, Version 2.0** for OCTANE.
 - Constitution: principles I, II
 - CitrineOS license: Apache-2.0
 - OCA software policy:
-  https://www.openchargealliance.org/about-us/policies/
+  <https://www.openchargealliance.org/about-us/policies/>

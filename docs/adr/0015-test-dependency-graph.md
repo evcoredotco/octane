@@ -44,7 +44,7 @@ by its location or extension.
 
 A story declares its dependencies through the `Depends:` Meta key:
 
-```
+```text
 Meta
     Name:     Connector reservation faulted
     Id:       connector_reservation_faulted
@@ -93,11 +93,11 @@ Depends:
 
 Three scope values are supported:
 
-| Scope | Cache key includes | Use case |
-|-------|--------------------|----------|
-| `per-station` (default) | station handle | Lifecycle prereqs that vary by station (boot, connect, status) |
-| `per-run` | run ID (config SHA + seed) | Run-level prereqs (CSMS reachability, feature support detection) |
-| `global` | empty (cache forever within validity window) | CSMS capability checks that don't change between operator sessions |
+| Scope                   | Cache key includes                           | Use case                                                           |
+|-------------------------|----------------------------------------------|--------------------------------------------------------------------|
+| `per-station` (default) | station handle                               | Lifecycle prereqs that vary by station (boot, connect, status)     |
+| `per-run`               | run ID (config SHA + seed)                   | Run-level prereqs (CSMS reachability, feature support detection)   |
+| `global`                | empty (cache forever within validity window) | CSMS capability checks that don't change between operator sessions |
 
 If `scope` is omitted, the default is `per-station`.
 

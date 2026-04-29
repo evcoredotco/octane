@@ -15,9 +15,9 @@ across `octane run` invocations.
 
 The cache must work correctly in two distinct deployment scenarios:
 
-| Scenario | Constraints |
-|----------|-------------|
-| **Local CLI** | One operator, one machine, occasional concurrent runs. POSIX file locks (`flock`) are sufficient for cross-process safety. |
+| Scenario                            | Constraints                                                                                                                                                                                                             |
+|-------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Local CLI**                       | One operator, one machine, occasional concurrent runs. POSIX file locks (`flock`) are sufficient for cross-process safety.                                                                                              |
 | **CI (GitHub Actions / GitLab CI)** | Cache directory restored from a prior job's tarball at job start; uploaded as a tarball at job end. Multiple parallel jobs may write to the same cache key concurrently across machines that do not share a filesystem. |
 
 A previous draft of this ADR specified SQLite as the cache backend.
@@ -45,7 +45,7 @@ of the cache key tuple. There is no database.
 
 ### Layout
 
-```
+```text
 $XDG_CACHE_HOME/octane/cache/
 ├── results/
 │   ├── ab/
@@ -72,7 +72,7 @@ directory size and keeps `ls` output readable.
 Each cache entry is keyed by the SHA-256 of the lexicographically
 ordered tuple:
 
-```
+```text
 test_id || ":" || scope_key || ":" || csms_endpoint_sha ||
   ":" || octane_version || ":" || ocpp_version ||
   ":" || story_content_sha || ":" || parameter_sha
@@ -80,15 +80,15 @@ test_id || ":" || scope_key || ":" || csms_endpoint_sha ||
 
 Where:
 
-| Field | Source |
-|-------|--------|
-| `test_id` | story `Id` Meta key |
-| `scope_key` | station handle (`per-station`), run ID (`per-run`), or empty (`global`) per ADR 0015 |
-| `csms_endpoint_sha` | SHA-256 of (URL + subprotocol + auth-mode tuple) |
-| `octane_version` | from build info |
-| `ocpp_version` | from story Meta or config |
-| `story_content_sha` | SHA-256 of story file + transitively all prerequisites' content |
-| `parameter_sha` | SHA-256 of bound parameters |
+| Field               | Source                                                                               |
+|---------------------|--------------------------------------------------------------------------------------|
+| `test_id`           | story `Id` Meta key                                                                  |
+| `scope_key`         | station handle (`per-station`), run ID (`per-run`), or empty (`global`) per ADR 0015 |
+| `csms_endpoint_sha` | SHA-256 of (URL + subprotocol + auth-mode tuple)                                     |
+| `octane_version`    | from build info                                                                      |
+| `ocpp_version`      | from story Meta or config                                                            |
+| `story_content_sha` | SHA-256 of story file + transitively all prerequisites' content                      |
+| `parameter_sha`     | SHA-256 of bound parameters                                                          |
 
 Any change to any field produces a new cache key and therefore a
 new path; old entries become unreachable and are pruned by age.
@@ -129,7 +129,7 @@ configuration); the rationale is that report rendering frequently
 needs `result.json` (status, finding count, timing) without needing
 the full wire frame log.
 
-```
+```text
 ab/ab12cd34ef56.../
 ├── result.json    # 1–2 KB typical
 └── trace.json     # 0 KB to several MB
@@ -216,7 +216,7 @@ solve cross-machine concurrency, and it does.
 
 For each cache key:
 
-```
+```text
 1. Compute key_hash = sha256(cache key tuple).
 2. Compute path = results/<key_hash[:2]>/<key_hash>/result.json
 3. Try to read result.json. If it exists and is valid (TTL not
@@ -244,7 +244,7 @@ for CI scripts that don't expect concurrent local runs).
 
 ### Operator surface
 
-```
+```text
 octane cache info     # cache directory, total size, entry count
 octane cache prune    # remove entries older than --max-age (default 30d)
                       # or with TTL exceeded
@@ -364,7 +364,7 @@ Notes:
 
 ### `.gitignore` recommendation
 
-```
+```shell
 .octane-cache/
 reports/
 ```
@@ -375,11 +375,11 @@ The cache is local-only. It is never committed.
 
 The cache grows monotonically until pruned. Two pruning paths:
 
-| Trigger | Mechanism |
-|---------|-----------|
-| Manual | `octane cache prune --max-age 7d` |
-| Automatic (per-run, opt-in) | `octane.yml` carries `cache.auto_prune_max_age: 30d`; the runner prunes at startup |
-| CI | The CI cache layer evicts old keys per its own LRU policy (GitHub: 10GB per repo; GitLab: configurable per project) |
+| Trigger                     | Mechanism                                                                                                           |
+|-----------------------------|---------------------------------------------------------------------------------------------------------------------|
+| Manual                      | `octane cache prune --max-age 7d`                                                                                   |
+| Automatic (per-run, opt-in) | `octane.yml` carries `cache.auto_prune_max_age: 30d`; the runner prunes at startup                                  |
+| CI                          | The CI cache layer evicts old keys per its own LRU policy (GitHub: 10GB per repo; GitLab: configurable per project) |
 
 A cache directory with several thousand entries is fine; SQLite
 would have been overkill for that scale anyway.

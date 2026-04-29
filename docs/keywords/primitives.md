@@ -45,7 +45,7 @@ if errors.As(err, &te) {
 
 ### 1. Open WebSocket
 
-```
+```text
 open a WebSocket to {url:string} as station {station:string}
 ```
 
@@ -62,7 +62,7 @@ Returns a wrapped error if the dial fails (unreachable host, TLS error, etc.).
 
 **Example story step:**
 
-```
+```text
 Given open a WebSocket to ws://csms.example.com/CP001 as station CP001
 ```
 

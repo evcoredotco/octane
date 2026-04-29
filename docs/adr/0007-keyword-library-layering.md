@@ -25,11 +25,11 @@ ownership and resolution rules.
 
 ## Decision
 
-```
-        ┌────────────────────────────────────────┐
+```text
+        ┌──────────────────────────────────────-──┐
 1.  ┌──> Domain keywords         (OCPP-level)     │  highest precedence
 2.  │    Primitive keywords      (transport)      │  fallback
-    │                                              │
+    │                                             │
     └─ resolution: domain → primitive  ───────────┘
 ```
 
@@ -196,7 +196,7 @@ When the CSMS sends a CALL and a station responds with a
 CALLRESULT (e.g. ReserveNow, RemoteStartTransaction), express the
 two halves as two keywords:
 
-```
+```text
 When  the CSMS sends ReserveNow with connectorId 1 and idTag "X" 
       to station "CP01" within 30 seconds
 Then  station "CP01" responds with ReserveNow.conf status "Faulted"
@@ -235,11 +235,11 @@ a wire-level error during execution.
 
 The CLI exposes the resolved keyword set for inspection:
 
-| Command | Output |
-|---------|--------|
-| `octane keywords list` | All registered keywords, sorted by `(Layer, OCPPVersion, Pattern)` |
-| `octane keywords list --layer domain --ocpp 1.6` | Filtered subset |
-| `octane keywords resolve --story foo.story` | For each step in the story, the layer that wins |
+| Command                                          | Output                                                             |
+|--------------------------------------------------|--------------------------------------------------------------------|
+| `octane keywords list`                           | All registered keywords, sorted by `(Layer, OCPPVersion, Pattern)` |
+| `octane keywords list --layer domain --ocpp 1.6` | Filtered subset                                                    |
+| `octane keywords resolve --story foo.story`      | For each step in the story, the layer that wins                    |
 
 The sort order is deterministic (constitution principle IV); two
 runs of `octane keywords list` against the same binary produce

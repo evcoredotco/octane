@@ -32,7 +32,7 @@ becomes wire-verifiable.
 
 OCTANE supports declaring N stations per scenario in the story Meta:
 
-```
+```text
 Meta
     Spec-Ref: OCPP-1.6 / TC_T_07_CS
     Title:    ConcurrentTx — same id token at two stations
@@ -43,7 +43,7 @@ Meta
 The runner allocates N station handles named `"CP01"`, `"CP02"`, … on
 preflight. Stories reference stations by handle in step text:
 
-```
+```text
 When  station "CP01" sends Authorize with id token "VID:0001"
 And   station "CP02" sends Authorize with id token "VID:0001"
 Then  the CSMS rejects "CP02" with status "ConcurrentTx"
@@ -58,12 +58,12 @@ Then  the CSMS rejects "CP02" with status "ConcurrentTx"
   `"CP01"`'s outcome is known.
 - Steps that need true concurrency declare a `Parallel` block:
 
-```
-Parallel
-    When  station "CP01" sends StartTransaction
-    When  station "CP02" sends StartTransaction
-End-Parallel
-```
+  ```text
+  Parallel
+      When  station "CP01" sends StartTransaction
+      When  station "CP02" sends StartTransaction
+  End-Parallel
+  ```
 
   Inside a `Parallel` block the steps execute concurrently. The block
   fails if any contained step fails.
@@ -85,7 +85,7 @@ End-Parallel
 The default Setup section opens connections for all declared stations
 and performs BootNotification, unless a Meta key disables it:
 
-```
+```text
 Meta
     Stations: 2
     Auto-Boot: false

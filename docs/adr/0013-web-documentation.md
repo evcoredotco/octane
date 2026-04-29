@@ -43,7 +43,7 @@ not an HTML render of the man pages.
 
 ### Site structure
 
-```
+```text
 website/
 ├── docs/
 │   ├── intro.md                      # what is OCTANE, why use it
@@ -170,4 +170,4 @@ plugin provides client-side search.
 
 - Constitution: principle II
 - ADR 0011 (man pages)
-- Docusaurus: https://docusaurus.io/
+- Docusaurus: <https://docusaurus.io/>

@@ -1,0 +1,39 @@
+name: Fuzz & Race
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'  # Every Monday at 03:00 UTC
+  push:
+    branches: ['release/**']
+  pull_request:
+    branches: ['release/**']
+
+env:
+  FUZZTIME: 30s
+  FUZZPROCS: 4
+
+jobs:
+  fuzz-race:
+    name: Fuzz & Race
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Race detector
+        run: go test -race -tags=race ./...
+
+      - name: Fuzz tests
+        run: |
+          FUZZES=$(go test -tags=fuzz -list Fuzz ./tests_fuzz | grep '^Fuzz')
+          if [ -z "$FUZZES" ]; then
+            echo "No fuzz tests found"
+          else
+            for fuzz in $FUZZES; do
+              echo ">>> Fuzzing $fuzz"
+              GOMAXPROCS=$FUZZPROCS go test -tags=fuzz -run=^$ -fuzz=^${fuzz}$ -fuzztime=$FUZZTIME ./tests_fuzz || exit $?
+            done
+          fi

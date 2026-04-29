@@ -14,9 +14,9 @@ the constitution calls "determinism" (principle IV).
 
 Two standard library facilities break this guarantee silently:
 
-| Facility | Why it breaks determinism |
-|----------|--------------------------|
-| `time.Now()` | Returns the wall clock, which advances differently on every invocation and every machine. |
+| Facility      | Why it breaks determinism                                                                                               |
+|---------------|-------------------------------------------------------------------------------------------------------------------------|
+| `time.Now()`  | Returns the wall clock, which advances differently on every invocation and every machine.                               |
 | `crypto/rand` | Returns cryptographically random bytes that differ per call, making any sequence that depends on them non-reproducible. |
 
 Direct calls to these facilities in engine code, keyword bodies, or the runner
@@ -159,7 +159,7 @@ test explicitly advances the clock, so tests never actually wait.
 
 ### Deterministic Clock
 
-```
+```text
 clock.Deterministic(seed time.Time) (*DeterministicClock, Clock)
 ```
 
@@ -182,7 +182,7 @@ clk.Tick(5 * time.Second) // instant in the test; no real sleep
 
 ### Deterministic Rand
 
-```
+```text
 rand.Deterministic(seed uint64) Rand
 ```
 
@@ -247,5 +247,5 @@ rand.Deterministic(seed uint64) Rand
 - ADR 0007 (keyword library layering — where Clock and Rand are consumed)
 - ADR 0008 (multi-station orchestration — concurrent injection)
 - Spec 002 (wire engine) — AC5, AC6
-- `math/rand/v2` package: https://pkg.go.dev/math/rand/v2
-- PCG random number generator: https://www.pcg-random.org/
+- `math/rand/v2` package: <https://pkg.go.dev/math/rand/v2>
+- PCG random number generator: <https://www.pcg-random.org/>
