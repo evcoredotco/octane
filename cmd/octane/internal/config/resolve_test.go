@@ -7,13 +7,6 @@ import (
 	"github.com/evcoreco/octane/cmd/octane/internal/config"
 )
 
-// ptr is a generic helper that returns a pointer to the given value.
-// It is used to construct FlagOverrides without intermediate
-// variables throughout this test file.
-func ptr[T any](value T) *T {
-	return &value
-}
-
 // TestResolve_FlagWinsOverEnv asserts that a non-nil flag override
 // takes precedence over an environment-variable value.
 func TestResolve_FlagWinsOverEnv(t *testing.T) {
@@ -22,8 +15,10 @@ func TestResolve_FlagWinsOverEnv(t *testing.T) {
 	base := config.Default()
 	base.CacheDir = "/env/cache" // simulate env-var layer result
 
+	flagCacheDir := "/flag/cache"
+
 	flags := config.FlagOverrides{
-		CacheDir:           ptr("/flag/cache"),
+		CacheDir:           &flagCacheDir,
 		MaxParallel:        nil,
 		OCPPVersion:        nil,
 		LockTimeout:        nil,

@@ -74,16 +74,17 @@ func init() {
 // Execute runs the root cobra command and exits with the appropriate
 // process exit code on error. It is called from main.
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	err := rootCmd.Execute()
+	if err != nil {
 		exitcode.Exec(exitcode.ToolError)
 	}
 }
 
-// dieErr prints a formatted error message to stderr and exits the
+// dieErrf prints a formatted error message to stderr and exits the
 // process with the given exit code. It is the canonical way for
 // RunE functions to report fatal errors without returning them
 // through cobra (which would print an additional usage hint).
-func dieErr(code int, format string, args ...any) {
+func dieErrf(code int, format string, args ...any) {
 	_, _ = fmt.Fprintf(os.Stderr, format, args...)
 
 	exitcode.Exec(code)

@@ -46,7 +46,8 @@ func init() {
 		"output directory; created if it does not exist (required)",
 	)
 
-	if err := genManPagesCmd.MarkFlagRequired("out"); err != nil {
+	err := genManPagesCmd.MarkFlagRequired("out")
+	if err != nil {
 		// MarkFlagRequired only errors when the flag name is unknown,
 		// which would be a programming error caught at init time.
 		panic(err)
@@ -63,8 +64,9 @@ func runGenManPages(_ *cobra.Command, _ []string) error {
 	section := genManPagesFlags.section
 
 	//nolint:gosec // G301: outDir is operator-supplied; 0755 is intentional for public man directories
-	if err := os.MkdirAll(outDir, 0o755); err != nil { //nolint:mnd // 0755 is conventional dir perms
-		dieErr(
+	err := os.MkdirAll(outDir, 0o755) //nolint:mnd // 0755 is conventional dir perms
+	if err != nil {
+		dieErrf(
 			exitcode.ToolError,
 			"octane: gen-manpages: mkdir %q: %v\n",
 			outDir,
@@ -79,8 +81,9 @@ func runGenManPages(_ *cobra.Command, _ []string) error {
 		Section: strconv.Itoa(section),
 	}
 
-	if err := doc.GenManTree(rootCmd, header, outDir); err != nil {
-		dieErr(exitcode.ToolError, "octane: gen-manpages: %v\n", err)
+	err = doc.GenManTree(rootCmd, header, outDir)
+	if err != nil {
+		dieErrf(exitcode.ToolError, "octane: gen-manpages: %v\n", err)
 	}
 
 	return nil

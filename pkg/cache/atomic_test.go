@@ -55,7 +55,8 @@ func Test_cache_RoundTrip(t *testing.T) {
 		TTL:       0,
 	}
 
-	if err = cch.Put(ctx, key, entry); err != nil {
+	err = cch.Put(ctx, key, entry)
+	if err != nil {
 		t.Fatalf("Put: %v", err)
 	}
 
@@ -97,17 +98,17 @@ func Test_cache_TornWriteRejected(t *testing.T) {
 
 	// Build the path that FileCache uses: <dir>/results/<hash[:2]>/<hash>/
 	entryDir := filepath.Join(tmpDir, "results", hash[:2], hash)
-	if err = os.MkdirAll(entryDir, 0o750); err != nil {
+
+	err = os.MkdirAll(entryDir, 0o750)
+	if err != nil {
 		t.Fatalf("create entry dir: %v", err)
 	}
 
 	// Drop the intermediate temp file; the atomic rename never happens.
 	tmpPath := filepath.Join(entryDir, "result.json.tmp")
-	if err = os.WriteFile(
-		tmpPath,
-		[]byte(`{"schema_version":1}`),
-		0o600,
-	); err != nil {
+
+	err = os.WriteFile(tmpPath, []byte(`{"schema_version":1}`), 0o600)
+	if err != nil {
 		t.Fatalf("write .tmp artefact: %v", err)
 	}
 
@@ -156,7 +157,8 @@ func Test_cache_TTLExpiry(t *testing.T) {
 		TTL:       valueTTL,
 	}
 
-	if err = cch.Put(ctx, key, entry); err != nil {
+	err = cch.Put(ctx, key, entry)
+	if err != nil {
 		t.Fatalf("Put: %v", err)
 	}
 
@@ -198,16 +200,19 @@ func Test_cache_PruneRemovesOldEntries(t *testing.T) {
 		TTL:       0,
 	}
 
-	if err = cch.Put(ctx, key, entry); err != nil {
+	err = cch.Put(ctx, key, entry)
+	if err != nil {
 		t.Fatalf("Put: %v", err)
 	}
 
 	// Sanity-check: entry is reachable before pruning.
-	if _, err = cch.Get(ctx, key); err != nil {
+	_, err = cch.Get(ctx, key)
+	if err != nil {
 		t.Fatalf("Get before Prune: %v", err)
 	}
 
-	if err = cch.Prune(ctx, valueMaxAge); err != nil {
+	err = cch.Prune(ctx, valueMaxAge)
+	if err != nil {
 		t.Fatalf("Prune: %v", err)
 	}
 

@@ -118,7 +118,8 @@ func Test_primitive_closeStation_LogsCloseMessage(t *testing.T) {
 		"station": handleClose,
 	})
 
-	if err := keywordFunc(context.Background(), state, args); err != nil {
+	err := keywordFunc(context.Background(), state, args)
+	if err != nil {
 		t.Fatalf("close keyword Func: unexpected error: %v", err)
 	}
 

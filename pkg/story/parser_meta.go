@@ -4,6 +4,7 @@ package story
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -88,7 +89,8 @@ func (p *parser) parseMeta() (ast.Meta, error) {
 			}, err
 		}
 
-		if err = p.applyMetaEntry(&meta, entry, tracker); err != nil {
+		err = p.applyMetaEntry(&meta, entry, tracker)
+		if err != nil {
 			return ast.Meta{
 				Name:       "",
 				ID:         "",
@@ -104,7 +106,8 @@ func (p *parser) parseMeta() (ast.Meta, error) {
 		}
 	}
 
-	if err := validateMetaRequired(p.file, meta, tracker); err != nil {
+	err := validateMetaRequired(p.file, meta, tracker)
+	if err != nil {
 		return ast.Meta{
 			Name:       "",
 			ID:         "",
@@ -377,11 +380,5 @@ func splitTrimmed(s, sep string) []string {
 
 // containsTag reports whether tags contains the given tag (case-sensitive).
 func containsTag(tags []string, tag string) bool {
-	for _, t := range tags {
-		if t == tag {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(tags, tag)
 }

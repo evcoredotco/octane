@@ -7,9 +7,14 @@
 // per-story and aggregate results, execution status, and cache
 // status. It contains no implementation logic and imports only
 // the standard library.
+
 package runner
 
 import "time"
+
+// statusUnknown is the string label returned by String() methods when the
+// enum value has not been recognised (i.e. falls into the default branch).
+const statusUnknown = "unknown"
 
 // ---------------------------------------------------------------------------
 // Status enum — per-story execution outcome
@@ -48,7 +53,7 @@ func (s Status) String() string {
 	case StatusSkipped:
 		return "skipped"
 	default:
-		return "unknown"
+		return statusUnknown
 	}
 }
 
@@ -99,7 +104,7 @@ func (c CacheStatus) String() string {
 	case CacheBypassed:
 		return "bypassed"
 	default:
-		return "unknown"
+		return statusUnknown
 	}
 }
 

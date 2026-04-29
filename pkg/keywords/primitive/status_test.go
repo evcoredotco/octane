@@ -5,6 +5,7 @@
 // AC1: "the connection on station {station} is open" passes when
 // MockStation.IsOpen() returns true and fails when it returns false.
 // "the connection on station {station} is closed" behaves inversely.
+
 package primitive_test
 
 import (
@@ -48,7 +49,8 @@ func Test_primitive_assertConnectionOpen_Passes(t *testing.T) {
 	})
 
 	// Invariant: the is-open keyword must return nil when the connection is open.
-	if err := keywordFunc(context.Background(), state, args); err != nil {
+	err := keywordFunc(context.Background(), state, args)
+	if err != nil {
 		t.Errorf(
 			"assertConnectionOpen on open station: want nil, got %v",
 			err,
@@ -108,7 +110,8 @@ func Test_primitive_assertConnectionClosed_Passes(t *testing.T) {
 
 	// Invariant: the is-closed keyword must return nil when the connection
 	// is indeed closed.
-	if err := keywordFunc(context.Background(), state, args); err != nil {
+	err := keywordFunc(context.Background(), state, args)
+	if err != nil {
 		t.Errorf(
 			"assertConnectionClosed on closed station: want nil, got %v",
 			err,

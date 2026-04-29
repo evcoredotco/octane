@@ -40,8 +40,9 @@ func TestScenariosParseClean(t *testing.T) {
 				t.Fatalf("read %s: %v", path, err)
 			}
 
-			if _, err = story.Parse(path, src); err != nil {
-				t.Errorf("parse %s: %v", path, err)
+			_, parseErr := story.Parse(path, src)
+			if parseErr != nil {
+				t.Errorf("parse %s: %v", path, parseErr)
 			}
 		})
 	}
@@ -106,6 +107,7 @@ func runGoldenCheck(
 
 	if *update {
 		writeGolden(t, goldenPath, got)
+
 		return
 	}
 
@@ -115,6 +117,7 @@ func runGoldenCheck(
 	if os.IsNotExist(readErr) {
 		// First-run bootstrap: write the golden file.
 		writeGolden(t, goldenPath, got)
+
 		return
 	}
 
@@ -170,11 +173,13 @@ func collectStoryPaths(t *testing.T, root string) []string {
 func writeGolden(t *testing.T, path string, data []byte) {
 	t.Helper()
 
-	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
+	err := os.MkdirAll(filepath.Dir(path), 0o750)
+	if err != nil {
 		t.Fatalf("mkdir %s: %v", filepath.Dir(path), err)
 	}
 
-	if err := os.WriteFile(path, data, 0o600); err != nil { //nolint:gosec // test golden file path
+	err = os.WriteFile(path, data, 0o600) //nolint:gosec // test golden file path
+	if err != nil {
 		t.Fatalf("write golden %s: %v", path, err)
 	}
 }

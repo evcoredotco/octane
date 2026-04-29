@@ -2,6 +2,7 @@
 //
 // Stress test: 100 leaf stories all depending on a single shared prereq.
 // Validates correctness under load with MaxParallel:4.
+
 package integration_test
 
 import (
@@ -53,8 +54,10 @@ func Test_runner_RunStress(t *testing.T) {
 
 	t.Parallel()
 
-	const totalLeaves = 100
-	const maxParallel = 4
+	const (
+		totalLeaves = 100
+		maxParallel = 4
+	)
 	// Total nodes: 1 prereq + 100 leaves.
 	const expectedTotal = totalLeaves + 1
 

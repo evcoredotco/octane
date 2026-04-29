@@ -3,6 +3,7 @@
 // This file contains the logic for cancelling an in-flight run when
 // context cancellation arrives. The per-story failure propagation is
 // handled in traversal.go (schedulerState.propagateFailures).
+
 package runner
 
 import "context"
@@ -16,7 +17,9 @@ func cancelPendingNodes(
 	state *schedulerState,
 ) {
 	cancelMsg := "skipped: run cancelled"
-	if ctxErr := ctx.Err(); ctxErr != nil {
+
+	ctxErr := ctx.Err()
+	if ctxErr != nil {
 		cancelMsg = "skipped: run cancelled: " + ctxErr.Error()
 	}
 

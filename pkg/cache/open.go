@@ -49,7 +49,8 @@ func Open(dir string) (Cache, error) {
 	}
 
 	for _, sub := range subDirs {
-		if err := os.MkdirAll(sub, 0o750); err != nil {
+		err := os.MkdirAll(sub, 0o750)
+		if err != nil {
 			return nil, fmt.Errorf(
 				"cache: create directory %q: %w",
 				sub,
@@ -58,7 +59,8 @@ func Open(dir string) (Cache, error) {
 		}
 	}
 
-	if err := writeVersionStamp(dir); err != nil {
+	err := writeVersionStamp(dir)
+	if err != nil {
 		return nil, err
 	}
 
@@ -77,7 +79,8 @@ func OpenWithClock(dir string, clk clock.Clock) (Cache, error) {
 	}
 
 	for _, sub := range subDirs {
-		if err := os.MkdirAll(sub, 0o750); err != nil {
+		err := os.MkdirAll(sub, 0o750)
+		if err != nil {
 			return nil, fmt.Errorf(
 				"cache: create directory %q: %w",
 				sub,
@@ -86,7 +89,8 @@ func OpenWithClock(dir string, clk clock.Clock) (Cache, error) {
 		}
 	}
 
-	if err := writeVersionStamp(dir); err != nil {
+	err := writeVersionStamp(dir)
+	if err != nil {
 		return nil, err
 	}
 
@@ -99,7 +103,8 @@ func OpenWithClock(dir string, clk clock.Clock) (Cache, error) {
 func writeVersionStamp(dir string) error {
 	versionPath := filepath.Join(dir, "version.json")
 
-	if _, err := os.Stat(versionPath); err == nil {
+	_, statErr := os.Stat(versionPath)
+	if statErr == nil {
 		// File already exists; leave it untouched.
 		return nil
 	}
@@ -114,7 +119,8 @@ func writeVersionStamp(dir string) error {
 		return fmt.Errorf("cache: marshal version stamp: %w", err)
 	}
 
-	if err = atomicWriteFile(versionPath, data); err != nil {
+	err = atomicWriteFile(versionPath, data)
+	if err != nil {
 		return fmt.Errorf("cache: write version stamp: %w", err)
 	}
 

@@ -78,13 +78,13 @@ func (p *parser) parseDepends() ([]ast.Dependency, error) {
 		valLit := strings.TrimSpace(valTok.Literal)
 
 		if strings.HasPrefix(keyLit, "-") {
-			flushed, flushErr := flushEntry(p.file, cur, entryIndex)
+			flushed, ok, flushErr := flushEntry(p.file, cur, entryIndex)
 			if flushErr != nil {
 				return nil, flushErr
 			}
 
-			if flushed != nil {
-				deps = append(deps, *flushed)
+			if ok {
+				deps = append(deps, flushed)
 			}
 
 			entryIndex++
@@ -102,7 +102,15 @@ func (p *parser) parseDepends() ([]ast.Dependency, error) {
 
 			subKey := strings.TrimSpace(strings.TrimPrefix(keyLit, "-"))
 
-			if applyErr := applySubKey(cur, subKey, valLit, valTok, p.file, entryIndex); applyErr != nil {
+			applyErr := applySubKey(
+				cur,
+				subKey,
+				valLit,
+				valTok,
+				p.file,
+				entryIndex,
+			)
+			if applyErr != nil {
 				return nil, applyErr
 			}
 
@@ -113,18 +121,19 @@ func (p *parser) parseDepends() ([]ast.Dependency, error) {
 			continue // ignore lines before the first bullet
 		}
 
-		if applyErr := applySubKey(cur, keyLit, valLit, valTok, p.file, entryIndex); applyErr != nil {
+		applyErr := applySubKey(cur, keyLit, valLit, valTok, p.file, entryIndex)
+		if applyErr != nil {
 			return nil, applyErr
 		}
 	}
 
-	flushed, err := flushEntry(p.file, cur, entryIndex)
+	flushed, ok, err := flushEntry(p.file, cur, entryIndex)
 	if err != nil {
 		return nil, err
 	}
 
-	if flushed != nil {
-		deps = append(deps, *flushed)
+	if ok {
+		deps = append(deps, flushed)
 	}
 
 	return deps, nil
@@ -217,18 +226,19 @@ func applySubKey(
 }
 
 // flushEntry validates a completed dependsEntry and converts it to an
-// ast.Dependency. If cur is nil (no entry has started) it returns nil, nil.
+// ast.Dependency. If cur is nil (no entry has started) it returns
+// (zero, false, nil).
 func flushEntry(
 	file string,
 	cur *dependsEntry,
 	entryIndex int,
-) (*ast.Dependency, error) {
+) (ast.Dependency, bool, error) {
 	if cur == nil {
-		return nil, nil
+		return ast.Dependency{}, false, nil
 	}
 
 	if !cur.idSet {
-		return nil, &diag.ErrMalformedDepends{
+		return ast.Dependency{}, false, &diag.ErrMalformedDepends{
 			File:       file,
 			Line:       cur.pos.Line,
 			Column:     cur.pos.Column,
@@ -240,7 +250,7 @@ func flushEntry(
 
 	dep := cur.toDependency()
 
-	return &dep, nil
+	return dep, true, nil
 }
 
 // parseScope converts a raw string to an ast.Scope value. It returns a

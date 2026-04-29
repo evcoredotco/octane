@@ -66,7 +66,8 @@ func (sta *stationHandle) Send(
 		return fmt.Errorf("transport: marshal frame: %w", err)
 	}
 
-	if err = sta.conn.Write(ctx, websocket.MessageText, data); err != nil {
+	err = sta.conn.Write(ctx, websocket.MessageText, data)
+	if err != nil {
 		select {
 		case <-sta.closed:
 			return &ErrStationClosed{}
@@ -114,17 +115,6 @@ func (sta *stationHandle) Expect(ctx context.Context) ([]any, error) {
 	}
 }
 
-// closeError returns the appropriate error for when the inbound channel closes.
-// If the reader goroutine recorded a frame-size error it is returned as
-// *ErrFrameTooLarge; otherwise *ErrStationClosed is returned.
-func (sta *stationHandle) closeError() error {
-	if errPtr := sta.readErr.Load(); errPtr != nil {
-		return *errPtr
-	}
-
-	return &ErrStationClosed{}
-}
-
 // Close gracefully closes the WebSocket connection with status 1000 (normal
 // closure). Subsequent calls to Close are no-ops and return nil. Close is
 // safe for concurrent use.
@@ -147,6 +137,17 @@ func (sta *stationHandle) IsOpen() bool {
 	default:
 		return true
 	}
+}
+
+// closeError returns the appropriate error for when the inbound channel closes.
+// If the reader goroutine recorded a frame-size error it is returned as
+// *ErrFrameTooLarge; otherwise *ErrStationClosed is returned.
+func (sta *stationHandle) closeError() error {
+	if errPtr := sta.readErr.Load(); errPtr != nil {
+		return *errPtr
+	}
+
+	return &ErrStationClosed{}
 }
 
 // readLoop is the reader goroutine started by newStationHandle. It reads
@@ -180,7 +181,8 @@ func (sta *stationHandle) readLoop(ctx context.Context) {
 
 		var frame []any
 
-		if err = json.Unmarshal(data, &frame); err != nil {
+		err = json.Unmarshal(data, &frame)
+		if err != nil {
 			// Non-JSON frames are silently dropped; they are not valid
 			// OCPP-J and will surface as a missing Expect delivery to
 			// the test scenario.

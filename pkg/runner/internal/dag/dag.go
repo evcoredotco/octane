@@ -10,6 +10,7 @@ package dag
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 // Node is a vertex in the dependency graph. Each node corresponds to
@@ -124,6 +125,22 @@ func (g *Graph) AddEdge(edge Edge) error {
 	return nil
 }
 
+// Nodes returns a copy of the graph's nodes in insertion order.
+func (g *Graph) Nodes() []Node {
+	out := make([]Node, len(g.nodes))
+	copy(out, g.nodes)
+
+	return out
+}
+
+// Edges returns a copy of the graph's edges in insertion order.
+func (g *Graph) Edges() []Edge {
+	out := make([]Edge, len(g.edges))
+	copy(out, g.edges)
+
+	return out
+}
+
 // reachablePath returns the sequence of edges that form a path from
 // start to target using a depth-first search over existing adjacency.
 // It returns nil when no path exists. The returned slice represents
@@ -162,22 +179,6 @@ func (g *Graph) dfsPath(
 	return nil
 }
 
-// Nodes returns a copy of the graph's nodes in insertion order.
-func (g *Graph) Nodes() []Node {
-	out := make([]Node, len(g.nodes))
-	copy(out, g.nodes)
-
-	return out
-}
-
-// Edges returns a copy of the graph's edges in insertion order.
-func (g *Graph) Edges() []Edge {
-	out := make([]Edge, len(g.edges))
-	copy(out, g.edges)
-
-	return out
-}
-
 // ErrCycle is returned by [Graph.AddEdge] when inserting an edge would
 // create a cycle in the dependency graph. The Edges field lists every
 // edge that participates in the cycle, enabling callers to produce
@@ -207,15 +208,18 @@ func (e *ErrCycle) Error() string {
 
 	msg := "dag: cycle detected: "
 
+	var msgSb strings.Builder
+
 	for i, edge := range e.Edges {
 		if i > 0 {
-			msg += " -> "
+			msgSb.WriteString(" -> ")
 		}
 
-		msg += edge.From
+		msgSb.WriteString(edge.From)
 	}
 
-	msg += fmt.Sprintf(" -> %s", e.Edges[0].From)
+	msg += msgSb.String()
+	msg += " -> " + e.Edges[0].From
 
 	return msg
 }

@@ -6,6 +6,7 @@
 // returns nil when a frame arrives within the timeout and stashes the frame.
 // AC4: When no frame arrives within the timeout the keyword returns *ErrTimeout
 // carrying the configured timeout and the deterministic-clock deadline.
+
 package primitive_test
 
 import (

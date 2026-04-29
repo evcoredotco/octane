@@ -29,7 +29,8 @@ func ApplyEnv(cfg Config) Config {
 	}
 
 	if maxParallel := os.Getenv("OCTANE_MAX_PARALLEL"); maxParallel != "" {
-		if parsed, err := strconv.Atoi(maxParallel); err == nil {
+		parsed, err := strconv.Atoi(maxParallel)
+		if err == nil {
 			cfg.MaxParallel = parsed
 		}
 	}
@@ -39,7 +40,8 @@ func ApplyEnv(cfg Config) Config {
 	}
 
 	if lockTimeout := os.Getenv("OCTANE_LOCK_TIMEOUT"); lockTimeout != "" {
-		if parsed, err := time.ParseDuration(lockTimeout); err == nil {
+		parsed, lockParseErr := time.ParseDuration(lockTimeout)
+		if lockParseErr == nil {
 			cfg.LockTimeout = parsed
 		}
 	}

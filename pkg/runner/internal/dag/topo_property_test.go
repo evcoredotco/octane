@@ -102,11 +102,13 @@ func Test_dag_TopologicalOrder_cycleReturnsErrCycle(t *testing.T) {
 	grph.AddNode(dag.Node{ID: cycleNodeC})
 
 	// Build A→B→C first (no cycle yet), then close C→A.
-	if err := grph.AddEdge(dag.Edge{From: cycleNodeA, To: cycleNodeB}); err != nil {
+	err := grph.AddEdge(dag.Edge{From: cycleNodeA, To: cycleNodeB})
+	if err != nil {
 		t.Fatalf("AddEdge A→B: unexpected error: %v", err)
 	}
 
-	if err := grph.AddEdge(dag.Edge{From: cycleNodeB, To: cycleNodeC}); err != nil {
+	err = grph.AddEdge(dag.Edge{From: cycleNodeB, To: cycleNodeC})
+	if err != nil {
 		t.Fatalf("AddEdge B→C: unexpected error: %v", err)
 	}
 
@@ -202,12 +204,14 @@ func buildRandomDAG(rng *mrand.Rand) (*dag.Graph, []dag.Edge) {
 
 	var edges []dag.Edge
 
-	for from := 0; from < nodeCount-1; from++ {
+	for from := range nodeCount - 1 {
 		for to := from + 1; to < nodeCount; to++ {
 			// Add this edge with 30 % probability to keep graphs sparse.
 			if rng.IntN(edgeProbabilityDenominator) < edgeProbabilityNumerator {
 				edge := dag.Edge{From: ids[from], To: ids[to]}
-				if err := grph.AddEdge(edge); err == nil {
+
+				err := grph.AddEdge(edge)
+				if err == nil {
 					edges = append(edges, edge)
 				}
 			}

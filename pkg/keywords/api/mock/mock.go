@@ -223,7 +223,8 @@ func NewMockStation() *Station {
 // Use [Station.SentFrames] after the keyword returns to assert the
 // sequence and content of outbound frames.
 func (st *Station) Send(ctx context.Context, frame []any) error {
-	if err := ctx.Err(); err != nil {
+	err := ctx.Err()
+	if err != nil {
 		return err
 	}
 

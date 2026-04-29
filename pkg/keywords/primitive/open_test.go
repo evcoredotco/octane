@@ -170,8 +170,9 @@ func Test_primitive_openWebSocket_StationIsOpen(t *testing.T) {
 		"station": handleStation,
 	})
 
-	if err := keywordFunc(context.Background(), state, args); err != nil {
-		t.Fatalf("open keyword Func: unexpected error: %v", err)
+	openErr := keywordFunc(context.Background(), state, args)
+	if openErr != nil {
+		t.Fatalf("open keyword Func: unexpected error: %v", openErr)
 	}
 
 	sta, err := state.Station(handleStation)
@@ -308,7 +309,8 @@ func Test_primitive_openWebSocket_LogsConnectionMessage(t *testing.T) {
 		"station": handleStation,
 	})
 
-	if err := keywordFunc(context.Background(), state, args); err != nil {
+	err := keywordFunc(context.Background(), state, args)
+	if err != nil {
 		t.Fatalf("open keyword Func: unexpected error: %v", err)
 	}
 

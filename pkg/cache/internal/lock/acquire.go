@@ -33,7 +33,8 @@ type lockCloser struct {
 // Close releases the exclusive flock and closes the underlying file
 // descriptor by delegating to [unlockFile].
 func (lc *lockCloser) Close() error {
-	if err := unlockFile(lc.file); err != nil {
+	err := unlockFile(lc.file)
+	if err != nil {
 		return fmt.Errorf("lock: Close: %w", err)
 	}
 
@@ -107,7 +108,8 @@ func Acquire(
 
 		sleepDuration := backoff.next()
 
-		if err = sleepOrCancel(deadline, sleepDuration); err != nil {
+		err = sleepOrCancel(deadline, sleepDuration)
+		if err != nil {
 			return nil, err
 		}
 	}

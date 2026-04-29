@@ -39,7 +39,8 @@ func TestBootNotificationHandshake(t *testing.T) {
 		"chargePointModel":  "TestCP",
 		"chargePointVendor": "OCTANE",
 	}}
-	if err = sta.Send(ctx, callFrame); err != nil {
+	err = sta.Send(ctx, callFrame)
+	if err != nil {
 		t.Fatalf("send BootNotification: %v", err)
 	}
 
@@ -61,7 +62,8 @@ func TestBootNotificationHandshake(t *testing.T) {
 	var payload struct {
 		Status string `json:"status"`
 	}
-	if err = json.Unmarshal(result.Payload, &payload); err != nil {
+	err = json.Unmarshal(result.Payload, &payload)
+	if err != nil {
 		t.Fatalf("unmarshal payload: %v", err)
 	}
 

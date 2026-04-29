@@ -40,7 +40,8 @@ func closeStation(
 		)
 	}
 
-	if closeErr := sta.Close(); closeErr != nil {
+	closeErr := sta.Close()
+	if closeErr != nil {
 		return fmt.Errorf(
 			"primitive: close station %q: %w",
 			handle,

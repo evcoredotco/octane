@@ -3,6 +3,7 @@ package clock_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -71,7 +72,7 @@ func TestDeterministicSleepCancelCtx(t *testing.T) {
 	cancel()
 
 	err := <-done
-	if err != context.Canceled {
+	if !errors.Is(err, context.Canceled) {
 		t.Errorf(
 			"Sleep with cancelled ctx: got %v, want %v",
 			err,
@@ -108,7 +109,8 @@ func TestDeterministicSleepZero(t *testing.T) {
 
 	clk := clock.Deterministic(seed)
 
-	if err := clk.Sleep(context.Background(), 0); err != nil {
+	err := clk.Sleep(context.Background(), 0)
+	if err != nil {
 		t.Errorf("Sleep(0): got error %v, want nil", err)
 	}
 }

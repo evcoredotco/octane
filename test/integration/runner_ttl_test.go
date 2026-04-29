@@ -3,6 +3,7 @@
 // Task: T-005-57
 // AC10: Cache-TTL: the cache treats an entry with an expired TTL as a miss and
 // causes the runner to re-execute the story.
+
 package integration_test
 
 import (
@@ -71,12 +72,14 @@ func Test_runner_CacheTTLDirectExpiry(t *testing.T) {
 		TTL:       valueTTLOne,
 	}
 
-	if err = storyCache.Put(context.Background(), key, entry); err != nil {
+	err = storyCache.Put(context.Background(), key, entry)
+	if err != nil {
 		t.Fatalf("cache.Put: %v", err)
 	}
 
 	// Invariant: entry is readable immediately (not yet expired).
-	if _, getErr := storyCache.Get(context.Background(), key); getErr != nil {
+	_, getErr := storyCache.Get(context.Background(), key)
+	if getErr != nil {
 		t.Fatalf("cache.Get before expiry: want hit, got %v", getErr)
 	}
 

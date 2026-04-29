@@ -142,7 +142,8 @@ func Test_robotxml_Golden(t *testing.T) {
 
 	dir1 := t.TempDir()
 
-	if err := robotxml.WriteRobotXML(result, dir1, opts); err != nil {
+	err := robotxml.WriteRobotXML(result, dir1, opts)
+	if err != nil {
 		t.Fatalf("WriteRobotXML dir1: %v", err)
 	}
 
@@ -151,7 +152,8 @@ func Test_robotxml_Golden(t *testing.T) {
 	// Determinism check: write a second time and compare bytes.
 	dir2 := t.TempDir()
 
-	if err := robotxml.WriteRobotXML(result, dir2, opts); err != nil {
+	err = robotxml.WriteRobotXML(result, dir2, opts)
+	if err != nil {
 		t.Fatalf("WriteRobotXML dir2: %v", err)
 	}
 
@@ -162,17 +164,21 @@ func Test_robotxml_Golden(t *testing.T) {
 	}
 
 	// Well-formedness check: parse the output back with encoding/xml.
-	var parsed interface{}
-	if err := xml.Unmarshal(got, &parsed); err != nil {
+	var parsed any
+
+	err = xml.Unmarshal(got, &parsed)
+	if err != nil {
 		t.Errorf("output.xml is not well-formed XML: %v", err)
 	}
 
 	if *updateFlag {
-		if err := os.MkdirAll("testdata", 0o750); err != nil {
+		err := os.MkdirAll("testdata", 0o750)
+		if err != nil {
 			t.Fatalf("creating testdata: %v", err)
 		}
 
-		if err := os.WriteFile(goldenFilePath, got, 0o600); err != nil {
+		err = os.WriteFile(goldenFilePath, got, 0o600)
+		if err != nil {
 			t.Fatalf("updating golden file: %v", err)
 		}
 

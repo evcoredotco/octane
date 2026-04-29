@@ -27,7 +27,8 @@ func TestJSONFloat64CoercionCall(t *testing.T) {
 
 	var frame []any
 
-	if err := json.Unmarshal([]byte(raw), &frame); err != nil {
+	err := json.Unmarshal([]byte(raw), &frame)
+	if err != nil {
 		t.Fatalf("json.Unmarshal failed: %v", err)
 	}
 
@@ -46,10 +47,11 @@ func TestJSONFloat64CoercionCall(t *testing.T) {
 		)
 	}
 
-	if _, err := wire.ParseCall(frame); err != nil {
+	_, parseCallErr := wire.ParseCall(frame)
+	if parseCallErr != nil {
 		t.Fatalf(
 			"ParseCall rejected a frame with float64 type code: %v",
-			err,
+			parseCallErr,
 		)
 	}
 }
@@ -63,7 +65,8 @@ func TestJSONFloat64CoercionResult(t *testing.T) {
 
 	var frame []any
 
-	if err := json.Unmarshal([]byte(raw), &frame); err != nil {
+	err := json.Unmarshal([]byte(raw), &frame)
+	if err != nil {
 		t.Fatalf("json.Unmarshal failed: %v", err)
 	}
 
@@ -82,10 +85,11 @@ func TestJSONFloat64CoercionResult(t *testing.T) {
 		)
 	}
 
-	if _, err := wire.ParseResult(frame); err != nil {
+	_, parseResultErr := wire.ParseResult(frame)
+	if parseResultErr != nil {
 		t.Fatalf(
 			"ParseResult rejected a frame with float64 type code: %v",
-			err,
+			parseResultErr,
 		)
 	}
 }
@@ -99,7 +103,8 @@ func TestJSONFloat64CoercionError(t *testing.T) {
 
 	var frame []any
 
-	if err := json.Unmarshal([]byte(raw), &frame); err != nil {
+	err := json.Unmarshal([]byte(raw), &frame)
+	if err != nil {
 		t.Fatalf("json.Unmarshal failed: %v", err)
 	}
 
@@ -118,10 +123,11 @@ func TestJSONFloat64CoercionError(t *testing.T) {
 		)
 	}
 
-	if _, err := wire.ParseError(frame); err != nil {
+	_, parseErrorErr := wire.ParseError(frame)
+	if parseErrorErr != nil {
 		t.Fatalf(
 			"ParseError rejected a frame with float64 type code: %v",
-			err,
+			parseErrorErr,
 		)
 	}
 }

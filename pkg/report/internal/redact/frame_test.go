@@ -22,7 +22,9 @@ func Test_redact_Frame_credentialField(t *testing.T) {
 	scrubbed := redact.Frame(raw)
 
 	var parsed []any
-	if err := json.Unmarshal(scrubbed, &parsed); err != nil {
+
+	err := json.Unmarshal(scrubbed, &parsed)
+	if err != nil {
 		t.Fatalf("scrubbed frame is not valid JSON: %v", err)
 	}
 
@@ -58,7 +60,9 @@ func Test_redact_Frame_jwtInString(t *testing.T) {
 	scrubbed := redact.Frame(raw)
 
 	var parsed []any
-	if err := json.Unmarshal(scrubbed, &parsed); err != nil {
+
+	err := json.Unmarshal(scrubbed, &parsed)
+	if err != nil {
 		t.Fatalf("scrubbed frame is not valid JSON: %v", err)
 	}
 

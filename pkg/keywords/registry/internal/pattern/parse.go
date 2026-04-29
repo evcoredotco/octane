@@ -148,10 +148,7 @@ type Token struct {
 // Parse returns.
 func Parse(pattern string) ([]Token, error) {
 	// Pre-allocate at least one slot; typical patterns are short.
-	initialCap := len(pattern) / 4
-	if initialCap < 1 {
-		initialCap = 1
-	}
+	initialCap := max(len(pattern)/4, 1)
 
 	tokens := make([]Token, 0, initialCap)
 
@@ -244,8 +241,8 @@ func parsePlaceholder(raw, fullPattern string) (Token, error) {
 		)
 	}
 
-	colonIdx := strings.IndexByte(inner, ':')
-	if colonIdx == -1 {
+	before, after, ok := strings.Cut(inner, ":")
+	if !ok {
 		return Token{}, fmt.Errorf(
 			"placeholder %q is missing the colon separator "+
 				"in pattern %q; use {name:type} syntax",
@@ -254,8 +251,8 @@ func parsePlaceholder(raw, fullPattern string) (Token, error) {
 		)
 	}
 
-	name := inner[:colonIdx]
-	typePart := inner[colonIdx+1:]
+	name := before
+	typePart := after
 
 	if name == "" {
 		return Token{}, fmt.Errorf(

@@ -38,9 +38,11 @@ Scenario: Leaf passes
 func Test_runner_RunPartialCache(t *testing.T) {
 	t.Parallel()
 
-	const totalStories = 10
-	const deletedEntries = 2
-	const expectedHits = totalStories - deletedEntries
+	const (
+		totalStories   = 10
+		deletedEntries = 2
+		expectedHits   = totalStories - deletedEntries
+	)
 
 	storyDir := t.TempDir()
 	cacheDir := t.TempDir()
@@ -89,7 +91,8 @@ func Test_runner_RunPartialCache(t *testing.T) {
 	}
 
 	// Delete 2 cache entries from the results tree so the third run misses them.
-	if err = deleteNCacheEntries(cacheDir, deletedEntries); err != nil {
+	err = deleteNCacheEntries(cacheDir, deletedEntries)
+	if err != nil {
 		t.Fatalf("deleteNCacheEntries: %v", err)
 	}
 
@@ -160,7 +163,8 @@ func deleteNCacheEntries(cacheDir string, n int) error {
 
 			hashPath := filepath.Join(prefixPath, hash.Name())
 
-			if err = os.RemoveAll(hashPath); err != nil {
+			err = os.RemoveAll(hashPath)
+			if err != nil {
 				return fmt.Errorf("remove entry dir %q: %w", hashPath, err)
 			}
 

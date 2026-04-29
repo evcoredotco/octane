@@ -5,6 +5,7 @@
 // AC5: Given a primitive keyword "wait {duration:duration}", when the
 // keyword executes, then it sleeps the deterministic clock by exactly
 // that duration; in deterministic mode, no real wall-clock time elapses.
+
 package primitive_test
 
 import (

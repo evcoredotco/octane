@@ -41,7 +41,8 @@ func Test_lock_AcquireAndRelease(t *testing.T) {
 		t.Fatalf("first Acquire: %v", err)
 	}
 
-	if err = closer.Close(); err != nil {
+	err = closer.Close()
+	if err != nil {
 		t.Fatalf("Close: %v", err)
 	}
 
@@ -51,7 +52,8 @@ func Test_lock_AcquireAndRelease(t *testing.T) {
 		t.Fatalf("second Acquire after Close: %v", err)
 	}
 
-	if err = closer2.Close(); err != nil {
+	err = closer2.Close()
+	if err != nil {
 		t.Fatalf("second Close: %v", err)
 	}
 }
@@ -73,7 +75,8 @@ func Test_lock_NoWaitReturnsBusy(t *testing.T) {
 	}
 
 	defer func() {
-		if closeErr := holder.Close(); closeErr != nil {
+		closeErr := holder.Close()
+		if closeErr != nil {
 			t.Errorf("holder Close: %v", closeErr)
 		}
 	}()
@@ -107,7 +110,8 @@ func Test_lock_TimeoutExpires(t *testing.T) {
 	}
 
 	defer func() {
-		if closeErr := holder.Close(); closeErr != nil {
+		closeErr := holder.Close()
+		if closeErr != nil {
 			t.Errorf("holder Close: %v", closeErr)
 		}
 	}()
@@ -164,7 +168,8 @@ func Test_lock_ContextCancel(t *testing.T) {
 	}
 
 	defer func() {
-		if closeErr := holder.Close(); closeErr != nil {
+		closeErr := holder.Close()
+		if closeErr != nil {
 			t.Errorf("holder Close: %v", closeErr)
 		}
 	}()
@@ -176,16 +181,10 @@ func Test_lock_ContextCancel(t *testing.T) {
 		waitGroup  sync.WaitGroup
 	)
 
-	const concurrency = 1
-
-	waitGroup.Add(concurrency)
-
-	go func() {
-		defer waitGroup.Done()
-
+	waitGroup.Go(func() {
 		// No timeout; rely solely on context cancellation.
 		_, acquireErr = lock.Acquire(cancelCtx, path, 0, false)
-	}()
+	})
 
 	// Give the goroutine a moment to enter the retry loop before
 	// cancelling. A short sleep is acceptable here because the

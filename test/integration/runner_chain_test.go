@@ -173,7 +173,8 @@ func Test_runner_RunChain(t *testing.T) {
 func writeFile(t *testing.T, path, content string) {
 	t.Helper()
 
-	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+	err := os.WriteFile(path, []byte(content), 0o600)
+	if err != nil {
 		t.Fatalf("writeFile(%q): %v", path, err)
 	}
 }

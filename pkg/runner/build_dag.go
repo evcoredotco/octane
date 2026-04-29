@@ -87,8 +87,7 @@ func scopeKeysFor(scope ast.Scope, stationCount int, runID string) []string {
 	case ast.ScopeGlobal:
 		return []string{""}
 
-	default:
-		// ScopePerStation is the default.
+	case ast.ScopePerStation:
 		keys := make([]string, stationCount)
 
 		for idx := range stationCount {
@@ -97,6 +96,9 @@ func scopeKeysFor(scope ast.Scope, stationCount int, runID string) []string {
 
 		return keys
 	}
+
+	// Unreachable: all Scope values handled above.
+	return nil
 }
 
 // buildDAG constructs the dependency DAG from the provided stories.
@@ -206,7 +208,7 @@ func buildDAG(
 			}
 
 			for _, dep := range storyAST.Meta.Depends {
-				if err := addDepEdges(
+				err := addDepEdges(
 					dep,
 					dependentNID,
 					idx,
@@ -215,7 +217,8 @@ func buildDAG(
 					grph,
 					&nodes,
 					nodeIdx,
-				); err != nil {
+				)
+				if err != nil {
 					return nil, err
 				}
 			}
@@ -297,7 +300,8 @@ func addDepEdges(
 
 		edge := dag.Edge{From: prereqNID, To: dependentNID}
 
-		if err := grph.AddEdge(edge); err != nil {
+		err := grph.AddEdge(edge)
+		if err != nil {
 			var errCycle *dag.ErrCycle
 			if errors.As(err, &errCycle) {
 				return fmt.Errorf("%w: %w", ErrCycle, errCycle)

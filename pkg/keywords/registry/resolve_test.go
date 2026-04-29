@@ -306,7 +306,6 @@ func Test_registry_Resolve_noMatchReturnsErrNoMatch(t *testing.T) {
 	registerPrimitive(patternPrimitive)
 
 	_, err := Resolve(stepUnregistered, api.OCPP16)
-
 	if err == nil {
 		t.Fatal("Resolve: expected *ErrNoMatch, got nil")
 	}
@@ -419,7 +418,6 @@ func Test_registry_Resolve_typeMismatchReturnedForBadIntToken(t *testing.T) {
 	registerPrimitive(patternIntType)
 
 	_, err := Resolve(stepIntTypeBad, api.OCPP16)
-
 	if err == nil {
 		t.Fatal("Resolve: expected *ErrTypeMismatch, got nil")
 	}
@@ -559,7 +557,6 @@ func Test_registry_Resolve_emptyRegistryReturnsErrNoMatch(t *testing.T) {
 	reset()
 
 	_, err := Resolve(stepPrimitive, api.OCPP16)
-
 	if err == nil {
 		t.Fatal("Resolve on empty registry: expected *ErrNoMatch, got nil")
 	}

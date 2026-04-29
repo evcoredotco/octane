@@ -82,7 +82,7 @@ func TestDeterministicSameSeedIdentical(t *testing.T) {
 	rng1 := rand.Deterministic(goldenSeed)
 	rng2 := rand.Deterministic(goldenSeed)
 
-	for idx := 0; idx < iterations; idx++ {
+	for idx := range iterations {
 		got1 := rng1.Int63()
 		got2 := rng2.Int63()
 
@@ -91,7 +91,7 @@ func TestDeterministicSameSeedIdentical(t *testing.T) {
 		}
 	}
 
-	for idx := 0; idx < iterations; idx++ {
+	for idx := range iterations {
 		got1 := rng1.Float64()
 		got2 := rng2.Float64()
 
@@ -100,7 +100,7 @@ func TestDeterministicSameSeedIdentical(t *testing.T) {
 		}
 	}
 
-	for idx := 0; idx < iterations; idx++ {
+	for idx := range iterations {
 		got1 := rng1.Intn(100)
 		got2 := rng2.Intn(100)
 
@@ -120,7 +120,7 @@ func TestDeterministicDifferentSeedsDiffer(t *testing.T) {
 
 	differ := false
 
-	for idx := 0; idx < 20; idx++ {
+	for range 20 {
 		if rng1.Int63() != rng2.Int63() {
 			differ = true
 
@@ -140,21 +140,21 @@ func TestRealRandInterface(t *testing.T) {
 
 	rng := rand.Real()
 
-	for idx := 0; idx < 20; idx++ {
+	for idx := range 20 {
 		val := rng.Int63()
 		if val < 0 {
 			t.Errorf("Int63[%d]=%d is negative", idx, val)
 		}
 	}
 
-	for idx := 0; idx < 20; idx++ {
+	for idx := range 20 {
 		val := rng.Float64()
 		if val < 0.0 || val >= 1.0 {
 			t.Errorf("Float64[%d]=%g out of [0.0, 1.0)", idx, val)
 		}
 	}
 
-	for idx := 0; idx < 20; idx++ {
+	for idx := range 20 {
 		val := rng.Intn(100)
 		if val < 0 || val >= 100 {
 			t.Errorf("Intn(100)[%d]=%d out of [0, 100)", idx, val)
@@ -173,19 +173,19 @@ func TestDeterministicPrintGolden(t *testing.T) {
 
 	t.Log("Int63 sequence:")
 
-	for idx := 0; idx < 20; idx++ {
+	for idx := range 20 {
 		t.Logf("  [%02d] %d", idx, rng.Int63())
 	}
 
 	t.Log("Float64 sequence:")
 
-	for idx := 0; idx < 20; idx++ {
+	for idx := range 20 {
 		t.Logf("  [%02d] %v", idx, rng.Float64())
 	}
 
 	t.Log("Intn(100) sequence:")
 
-	for idx := 0; idx < 10; idx++ {
+	for idx := range 10 {
 		t.Logf("  [%02d] %d", idx, rng.Intn(100))
 	}
 }

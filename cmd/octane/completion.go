@@ -53,7 +53,7 @@ func generateCompletion(_ *cobra.Command, args []string) error {
 	case "powershell":
 		err = rootCmd.GenPowerShellCompletionWithDesc(os.Stdout)
 	default:
-		dieErr(
+		dieErrf(
 			exitcode.ConfigError,
 			"octane: unsupported shell %q;"+
 				" valid values: bash, zsh, fish, powershell\n",
@@ -64,7 +64,7 @@ func generateCompletion(_ *cobra.Command, args []string) error {
 	}
 
 	if err != nil {
-		dieErr(exitcode.ToolError, "octane: generate completion: %v\n", err)
+		dieErrf(exitcode.ToolError, "octane: generate completion: %v\n", err)
 	}
 
 	return nil

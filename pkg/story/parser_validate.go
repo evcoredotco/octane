@@ -127,7 +127,7 @@ func findUnbound(text string, declared map[string]struct{}) []string {
 // stripTypeSuffix removes the ':type' suffix from a placeholder inner
 // string, returning only the name portion.
 func stripTypeSuffix(inner string) string {
-	for idx := 0; idx < len(inner); idx++ {
+	for idx := range len(inner) {
 		if inner[idx] == ':' {
 			return inner[:idx]
 		}

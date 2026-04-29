@@ -61,7 +61,8 @@ func sendRawFrame(
 		)
 	}
 
-	if sendErr := sta.Send(ctx, frame); sendErr != nil {
+	sendErr := sta.Send(ctx, frame)
+	if sendErr != nil {
 		return fmt.Errorf(
 			"primitive: send raw frame on station %q: %w",
 			handle,
@@ -112,7 +113,8 @@ func sendRawBytes(
 
 	var frame []any
 
-	if jsonErr := json.Unmarshal(decoded, &frame); jsonErr != nil {
+	jsonErr := json.Unmarshal(decoded, &frame)
+	if jsonErr != nil {
 		return fmt.Errorf(
 			"primitive: send raw bytes on station %q: "+
 				"decoded bytes are not a JSON array: %w",
@@ -130,7 +132,8 @@ func sendRawBytes(
 		)
 	}
 
-	if sendErr := sta.Send(ctx, frame); sendErr != nil {
+	sendErr := sta.Send(ctx, frame)
+	if sendErr != nil {
 		return fmt.Errorf(
 			"primitive: send raw bytes on station %q: %w",
 			handle,

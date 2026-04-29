@@ -43,7 +43,9 @@ func mustPanic(t *testing.T, callFunc func()) string {
 
 	var recovered any
 
-	didPanic := func() (panicked bool) {
+	var panicked bool
+
+	func() {
 		defer func() {
 			if r := recover(); r != nil {
 				recovered = r
@@ -52,9 +54,9 @@ func mustPanic(t *testing.T, callFunc func()) string {
 		}()
 
 		callFunc()
-
-		return false
 	}()
+
+	didPanic := panicked
 
 	if !didPanic {
 		t.Fatal("expected Register to panic on collision, but it did not")

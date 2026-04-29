@@ -102,8 +102,9 @@ func TestPrimitivesSmoke_BootNotificationCALLRESULT(t *testing.T) {
 		"subprotocol": subprotocolOCPP16Smoke,
 	})
 
-	if err := openFunc(ctx, state, openArgs); err != nil {
-		t.Fatalf("open WebSocket: %v", err)
+	openFuncErr := openFunc(ctx, state, openArgs)
+	if openFuncErr != nil {
+		t.Fatalf("open WebSocket: %v", openFuncErr)
 	}
 
 	// ── Step 2: assert connection is open ─────────────────────────────────────
@@ -116,8 +117,9 @@ func TestPrimitivesSmoke_BootNotificationCALLRESULT(t *testing.T) {
 
 	isOpenArgs := api.NewArgs(map[string]any{"station": stationHandle})
 
-	if err := isOpenFunc(ctx, state, isOpenArgs); err != nil {
-		t.Fatalf("connection-open assertion: %v", err)
+	isOpenFuncErr := isOpenFunc(ctx, state, isOpenArgs)
+	if isOpenFuncErr != nil {
+		t.Fatalf("connection-open assertion: %v", isOpenFuncErr)
 	}
 
 	// ── Step 3: send BootNotification CALL ────────────────────────────────────
@@ -146,8 +148,9 @@ func TestPrimitivesSmoke_BootNotificationCALLRESULT(t *testing.T) {
 		"station": stationHandle,
 	})
 
-	if err := sendFunc(ctx, state, sendArgs); err != nil {
-		t.Fatalf("send raw frame: %v", err)
+	sendFuncErr := sendFunc(ctx, state, sendArgs)
+	if sendFuncErr != nil {
+		t.Fatalf("send raw frame: %v", sendFuncErr)
 	}
 
 	// ── Step 4: expect any inbound frame within the timeout ───────────────────
@@ -209,8 +212,9 @@ func TestPrimitivesSmoke_BootNotificationCALLRESULT(t *testing.T) {
 		Status string `json:"status"`
 	}
 
-	if err := json.Unmarshal(result.Payload, &payload); err != nil {
-		t.Fatalf("unmarshal BootNotification response payload: %v", err)
+	unmarshalErr := json.Unmarshal(result.Payload, &payload)
+	if unmarshalErr != nil {
+		t.Fatalf("unmarshal BootNotification response payload: %v", unmarshalErr)
 	}
 
 	if payload.Status != "Accepted" {
@@ -228,8 +232,9 @@ func TestPrimitivesSmoke_BootNotificationCALLRESULT(t *testing.T) {
 
 	closeArgs := api.NewArgs(map[string]any{"station": stationHandle})
 
-	if err := closeFunc(ctx, state, closeArgs); err != nil {
-		t.Fatalf("close station: %v", err)
+	closeFuncErr := closeFunc(ctx, state, closeArgs)
+	if closeFuncErr != nil {
+		t.Fatalf("close station: %v", closeFuncErr)
 	}
 
 	isClosedFunc := resolveStep(
@@ -237,8 +242,9 @@ func TestPrimitivesSmoke_BootNotificationCALLRESULT(t *testing.T) {
 		"the connection on station {station:string} is closed",
 	)
 
-	if err := isClosedFunc(ctx, state, isOpenArgs); err != nil {
-		t.Fatalf("connection-closed assertion: %v", err)
+	isClosedFuncErr := isClosedFunc(ctx, state, isOpenArgs)
+	if isClosedFuncErr != nil {
+		t.Fatalf("connection-closed assertion: %v", isClosedFuncErr)
 	}
 
 	_ = sta

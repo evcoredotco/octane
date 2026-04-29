@@ -361,13 +361,9 @@ func runScheduler(
 	// correct synchronization here.
 	var wg sync.WaitGroup
 
-	wg.Add(1)
-
-	go func() {
-		defer wg.Done()
-
+	wg.Go(func() {
 		completionLoop()
-	}()
+	})
 
 	wg.Wait()
 
@@ -498,7 +494,8 @@ func executeWithLock(
 	}()
 
 	// Step 3: re-read after acquiring lock (double-checked locking).
-	if entry, entryErr := storyCache.Get(ctx, cacheKey); entryErr == nil {
+	entry, entryErr := storyCache.Get(ctx, cacheKey)
+	if entryErr == nil {
 		return cacheHitResult(storyNodeVal, entry, startedAt, clk)
 	}
 
@@ -536,7 +533,8 @@ func cacheHitResult(
 		Status string `json:"status"`
 	}
 
-	if err := json.Unmarshal(entry.Result, &recorded); err == nil {
+	err := json.Unmarshal(entry.Result, &recorded)
+	if err == nil {
 		if recorded.Status == "skipped" {
 			cacheStatus = CacheHitSkip
 		}
@@ -578,7 +576,7 @@ func executeStory(
 
 	ocppVer := resolveOCPPVersion(storyNodeVal.story.Meta.Tags, cfg.OCPPVersion)
 
-	var findings []Finding
+	findings := make([]Finding, 0, len(state.logLines))
 
 	result := executeAllSections(
 		ctx,
@@ -663,7 +661,8 @@ func runSteps(
 	failed := false
 
 	for _, step := range steps {
-		if err := runStep(ctx, step, state, ocppVer, findings); err != nil {
+		err := runStep(ctx, step, state, ocppVer, findings)
+		if err != nil {
 			failed = true
 		}
 	}
@@ -691,7 +690,8 @@ func runStep(
 		return err
 	}
 
-	if err = match.Keyword.Func(ctx, state, match.Args); err != nil {
+	err = match.Keyword.Func(ctx, state, match.Args)
+	if err != nil {
 		*findings = append(*findings, Finding{
 			Message:  fmt.Sprintf("step %q: %v", step.Text, err),
 			Severity: "error",
@@ -770,7 +770,7 @@ func buildCacheKey(
 
 	ocppVer := cfg.OCPPVersion
 	if ocppVer == "" {
-		ocppVer = "unknown"
+		ocppVer = statusUnknown
 	}
 
 	return cache.Key{
@@ -1025,9 +1025,9 @@ func generateRunID(clk clock.Clock) string {
 // snake_case (no "/"); scope keys are alphanumeric station handles
 // ("CP01") or run IDs (hex strings). The split is safe because
 // story IDs never contain a "/".
-func splitNodeID(nodeID string) (storyID, scopeKey string) {
-	if idx := strings.IndexByte(nodeID, '/'); idx >= 0 {
-		return nodeID[:idx], nodeID[idx+1:]
+func splitNodeID(nodeID string) (string, string) {
+	if before, after, ok := strings.Cut(nodeID, "/"); ok {
+		return before, after
 	}
 
 	return nodeID, ""

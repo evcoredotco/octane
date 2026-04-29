@@ -2,6 +2,7 @@
 //
 // Task: T-005-56
 // AC9: 16 leaf stories with no inter-dependencies all pass when MaxParallel:4.
+
 package integration_test
 
 import (
@@ -33,8 +34,10 @@ Scenario: Leaf passes
 func Test_runner_RunParallelLeafStories(t *testing.T) {
 	t.Parallel()
 
-	const totalLeaves = 16
-	const maxParallel = 4
+	const (
+		totalLeaves = 16
+		maxParallel = 4
+	)
 
 	storyDir := t.TempDir()
 

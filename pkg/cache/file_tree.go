@@ -58,14 +58,6 @@ type FileCache struct {
 	clk clock.Clock
 }
 
-// resultDir returns the directory path for a given hash, including
-// the two-character fanout prefix:
-//
-//	<dir>/results/<hash[:2]>/<hash>/
-func (fc *FileCache) resultDir(hash string) string {
-	return filepath.Join(fc.dir, "results", hash[:2], hash)
-}
-
 // Get retrieves the cache entry for the given key.
 //
 // Get computes the key hash, reads
@@ -84,7 +76,8 @@ func (fc *FileCache) Get(
 	ctx context.Context,
 	key Key,
 ) (*Entry, error) {
-	if err := ctx.Err(); err != nil {
+	err := ctx.Err()
+	if err != nil {
 		return nil, fmt.Errorf("cache: Get: %w", err)
 	}
 
@@ -102,7 +95,8 @@ func (fc *FileCache) Get(
 
 	var env resultEnvelope
 
-	if err = json.Unmarshal(data, &env); err != nil {
+	err = json.Unmarshal(data, &env)
+	if err != nil {
 		// Treat corrupt entry as a cache miss so the runner
 		// re-executes and overwrites the bad file.
 		return nil, ErrCacheMiss
@@ -158,14 +152,16 @@ func (fc *FileCache) Put(
 	key Key,
 	entry Entry,
 ) error {
-	if err := ctx.Err(); err != nil {
+	err := ctx.Err()
+	if err != nil {
 		return fmt.Errorf("cache: Put: %w", err)
 	}
 
 	hash := key.Hash()
 	dir := fc.resultDir(hash)
 
-	if err := os.MkdirAll(dir, 0o750); err != nil {
+	err = os.MkdirAll(dir, 0o750)
+	if err != nil {
 		return fmt.Errorf("cache: create entry dir: %w", err)
 	}
 
@@ -174,7 +170,8 @@ func (fc *FileCache) Put(
 	if tracePresent {
 		tracePath := filepath.Join(dir, "trace.json")
 
-		if err := atomicWriteFile(tracePath, entry.Trace); err != nil {
+		err := atomicWriteFile(tracePath, entry.Trace)
+		if err != nil {
 			return fmt.Errorf("cache: write trace.json: %w", err)
 		}
 	}
@@ -204,15 +201,25 @@ func (fc *FileCache) Put(
 
 	resultPath := filepath.Join(dir, "result.json")
 
-	if err = atomicWriteFile(resultPath, data); err != nil {
+	err = atomicWriteFile(resultPath, data)
+	if err != nil {
 		return fmt.Errorf("cache: write result.json: %w", err)
 	}
 
-	if err = fsyncDir(dir); err != nil {
+	err = fsyncDir(dir)
+	if err != nil {
 		return fmt.Errorf("cache: fsync entry dir: %w", err)
 	}
 
 	return nil
+}
+
+// resultDir returns the directory path for a given hash, including
+// the two-character fanout prefix:
+//
+//	<dir>/results/<hash[:2]>/<hash>/
+func (fc *FileCache) resultDir(hash string) string {
+	return filepath.Join(fc.dir, "results", hash[:2], hash)
 }
 
 // cacheReadFile reads a cache file at the given path.
@@ -224,6 +231,7 @@ func (fc *FileCache) Put(
 // cache-internal.
 func cacheReadFile(path string) ([]byte, error) {
 	data, err := os.ReadFile(path) //nolint:gosec // G304: cache path
+
 	return data, err
 }
 
@@ -268,7 +276,8 @@ func atomicWriteFile(path string, data []byte) error {
 		return fmt.Errorf("close temp file: %w", closeErr)
 	}
 
-	if err = os.Rename(tmp, path); err != nil {
+	err = os.Rename(tmp, path)
+	if err != nil {
 		_ = os.Remove(tmp)
 
 		return fmt.Errorf("rename temp file: %w", err)
@@ -294,7 +303,8 @@ func fsyncDir(dir string) error {
 	// Sync error on directories is non-fatal on non-Linux platforms.
 	_ = dirHandle.Sync()
 
-	if err = dirHandle.Close(); err != nil {
+	err = dirHandle.Close()
+	if err != nil {
 		return fmt.Errorf("close dir after fsync: %w", err)
 	}
 

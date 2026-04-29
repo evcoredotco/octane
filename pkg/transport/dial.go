@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -96,7 +97,8 @@ func Dial(
 
 	conn.SetReadLimit(maxBytes)
 
-	if err = validateSubprotocol(conn, opts.Subprotocols); err != nil {
+	err = validateSubprotocol(conn, opts.Subprotocols)
+	if err != nil {
 		_ = conn.Close(websocket.StatusNormalClosure, "subprotocol mismatch")
 
 		return nil, err
@@ -236,11 +238,5 @@ var tlsErrorMarkers = []string{
 
 // contains reports whether needle is an element of haystack.
 func contains(haystack []string, needle string) bool {
-	for _, item := range haystack {
-		if item == needle {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(haystack, needle)
 }

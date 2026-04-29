@@ -68,11 +68,15 @@ for debugging cache invalidation behaviour.`,
 	RunE: cacheKey,
 }
 
+// defaultMaxAge is the default value for the --max-age flag used by
+// "octane cache prune". Entries older than this are removed by default.
+const defaultMaxAge = 24 * time.Hour
+
 func init() {
 	cachePruneCmd.Flags().DurationVar(
 		&cachePruneFlags.maxAge,
 		"max-age",
-		24*time.Hour,
+		defaultMaxAge,
 		"maximum age of cache entries to keep (e.g. 24h, 7d)",
 	)
 
@@ -111,7 +115,7 @@ func resolveCacheDirForCLI() (string, error) {
 func cacheInfo(_ *cobra.Command, _ []string) error {
 	cacheDir, err := resolveCacheDirForCLI()
 	if err != nil {
-		dieErr(exitcode.ToolError, "octane: %v\n", err)
+		dieErrf(exitcode.ToolError, "octane: %v\n", err)
 
 		return nil
 	}
@@ -125,20 +129,21 @@ func cacheInfo(_ *cobra.Command, _ []string) error {
 func cachePrune(_ *cobra.Command, _ []string) error {
 	cacheDir, err := resolveCacheDirForCLI()
 	if err != nil {
-		dieErr(exitcode.ToolError, "octane: %v\n", err)
+		dieErrf(exitcode.ToolError, "octane: %v\n", err)
 
 		return nil
 	}
 
 	cacheStore, err := cache.Open(cacheDir)
 	if err != nil {
-		dieErr(exitcode.ToolError, "octane: open cache: %v\n", err)
+		dieErrf(exitcode.ToolError, "octane: open cache: %v\n", err)
 
 		return nil
 	}
 
-	if err = cacheStore.Prune(context.Background(), cachePruneFlags.maxAge); err != nil {
-		dieErr(exitcode.ToolError, "octane: prune cache: %v\n", err)
+	err = cacheStore.Prune(context.Background(), cachePruneFlags.maxAge)
+	if err != nil {
+		dieErrf(exitcode.ToolError, "octane: prune cache: %v\n", err)
 
 		return nil
 	}
@@ -152,21 +157,23 @@ func cachePrune(_ *cobra.Command, _ []string) error {
 func cacheClear(_ *cobra.Command, _ []string) error {
 	cacheDir, err := resolveCacheDirForCLI()
 	if err != nil {
-		dieErr(exitcode.ToolError, "octane: %v\n", err)
+		dieErrf(exitcode.ToolError, "octane: %v\n", err)
 
 		return nil
 	}
 
 	resultsDir := filepath.Join(cacheDir, "results")
 
-	if err = os.RemoveAll(resultsDir); err != nil {
-		dieErr(exitcode.ToolError, "octane: remove results dir: %v\n", err)
+	err = os.RemoveAll(resultsDir)
+	if err != nil {
+		dieErrf(exitcode.ToolError, "octane: remove results dir: %v\n", err)
 
 		return nil
 	}
 
-	if err = os.MkdirAll(resultsDir, 0o750); err != nil {
-		dieErr(exitcode.ToolError, "octane: recreate results dir: %v\n", err)
+	err = os.MkdirAll(resultsDir, 0o750)
+	if err != nil {
+		dieErrf(exitcode.ToolError, "octane: recreate results dir: %v\n", err)
 
 		return nil
 	}

@@ -3,6 +3,7 @@
 // Task: T-005-52
 // AC4: Dependent story is skipped when its prerequisite fails. The Findings
 // field on the skipped story references the failing prerequisite's ID.
+
 package integration_test
 
 import (

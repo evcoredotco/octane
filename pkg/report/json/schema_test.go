@@ -73,8 +73,9 @@ func Test_json_Schema(t *testing.T) {
 	}
 	dir := t.TempDir()
 
-	if err := reportjson.WriteJSON(result, dir, opts); err != nil {
-		t.Fatalf("WriteJSON: %v", err)
+	writeErr := reportjson.WriteJSON(result, dir, opts)
+	if writeErr != nil {
+		t.Fatalf("WriteJSON: %v", writeErr)
 	}
 
 	outPath := filepath.Join(dir, "octane.json")
@@ -86,8 +87,9 @@ func Test_json_Schema(t *testing.T) {
 
 	var top map[string]any
 
-	if err := json.Unmarshal(data, &top); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+	unmarshalErr := json.Unmarshal(data, &top)
+	if unmarshalErr != nil {
+		t.Fatalf("unmarshal: %v", unmarshalErr)
 	}
 
 	for _, key := range requiredTopLevelKeys {

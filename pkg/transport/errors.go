@@ -109,5 +109,6 @@ func (e *ErrStationClosed) Error() string {
 // Is reports whether target is an *ErrStationClosed, enabling errors.Is matching.
 func (e *ErrStationClosed) Is(target error) bool {
 	_, ok := target.(*ErrStationClosed)
+
 	return ok
 }

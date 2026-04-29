@@ -279,9 +279,29 @@ func stepKindFromToken(tok lex.Token) (ast.StepKind, bool, error) {
 		// A bare indented line with no step keyword and no colon
 		// (so the lexer emitted TokenIllegal). Treat as StepAction.
 		return ast.StepAction, true, nil
-	default:
+
+	case lex.TokenEOF,
+		lex.TokenNewline,
+		lex.TokenComment,
+		lex.TokenIndent,
+		lex.TokenMeta,
+		lex.TokenBackground,
+		lex.TokenSetup,
+		lex.TokenScenario,
+		lex.TokenTeardown,
+		lex.TokenParallel,
+		lex.TokenEndParallel,
+		lex.TokenMetaKey,
+		lex.TokenColon,
+		lex.TokenValue,
+		lex.TokenText:
 		return 0, false, fmt.Errorf(
 			"expected step keyword (Given/When/Then/And/But), got %s", tok.Kind,
 		)
 	}
+
+	// Unreachable: all TokenKind values handled above.
+	return 0, false, fmt.Errorf(
+		"expected step keyword (Given/When/Then/And/But), got %s", tok.Kind,
+	)
 }

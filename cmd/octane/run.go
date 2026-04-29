@@ -124,7 +124,7 @@ func init() {
 func runStories(_ *cobra.Command, storyPaths []string) error {
 	cfg, err := config.Load(globalFlags.configPath)
 	if err != nil {
-		dieErr(
+		dieErrf(
 			exitcode.ConfigError,
 			"octane: %q: config error: %v\n",
 			globalFlags.configPath,
@@ -147,7 +147,7 @@ func runStories(_ *cobra.Command, storyPaths []string) error {
 
 	shardIndex, shardTotal, shardErr := parseShard(runFlags.shard)
 	if shardErr != nil {
-		dieErr(
+		dieErrf(
 			exitcode.ConfigError,
 			"octane: invalid --shard value: %v\n",
 			shardErr,
@@ -176,7 +176,7 @@ func runStories(_ *cobra.Command, storyPaths []string) error {
 
 	result, runErr := runner.Run(context.Background(), runnerCfg)
 	if runErr != nil {
-		dieErr(exitcode.ToolError, "octane: run error: %v\n", runErr)
+		dieErrf(exitcode.ToolError, "octane: run error: %v\n", runErr)
 
 		return nil
 	}
@@ -198,7 +198,8 @@ func runStories(_ *cobra.Command, storyPaths []string) error {
 			OctaneVersion: version,
 		}
 
-		if writeErr := reportjson.WriteJSON(result, reportPath, jsonOpts); writeErr != nil {
+		writeErr := reportjson.WriteJSON(result, reportPath, jsonOpts)
+		if writeErr != nil {
 			_, _ = fmt.Fprintf(
 				os.Stderr,
 				"octane: warning: JSON report write failed: %v\n",
@@ -209,7 +210,8 @@ func runStories(_ *cobra.Command, storyPaths []string) error {
 		xmlOpts := reportpkg.RobotXMLOptions{ //nolint:exhaustruct // SuiteName defaults to "OCTANE Conformance"
 		}
 
-		if writeErr := robotxml.WriteRobotXML(result, reportPath, xmlOpts); writeErr != nil {
+		writeErr = robotxml.WriteRobotXML(result, reportPath, xmlOpts)
+		if writeErr != nil {
 			_, _ = fmt.Fprintf(
 				os.Stderr,
 				"octane: warning: Robot XML report write failed: %v\n",
@@ -271,7 +273,7 @@ func applyRunFlagOverrides(cfg config.Config) config.Config {
 // is valid and returns (0, 0, nil) meaning sharding is disabled.
 // Returns an error when the format is invalid or the values are out
 // of range (N < 1, N > M, M < 1).
-func parseShard(value string) (shardIndex, shardTotal int, err error) {
+func parseShard(value string) (int, int, error) {
 	if value == "" {
 		return 0, 0, nil
 	}

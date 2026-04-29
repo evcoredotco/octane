@@ -35,7 +35,8 @@ func waitDuration(
 ) error {
 	dur := args.Duration("duration")
 
-	if err := state.Sleep(ctx, dur); err != nil {
+	err := state.Sleep(ctx, dur)
+	if err != nil {
 		return fmt.Errorf("primitive: wait %s: %w", dur, err)
 	}
 

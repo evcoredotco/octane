@@ -34,7 +34,8 @@ var jwtRE = regexp.MustCompile(
 func Frame(raw []byte) []byte {
 	var v any
 
-	if err := json.Unmarshal(raw, &v); err != nil {
+	err := json.Unmarshal(raw, &v)
+	if err != nil {
 		return raw
 	}
 

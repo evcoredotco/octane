@@ -140,7 +140,8 @@ func Test_json_Golden(t *testing.T) {
 
 	dir1 := t.TempDir()
 
-	if err := reportjson.WriteJSON(result, dir1, opts); err != nil {
+	err := reportjson.WriteJSON(result, dir1, opts)
+	if err != nil {
 		t.Fatalf("WriteJSON dir1: %v", err)
 	}
 
@@ -149,7 +150,8 @@ func Test_json_Golden(t *testing.T) {
 	// AC2: determinism — write a second time and compare bytes.
 	dir2 := t.TempDir()
 
-	if err := reportjson.WriteJSON(result, dir2, opts); err != nil {
+	err = reportjson.WriteJSON(result, dir2, opts)
+	if err != nil {
 		t.Fatalf("WriteJSON dir2: %v", err)
 	}
 
@@ -160,11 +162,13 @@ func Test_json_Golden(t *testing.T) {
 	}
 
 	if *updateFlag {
-		if err := os.MkdirAll("testdata", 0o750); err != nil {
+		err := os.MkdirAll("testdata", 0o750)
+		if err != nil {
 			t.Fatalf("creating testdata: %v", err)
 		}
 
-		if err := os.WriteFile(goldenFilePath, got, 0o600); err != nil {
+		err = os.WriteFile(goldenFilePath, got, 0o600)
+		if err != nil {
 			t.Fatalf("updating golden file: %v", err)
 		}
 

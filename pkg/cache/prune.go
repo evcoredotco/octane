@@ -48,7 +48,8 @@ func (fc *FileCache) Prune(
 	}
 
 	for _, fanout := range fanouts {
-		if err = ctx.Err(); err != nil {
+		err = ctx.Err()
+		if err != nil {
 			return fmt.Errorf("cache: prune: %w", err)
 		}
 
@@ -58,7 +59,8 @@ func (fc *FileCache) Prune(
 
 		fanoutPath := filepath.Join(resultsDir, fanout.Name())
 
-		if err = pruneEntriesUnder(fanoutPath, now, maxAge); err != nil {
+		err = pruneEntriesUnder(fanoutPath, now, maxAge)
+		if err != nil {
 			return err
 		}
 
@@ -96,7 +98,8 @@ func pruneEntriesUnder(
 		entryDir := filepath.Join(fanoutDir, ent.Name())
 
 		if shouldPrune(entryDir, now, maxAge) {
-			if err = os.RemoveAll(entryDir); err != nil &&
+			err = os.RemoveAll(entryDir)
+			if err != nil &&
 				!errors.Is(err, os.ErrNotExist) {
 				return fmt.Errorf(
 					"cache: prune: remove entry %q: %w",
@@ -128,7 +131,8 @@ func shouldPrune(entryDir string, now time.Time, maxAge time.Duration) bool {
 
 	var env resultEnvelope
 
-	if err = json.Unmarshal(data, &env); err != nil {
+	err = json.Unmarshal(data, &env)
+	if err != nil {
 		// Corrupt JSON — prune.
 		return true
 	}

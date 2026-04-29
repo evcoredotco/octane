@@ -28,7 +28,7 @@ func buildTrace(
 	src *model.Trace,
 	status string,
 	opts report.JSONOptions,
-) (tracePresent bool, trace *jsonTrace) {
+) (bool, *jsonTrace) {
 	if src == nil {
 		return false, nil
 	}

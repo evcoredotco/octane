@@ -122,9 +122,8 @@ func (p *parser) parseStory() (*ast.Story, error) {
 		}
 	}
 
-	if err = validateParameters(
-		p.file, meta, scenarios, background, setup, teardown,
-	); err != nil {
+	err = validateParameters(p.file, meta, scenarios, background, setup, teardown)
+	if err != nil {
 		return nil, err
 	}
 

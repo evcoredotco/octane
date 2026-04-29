@@ -16,7 +16,8 @@ type realRand struct {
 func Real() Rand {
 	var seed [16]byte
 
-	if _, err := crand.Read(seed[:]); err != nil {
+	_, err := crand.Read(seed[:])
+	if err != nil {
 		panic("clock/rand: crypto/rand unavailable: " + err.Error())
 	}
 

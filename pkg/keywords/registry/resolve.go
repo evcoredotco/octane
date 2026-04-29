@@ -63,13 +63,13 @@ func Resolve(step string, ocppVersion api.OCPPVersion) (Match, error) {
 	candidates := eligibleCandidates(all, ocppVersion)
 
 	for _, keyword := range candidates {
-		matched, err := tryMatch(step, keyword)
+		matched, ok, err := tryMatch(step, keyword)
 		if err != nil {
 			return Match{}, err
 		}
 
-		if matched != nil {
-			return *matched, nil
+		if ok {
+			return matched, nil
 		}
 	}
 
@@ -139,40 +139,40 @@ func isEligible(keyword api.Keyword, ocppVersion api.OCPPVersion) bool {
 // A *[ErrTypeMismatch] is returned when the pattern matches
 // structurally but a placeholder value cannot be coerced to its
 // declared type.
-func tryMatch(step string, keyword api.Keyword) (*Match, error) {
+func tryMatch(step string, keyword api.Keyword) (Match, bool, error) {
 	tokens, err := pattern.Parse(keyword.Pattern)
 	if err != nil {
 		// A malformed pattern should have been caught at Register
 		// time; skip it defensively rather than surfacing a parse
 		// error to the caller.
-		return nil, nil //nolint:nilerr // defensive skip; not caller-visible
+		return Match{}, false, nil //nolint:nilerr // defensive skip; not caller-visible
 	}
 
 	captures, matched := pattern.Match(tokens, step)
 	if !matched {
-		return nil, nil
+		return Match{}, false, nil
 	}
 
 	coerced, coerceErr := pattern.Coerce(captures, tokens)
 	if coerceErr != nil {
 		var coercErr *pattern.CoercionError
 		if errors.As(coerceErr, &coercErr) {
-			return nil, &ErrTypeMismatch{
+			return Match{}, false, &ErrTypeMismatch{
 				ArgName:  coercErr.ArgName,
 				Expected: coercErr.Expected,
 				Got:      coercErr.Got,
 			}
 		}
 
-		return nil, coerceErr
+		return Match{}, false, coerceErr
 	}
 
-	result := &Match{
+	result := Match{
 		Keyword: keyword,
 		Args:    api.NewArgs(coerced),
 	}
 
-	return result, nil
+	return result, true, nil
 }
 
 // closestPattern returns the registered pattern string whose
