@@ -34,7 +34,10 @@ const (
 func TestScenariosParseClean(t *testing.T) {
 	t.Parallel()
 
-	paths := collectStoryPaths(t, filepath.Join(parentDir, parentDir, scenariosDir))
+	paths := collectStoryPaths(
+		t,
+		filepath.Join(parentDir, parentDir, scenariosDir),
+	)
 
 	for _, path := range paths {
 		t.Run(filepath.ToSlash(path), func(t *testing.T) {

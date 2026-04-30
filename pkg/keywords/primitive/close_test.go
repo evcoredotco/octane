@@ -24,10 +24,10 @@ import (
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
 	"github.com/evcoreco/octane/pkg/keywords/api/mock"
-	_ "github.com/evcoreco/octane/pkg/keywords/primitive" // registers primitive keywords
+	_ "github.com/evcoreco/octane/pkg/keywords/primitive" // blank import
 )
 
-// ── Named constants ───────────────────────────────────────────────────────────
+// ── Named constants ──────────────────────────────────────────────────────────
 
 const (
 	// handleClose is the station handle name used across close tests.
@@ -37,7 +37,7 @@ const (
 	patternClose = "close station {station:string}"
 )
 
-// ── tests ─────────────────────────────────────────────────────────────────────
+// ── tests ────────────────────────────────────────────────────────────────────
 
 // Test_primitive_closeStation verifies that calling the close keyword's Func
 // invokes Close() on the mock station so that IsOpen() returns false (AC1).

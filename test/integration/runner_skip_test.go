@@ -54,19 +54,7 @@ func Test_runner_RunDependentSkippedOnPrereqFailure(t *testing.T) {
 	writeFile(t, storyDir+"/always_fails.story", storyAlwaysFails)
 	writeFile(t, storyDir+"/skip_dependent.story", storySkipDependent)
 
-	cfg := runner.Config{
-		StoryPaths:         []string{storyDir},
-		MaxParallel:        0,
-		LockTimeout:        0,
-		NoWait:             false,
-		ShardIndex:         0,
-		ShardTotal:         0,
-		CacheDir:           "",
-		NoCache:            true,
-		NoTraceOnPass:      false,
-		OCPPVersion:        "",
-		InsecureSkipVerify: false,
-	}
+	cfg := noopCfg(storyDir)
 
 	result, err := runner.Run(context.Background(), cfg)
 	if err != nil {

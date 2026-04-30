@@ -1,11 +1,15 @@
 package pattern
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 )
+
+// errUnknownPlaceholderType is returned when a placeholder's type is not supported.
+var errUnknownPlaceholderType = errors.New("internal: unknown placeholder type")
 
 // float64BitSize is the bit-width passed to strconv.ParseFloat.
 const float64BitSize = 64
@@ -171,7 +175,8 @@ func coerceOne(
 		// reaching this branch indicates an internal invariant
 		// violation rather than a user-facing authoring error.
 		return nil, fmt.Errorf(
-			"internal: unknown placeholder type %q for argument %q",
+			"%w %q for argument %q",
+			errUnknownPlaceholderType,
 			pType,
 			name,
 		)

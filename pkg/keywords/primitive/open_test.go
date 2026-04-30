@@ -15,13 +15,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/coder/websocket"
 	"github.com/evcoreco/octane/pkg/keywords/api"
 	"github.com/evcoreco/octane/pkg/keywords/api/mock"
-	// Side-effect: registers primitive keywords at init time.
-	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
+	_ "github.com/evcoreco/octane/pkg/keywords/primitive" // blank import
 	"github.com/evcoreco/octane/pkg/keywords/registry"
-
-	"github.com/coder/websocket"
 )
 
 // ── Named constants ───────────────────────────────────────────────────────────
@@ -270,7 +268,7 @@ func Test_primitive_openWebSocketWithSubprotocol(t *testing.T) {
 func Test_primitive_openWebSocketWithSubprotocol_Mismatch(t *testing.T) {
 	t.Parallel()
 
-	// The server accepts only an unsupported subprotocol; the client requests ocpp1.6.
+	// The server offers an unsupported subprotocol; client requests ocpp1.6.
 	srv, wsURL := newSubprotocolServer(t, "ocpp_unsupported")
 
 	defer srv.Close()

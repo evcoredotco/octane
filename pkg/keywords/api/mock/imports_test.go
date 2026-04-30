@@ -24,6 +24,15 @@ import (
 	"github.com/evcoreco/octane/pkg/keywords/api/mock"
 )
 
+// ── package-level sentinel errors ────────────────────────────────────────────
+
+var (
+	errSendFailed   = errors.New("send failed")
+	errExpectFailed = errors.New("expect failed")
+	errTemporary    = errors.New("temporary error")
+	errTransient    = errors.New("transient error")
+)
+
 // ── interface-satisfaction compile-time checks ────────────────────────────────
 
 // Verify at compile time that *mock.State implements api.State and that
@@ -191,7 +200,7 @@ func Test_MockStation_SendReturnsConfiguredError(t *testing.T) {
 	station := mock.NewMockStation()
 	ctx := context.Background()
 
-	wantErr := errors.New("send failed")
+	wantErr := errSendFailed
 
 	station.SetSendError(wantErr)
 
@@ -289,7 +298,7 @@ func Test_MockStation_ExpectReturnsConfiguredError(t *testing.T) {
 	station := mock.NewMockStation()
 	ctx := context.Background()
 
-	wantErr := errors.New("expect failed")
+	wantErr := errExpectFailed
 
 	station.QueueFrame([]any{
 		3, "msg-01", "HeartbeatResponse", map[string]any{},
@@ -362,7 +371,7 @@ func Test_MockStation_SetSendErrorNilClearsError(t *testing.T) {
 	station := mock.NewMockStation()
 	ctx := context.Background()
 
-	station.SetSendError(errors.New("temporary error"))
+	station.SetSendError(errTemporary)
 	station.SetSendError(nil)
 
 	err := station.Send(
@@ -389,7 +398,7 @@ func Test_MockStation_SetExpectErrorNilClearsError(t *testing.T) {
 	station.QueueFrame([]any{
 		3, "msg-01", "Response", map[string]any{},
 	})
-	station.SetExpectError(errors.New("transient error"))
+	station.SetExpectError(errTransient)
 	station.SetExpectError(nil)
 
 	_, err := station.Expect(ctx)

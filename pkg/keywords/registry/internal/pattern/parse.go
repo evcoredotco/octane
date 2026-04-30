@@ -21,6 +21,26 @@ import (
 	"strings"
 )
 
+// Sentinel errors returned by Parse and parsePlaceholder.
+var (
+	errBareCloseBrace   = errors.New("unexpected '}'")
+	errUnclosedBrace    = errors.New("unclosed '{'")
+	errEmptyPattern     = errors.New("pattern must not be empty")
+	errEmptyPlaceholder = errors.New("empty placeholder")
+	errMissingColon     = errors.New(
+		"placeholder is missing the colon separator; use {name:type} syntax",
+	)
+	errEmptyName = errors.New("placeholder has an empty name")
+	errEmptyType = errors.New(
+		"placeholder has an empty type; " +
+			"supported types: string, int, float, bool, duration, station, any",
+	)
+	errUnknownType = errors.New(
+		"placeholder declares unknown type; " +
+			"supported types: string, int, float, bool, duration, station, any",
+	)
+)
+
 // Kind indicates whether a [Token] represents a literal segment or
 // a typed placeholder.
 type Kind int
@@ -182,7 +202,8 @@ func Parse(pattern string) ([]Token, error) {
 		// Bare '}' before any '{' is malformed.
 		if closeIdx != notFound && (openIdx == notFound || closeIdx < openIdx) {
 			return nil, fmt.Errorf(
-				"unexpected '}' at position %d in pattern %q",
+				"%w at position %d in pattern %q",
+				errBareCloseBrace,
 				len(pattern)-len(remaining)+closeIdx,
 				pattern,
 			)
@@ -210,10 +231,7 @@ func Parse(pattern string) ([]Token, error) {
 		// Find the matching '}'.
 		closeIdx = strings.IndexByte(remaining, '}')
 		if closeIdx == notFound {
-			return nil, fmt.Errorf(
-				"unclosed '{' in pattern %q",
-				pattern,
-			)
+			return nil, fmt.Errorf("%w in pattern %q", errUnclosedBrace, pattern)
 		}
 
 		raw := remaining[:closeIdx+bracketWidth]
@@ -229,7 +247,7 @@ func Parse(pattern string) ([]Token, error) {
 	}
 
 	if len(tokens) == zeroIdx {
-		return nil, errors.New("pattern must not be empty")
+		return nil, errEmptyPattern
 	}
 
 	return tokens, nil
@@ -257,7 +275,8 @@ func parsePlaceholder(raw, fullPattern string) (Token, error) {
 
 	if inner == emptyString {
 		return Token{}, fmt.Errorf(
-			"empty placeholder %q in pattern %q",
+			"%w %q in pattern %q",
+			errEmptyPlaceholder,
 			raw,
 			fullPattern,
 		)
@@ -266,9 +285,9 @@ func parsePlaceholder(raw, fullPattern string) (Token, error) {
 	before, after, ok := strings.Cut(inner, ":")
 	if !ok {
 		return Token{}, fmt.Errorf(
-			"placeholder %q is missing the colon separator "+
-				"in pattern %q; use {name:type} syntax",
+			"placeholder %q: %w in pattern %q",
 			raw,
+			errMissingColon,
 			fullPattern,
 		)
 	}
@@ -278,18 +297,18 @@ func parsePlaceholder(raw, fullPattern string) (Token, error) {
 
 	if name == emptyString {
 		return Token{}, fmt.Errorf(
-			"placeholder %q has an empty name in pattern %q",
+			"placeholder %q: %w in pattern %q",
 			raw,
+			errEmptyName,
 			fullPattern,
 		)
 	}
 
 	if typePart == emptyString {
 		return Token{}, fmt.Errorf(
-			"placeholder %q has an empty type in pattern %q; "+
-				"supported types: string, int, float, bool, "+
-				"duration, station, any",
+			"placeholder %q: %w in pattern %q",
 			raw,
+			errEmptyType,
 			fullPattern,
 		)
 	}
@@ -298,11 +317,10 @@ func parsePlaceholder(raw, fullPattern string) (Token, error) {
 
 	if _, supported := validTypes[pType]; !supported {
 		return Token{}, fmt.Errorf(
-			"placeholder %q declares unknown type %q in pattern %q; "+
-				"supported types: string, int, float, bool, "+
-				"duration, station, any",
+			"placeholder %q type %q: %w in pattern %q",
 			raw,
 			typePart,
+			errUnknownType,
 			fullPattern,
 		)
 	}

@@ -1,8 +1,3 @@
-// Package json implements the JSON emitter for OCTANE run reports.
-// This file implements cause-chain walking helpers.
-//
-// Task: T-007-22.
-
 package json
 
 import (

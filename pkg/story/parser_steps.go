@@ -1,11 +1,23 @@
 package story
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/evcoreco/octane/pkg/story/ast"
 	"github.com/evcoreco/octane/pkg/story/lex"
+)
+
+// Sentinel errors for parser_steps parse failures.
+var (
+	errExpectedBackground         = errors.New("expected Background keyword")
+	errExpectedSetup              = errors.New("expected Setup keyword")
+	errExpectedTeardown           = errors.New("expected Teardown keyword")
+	errExpectedScenario           = errors.New("expected Scenario keyword")
+	errExpectedColonAfterScenario = errors.New("expected ':' after Scenario")
+	errExpectedScenarioTitle      = errors.New("expected scenario title text after 'Scenario:'")
+	errExpectedStepText           = errors.New("expected step text after keyword")
 )
 
 // indentedColumn is the minimum column value that indicates a token
@@ -21,8 +33,8 @@ func (p *parser) parseBackground() ([]ast.Step, error) {
 	tok := p.lex.Next()
 	if tok.Kind != lex.TokenBackground {
 		return nil, fmt.Errorf(
-			"%s:%d:%d: expected Background keyword, got %s",
-			p.file, tok.Line, tok.Column, tok.Kind,
+			"%s:%d:%d: %w, got %s",
+			p.file, tok.Line, tok.Column, errExpectedBackground, tok.Kind,
 		)
 	}
 
@@ -35,8 +47,8 @@ func (p *parser) parseSetup() ([]ast.Step, error) {
 	tok := p.lex.Next()
 	if tok.Kind != lex.TokenSetup {
 		return nil, fmt.Errorf(
-			"%s:%d:%d: expected Setup keyword, got %s",
-			p.file, tok.Line, tok.Column, tok.Kind,
+			"%s:%d:%d: %w, got %s",
+			p.file, tok.Line, tok.Column, errExpectedSetup, tok.Kind,
 		)
 	}
 
@@ -49,8 +61,8 @@ func (p *parser) parseTeardown() ([]ast.Step, error) {
 	tok := p.lex.Next()
 	if tok.Kind != lex.TokenTeardown {
 		return nil, fmt.Errorf(
-			"%s:%d:%d: expected Teardown keyword, got %s",
-			p.file, tok.Line, tok.Column, tok.Kind,
+			"%s:%d:%d: %w, got %s",
+			p.file, tok.Line, tok.Column, errExpectedTeardown, tok.Kind,
 		)
 	}
 
@@ -65,24 +77,24 @@ func (p *parser) parseScenario() (ast.Scenario, error) {
 	scTok := p.lex.Next()
 	if scTok.Kind != lex.TokenScenario {
 		return ast.Scenario{}, fmt.Errorf(
-			"%s:%d:%d: expected Scenario keyword, got %s",
-			p.file, scTok.Line, scTok.Column, scTok.Kind,
+			"%s:%d:%d: %w, got %s",
+			p.file, scTok.Line, scTok.Column, errExpectedScenario, scTok.Kind,
 		)
 	}
 
 	colonTok := p.lex.Next()
 	if colonTok.Kind != lex.TokenColon {
 		return ast.Scenario{}, fmt.Errorf(
-			"%s:%d:%d: expected ':' after Scenario, got %s",
-			p.file, colonTok.Line, colonTok.Column, colonTok.Kind,
+			"%s:%d:%d: %w, got %s",
+			p.file, colonTok.Line, colonTok.Column, errExpectedColonAfterScenario, colonTok.Kind,
 		)
 	}
 
 	titleTok := p.lex.Next()
 	if titleTok.Kind != lex.TokenText {
 		return ast.Scenario{}, fmt.Errorf(
-			"%s:%d:%d: expected scenario title text after 'Scenario:', got %s",
-			p.file, titleTok.Line, titleTok.Column, titleTok.Kind,
+			"%s:%d:%d: %w, got %s",
+			p.file, titleTok.Line, titleTok.Column, errExpectedScenarioTitle, titleTok.Kind,
 		)
 	}
 
@@ -228,9 +240,9 @@ func (p *parser) parseSteps() ([]ast.Step, error) {
 			textTok := p.lex.Next()
 			if textTok.Kind != lex.TokenText {
 				return nil, fmt.Errorf(
-					"%s:%d:%d: expected step text after %s keyword, got %s",
+					"%s:%d:%d: %w after %s, got %s",
 					p.file, textTok.Line, textTok.Column,
-					kwTok.Literal, textTok.Kind,
+					errExpectedStepText, kwTok.Literal, textTok.Kind,
 				)
 			}
 

@@ -2,6 +2,10 @@ package transport
 
 import "fmt"
 
+// unknownActualSize is the sentinel value stored in FrameTooLargeError.Actual
+// when the WebSocket library did not expose the exact frame byte count.
+const unknownActualSize = int64(-1)
+
 // SubprotocolMismatchError is returned by Dial when the CSMS's WebSocket
 // upgrade response selects a subprotocol not in the requested list, or
 // omits the header entirely.
@@ -76,7 +80,7 @@ type FrameTooLargeError struct {
 
 // Error implements the error interface.
 func (e *FrameTooLargeError) Error() string {
-	if e.Actual < 0 {
+	if e.Actual == unknownActualSize {
 		return fmt.Sprintf(
 			"transport: inbound frame exceeds limit of %d bytes"+
 				" (actual size unknown)",

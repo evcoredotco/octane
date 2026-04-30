@@ -25,89 +25,135 @@ const goldenFilePath = "testdata/golden.json"
 // reportFileName is the output file name produced by WriteJSON.
 const reportFileName = "octane.json"
 
+const (
+	// goldenBaseYear is the year used in fixedTime for golden test fixtures.
+	goldenBaseYear = 2024
+
+	// totalStories is the total number of stories in the golden result.
+	totalStories = 3
+
+	// orderSecond is the Order index for the second story.
+	orderSecond = 2
+
+	// scopeKeyCP01 is the station scope key used in golden test fixtures.
+	scopeKeyCP01 = "CP01"
+
+	// ocppVersion16 is the OCPP version string for OCPP 1.6.
+	ocppVersion16 = "1.6"
+
+	// finishedAtSec is the run finish offset in seconds from the base time.
+	finishedAtSec = 30
+
+	// startAt10 is the offset in seconds for stories starting at T+10.
+	startAt10 = 10
+
+	// startAt20 is the offset in seconds for stories starting at T+20.
+	startAt20 = 20
+
+	// dirPerms is the directory permission bits used when creating testdata.
+	dirPerms = 0o750
+
+	// filePerms is the file permission bits used when writing golden files.
+	filePerms = 0o600
+)
+
 // fixedTime returns a deterministic time for test fixtures.
 func fixedTime(offsetSeconds int) time.Time {
-	base := time.Date(2024, 1, 15, 10, 0, 0, 0, time.UTC)
+	base := time.Date(goldenBaseYear, 1, 15, 10, 0, 0, 0, time.UTC)
 
 	return base.Add(time.Duration(offsetSeconds) * time.Second)
+}
+
+// goldenPassedStory returns the passed BootNotification story fixture.
+func goldenPassedStory() runner.StoryResult {
+	passedTrace := &runner.Trace{
+		Frames: [][]byte{
+			[]byte(`[2,"abc123","BootNotification",{"reason":"PowerUp"}]`),
+			[]byte(`[3,"abc123",{"currentTime":"2024-01-15T10:00:01Z",` +
+				`"interval":300,"status":"Accepted"}]`),
+		},
+	}
+
+	return runner.StoryResult{
+		Order:       0,
+		TestID:      "tc_boot_notification",
+		ScopeKey:    scopeKeyCP01,
+		OCPPVersion: ocppVersion16,
+		Status:      runner.StatusPassed,
+		CacheStatus: runner.CacheHitPass,
+		StartedAt:   fixedTime(0),
+		FinishedAt:  fixedTime(startAt10),
+		Findings:    nil,
+		Trace:       passedTrace,
+		Cause:       "",
+		CauseChain:  nil,
+	}
+}
+
+// goldenFailedStory returns the failed Heartbeat story fixture.
+func goldenFailedStory() runner.StoryResult {
+	return runner.StoryResult{
+		Order:       1,
+		TestID:      "tc_heartbeat",
+		ScopeKey:    scopeKeyCP01,
+		OCPPVersion: ocppVersion16,
+		Status:      runner.StatusFailed,
+		CacheStatus: runner.CacheMiss,
+		StartedAt:   fixedTime(startAt10),
+		FinishedAt:  fixedTime(startAt20),
+		Findings: []runner.Finding{
+			{
+				Message:  "heartbeat interval mismatch: got 600, want 300",
+				Severity: "error",
+			},
+			{
+				Message:  "response took 250ms",
+				Severity: "warning",
+			},
+		},
+		Trace:      nil,
+		Cause:      "",
+		CauseChain: nil,
+	}
+}
+
+// goldenSkippedStory returns the skipped StatusNotification story fixture.
+func goldenSkippedStory() runner.StoryResult {
+	return runner.StoryResult{
+		Order:       orderSecond,
+		TestID:      "tc_status_notification",
+		ScopeKey:    scopeKeyCP01,
+		OCPPVersion: ocppVersion16,
+		Status:      runner.StatusSkipped,
+		CacheStatus: runner.CacheBypassed,
+		StartedAt:   fixedTime(startAt20),
+		FinishedAt:  fixedTime(startAt20),
+		Findings:    nil,
+		Trace:       nil,
+		Cause:       "tc_heartbeat/CP01",
+		CauseChain:  []string{"tc_heartbeat/CP01"},
+	}
 }
 
 // buildGoldenResult constructs a canned runner.RunResult with known
 // data: three stories (passed, failed, skipped). The skipped story has
 // a cause chain.
 func buildGoldenResult() *runner.RunResult {
-	passedTrace := &runner.Trace{
-		Frames: [][]byte{
-			[]byte(`[2,"abc123","BootNotification",{"reason":"PowerUp"}]`),
-			[]byte(
-				`[3,"abc123",{"currentTime":"2024-01-15T10:00:01Z","interval":300,"status":"Accepted"}]`,
-			),
-		},
-	}
-
 	return &runner.RunResult{
 		RunID:      "01ARZ3NDEKTSV4RRFFQ69G5FAV",
 		StartedAt:  fixedTime(0),
-		FinishedAt: fixedTime(30),
+		FinishedAt: fixedTime(finishedAtSec),
 		Summary: runner.Summary{
-			Total:     3,
+			Total:     totalStories,
 			Passed:    1,
 			Failed:    1,
 			Skipped:   1,
 			CacheHits: 1,
 		},
 		Stories: []runner.StoryResult{
-			{
-				Order:       0,
-				TestID:      "tc_boot_notification",
-				ScopeKey:    "CP01",
-				OCPPVersion: "1.6",
-				Status:      runner.StatusPassed,
-				CacheStatus: runner.CacheHitPass,
-				StartedAt:   fixedTime(0),
-				FinishedAt:  fixedTime(10),
-				Findings:    nil,
-				Trace:       passedTrace,
-				Cause:       "",
-				CauseChain:  nil,
-			},
-			{
-				Order:       1,
-				TestID:      "tc_heartbeat",
-				ScopeKey:    "CP01",
-				OCPPVersion: "1.6",
-				Status:      runner.StatusFailed,
-				CacheStatus: runner.CacheMiss,
-				StartedAt:   fixedTime(10),
-				FinishedAt:  fixedTime(20),
-				Findings: []runner.Finding{
-					{
-						Message:  "heartbeat interval mismatch: got 600, want 300",
-						Severity: "error",
-					},
-					{
-						Message:  "response took 250ms",
-						Severity: "warning",
-					},
-				},
-				Trace:      nil,
-				Cause:      "",
-				CauseChain: nil,
-			},
-			{
-				Order:       2,
-				TestID:      "tc_status_notification",
-				ScopeKey:    "CP01",
-				OCPPVersion: "1.6",
-				Status:      runner.StatusSkipped,
-				CacheStatus: runner.CacheBypassed,
-				StartedAt:   fixedTime(20),
-				FinishedAt:  fixedTime(20),
-				Findings:    nil,
-				Trace:       nil,
-				Cause:       "tc_heartbeat/CP01",
-				CauseChain:  []string{"tc_heartbeat/CP01"},
-			},
+			goldenPassedStory(),
+			goldenFailedStory(),
+			goldenSkippedStory(),
 		},
 	}
 }
@@ -125,6 +171,24 @@ func readReport(t *testing.T, dir string) []byte {
 	}
 
 	return data
+}
+
+// updateGoldenJSONFile rewrites the golden JSON file with got.
+// Called by Test_json_Golden when the -update flag is set.
+func updateGoldenJSONFile(t *testing.T, got []byte) {
+	t.Helper()
+
+	err := os.MkdirAll("testdata", dirPerms)
+	if err != nil {
+		t.Fatalf("creating testdata: %v", err)
+	}
+
+	err = os.WriteFile(goldenFilePath, got, filePerms)
+	if err != nil {
+		t.Fatalf("updating golden file: %v", err)
+	}
+
+	t.Logf("golden file updated: %s", goldenFilePath)
 }
 
 // Test_json_Golden verifies byte-deterministic JSON output. When the
@@ -162,17 +226,7 @@ func Test_json_Golden(t *testing.T) {
 	}
 
 	if *updateFlag {
-		err := os.MkdirAll("testdata", 0o750)
-		if err != nil {
-			t.Fatalf("creating testdata: %v", err)
-		}
-
-		err = os.WriteFile(goldenFilePath, got, 0o600)
-		if err != nil {
-			t.Fatalf("updating golden file: %v", err)
-		}
-
-		t.Logf("golden file updated: %s", goldenFilePath)
+		updateGoldenJSONFile(t, got)
 
 		return
 	}
@@ -187,7 +241,8 @@ func Test_json_Golden(t *testing.T) {
 
 	if !bytes.Equal(got, want) {
 		t.Errorf(
-			"output differs from golden file %s\n--- got ---\n%s\n--- want ---\n%s",
+			"output differs from golden file %s\n"+
+				"--- got ---\n%s\n--- want ---\n%s",
 			goldenFilePath,
 			got,
 			want,

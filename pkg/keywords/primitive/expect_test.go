@@ -18,7 +18,7 @@ import (
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
 	"github.com/evcoreco/octane/pkg/keywords/api/mock"
-	"github.com/evcoreco/octane/pkg/keywords/primitive" // Side-effect: registers primitive keywords; exposes TimeoutError.
+	"github.com/evcoreco/octane/pkg/keywords/primitive" // exposes TimeoutError
 )
 
 // ── Named constants ───────────────────────────────────────────────────────────
@@ -224,7 +224,7 @@ func Test_primitive_expectFrameOfType_WrongTypeThenTimeout(t *testing.T) {
 
 	err := keywordFunc(context.Background(), state, args)
 
-	// Invariant: wrong-type frames must be skipped; timeout returns *TimeoutError.
+	// Invariant: wrong-type frames are skipped; timeout returns *TimeoutError.
 	if err == nil {
 		t.Fatal(
 			"expectFrameOfType (wrong type): want error, got nil",

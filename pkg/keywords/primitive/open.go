@@ -11,7 +11,8 @@ import (
 
 func init() {
 	registry.Register(api.Keyword{
-		Pattern:     "open a WebSocket to {url:string} as station {station:string}",
+		Pattern: "open a WebSocket to {url:string}" +
+			" as station {station:string}",
 		Layer:       api.LayerPrimitive,
 		OCPPVersion: 0,
 		Func:        openWebSocket,

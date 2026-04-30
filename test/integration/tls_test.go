@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
+
 	"github.com/evcoreco/octane/pkg/transport"
 )
 

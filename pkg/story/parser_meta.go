@@ -1,6 +1,7 @@
 package story
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"strconv"
@@ -10,6 +11,16 @@ import (
 	"github.com/evcoreco/octane/pkg/story/ast"
 	"github.com/evcoreco/octane/pkg/story/diag"
 	"github.com/evcoreco/octane/pkg/story/lex"
+)
+
+// Sentinel errors for parser_meta parse failures.
+var (
+	errExpectedMetaSection     = errors.New("expected Meta section at top of file")
+	errStationsNotInt          = errors.New("Stations value is not a valid integer")
+	errStationsOutOfRange      = errors.New("Stations value is out of range; must be between 1 and 10000")
+	errExpectedMetaKey         = errors.New("expected meta key")
+	errExpectedColonAfterKey   = errors.New("expected ':' after meta key")
+	errExpectedValueAfterColon = errors.New("expected value after ':'")
 )
 
 // metaEntry is the internal representation of a single parsed meta line.
@@ -41,8 +52,8 @@ func (p *parser) parseMeta() (ast.Meta, error) {
 				Depends:    nil,
 				Position:   ast.Position{Line: tok.Line, Column: tok.Column},
 			}, fmt.Errorf(
-				"%s:%d:%d: expected Meta section at top of file, got %s",
-				p.file, tok.Line, tok.Column, tok.Kind,
+				"%s:%d:%d: %w, got %s",
+				p.file, tok.Line, tok.Column, errExpectedMetaSection, tok.Kind,
 			)
 	}
 
@@ -168,18 +179,18 @@ func (p *parser) applyMetaEntry(
 		count, err := strconv.Atoi(entry.value)
 		if err != nil {
 			return fmt.Errorf(
-				"%s:%d:%d: Stations value %q is not a valid integer",
-				p.file, entry.line, entry.column, entry.value,
+				"%s:%d:%d: %w: %q",
+				p.file, entry.line, entry.column, errStationsNotInt, entry.value,
 			)
 		}
 
 		if count < 1 || count > 10000 {
 			return fmt.Errorf(
-				"%s:%d:%d: Stations value %d is out of range;"+
-					" must be between 1 and 10000",
+				"%s:%d:%d: %w: got %d",
 				p.file,
 				entry.line,
 				entry.column,
+				errStationsOutOfRange,
 				count,
 			)
 		}
@@ -322,8 +333,8 @@ func (p *parser) parseMetaEntry() (metaEntry, error) {
 				line:   keyTok.Line,
 				column: keyTok.Column,
 			}, fmt.Errorf(
-				"%s:%d:%d: expected meta key, got %s",
-				p.file, keyTok.Line, keyTok.Column, keyTok.Kind,
+				"%s:%d:%d: %w, got %s",
+				p.file, keyTok.Line, keyTok.Column, errExpectedMetaKey, keyTok.Kind,
 			)
 	}
 
@@ -335,10 +346,11 @@ func (p *parser) parseMetaEntry() (metaEntry, error) {
 				line:   colonTok.Line,
 				column: colonTok.Column,
 			}, fmt.Errorf(
-				"%s:%d:%d: expected ':' after meta key %q, got %s",
+				"%s:%d:%d: %w %q, got %s",
 				p.file,
 				colonTok.Line,
 				colonTok.Column,
+				errExpectedColonAfterKey,
 				keyTok.Literal,
 				colonTok.Kind,
 			)
@@ -352,8 +364,8 @@ func (p *parser) parseMetaEntry() (metaEntry, error) {
 				line:   valTok.Line,
 				column: valTok.Column,
 			}, fmt.Errorf(
-				"%s:%d:%d: expected value after ':', got %s",
-				p.file, valTok.Line, valTok.Column, valTok.Kind,
+				"%s:%d:%d: %w, got %s",
+				p.file, valTok.Line, valTok.Column, errExpectedValueAfterColon, valTok.Kind,
 			)
 	}
 

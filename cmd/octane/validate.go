@@ -92,7 +92,12 @@ func validateStories(_ *cobra.Command, storyPaths []string) error {
 // readStoryFile reads the story file at path. The path originates
 // from CLI arguments and is therefore operator-controlled.
 func readStoryFile(path string) ([]byte, error) {
-	return os.ReadFile(filepath.Clean(path))
+	data, err := os.ReadFile(filepath.Clean(path))
+	if err != nil {
+		return nil, fmt.Errorf("validate: read story file: %w", err)
+	}
+
+	return data, nil
 }
 
 // collectStoryFiles recursively collects all .story file paths under

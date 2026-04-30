@@ -78,6 +78,30 @@ func validateRunIDEntry(
 	seenRunIDs[runID] = struct{}{}
 }
 
+// writeTestReport builds a minimal RunResult and calls reportjson.WriteJSON
+// for a single goroutine in the concurrent test. Errors are sent to errs.
+func writeTestReport(goroutineIdx int, sharedDir string, errs chan<- error) {
+	fixedTime := time.Date(2024, 1, 15, 10, 0, 0, 0, time.UTC)
+	result := &runner.RunResult{
+		RunID:      fmt.Sprintf("run-%02d", goroutineIdx),
+		StartedAt:  fixedTime,
+		FinishedAt: fixedTime.Add(5 * time.Second),
+		Stories:    []runner.StoryResult{},
+		Summary:    runner.Summary{}, //nolint:exhaustruct // zero-value fixture
+	}
+
+	outDir := filepath.Join(sharedDir, result.RunID)
+
+	opts := report.JSONOptions{ //nolint:exhaustruct // NoTraceOnPass zero value is correct
+		OctaneVersion: "test",
+	}
+
+	writeErr := reportjson.WriteJSON(result, outDir, opts)
+	if writeErr != nil {
+		errs <- fmt.Errorf("goroutine %d: %w", goroutineIdx, writeErr)
+	}
+}
+
 // Test_report_WriteJSON_ConcurrentDistinctRunIDs asserts that N parallel
 // WriteJSON calls with distinct run-ids produce no file conflicts and that
 // every caller writes its own <run-id>/octane.json to the shared parent dir.
@@ -96,26 +120,7 @@ func Test_report_WriteJSON_ConcurrentDistinctRunIDs(t *testing.T) {
 		go func() {
 			defer workGroup.Done()
 
-			fixedTime := time.Date(2024, 1, 15, 10, 0, 0, 0, time.UTC)
-			result := &runner.RunResult{
-				RunID:      fmt.Sprintf("run-%02d", goroutineIdx),
-				StartedAt:  fixedTime,
-				FinishedAt: fixedTime.Add(5 * time.Second),
-				Stories:    []runner.StoryResult{},
-				Summary:    runner.Summary{ //nolint:exhaustruct // zero-value fixture
-				},
-			}
-
-			outDir := filepath.Join(sharedDir, result.RunID)
-
-			opts := report.JSONOptions{ //nolint:exhaustruct // NoTraceOnPass zero value is correct
-				OctaneVersion: "test",
-			}
-
-			err := reportjson.WriteJSON(result, outDir, opts)
-			if err != nil {
-				errs <- fmt.Errorf("goroutine %d: %w", goroutineIdx, err)
-			}
+			writeTestReport(goroutineIdx, sharedDir, errs)
 		}()
 	}
 

@@ -16,9 +16,13 @@ import (
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
 	"github.com/evcoreco/octane/pkg/keywords/api/mock"
-	// Side-effect: registers primitive keywords at init time.
-	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
+	_ "github.com/evcoreco/octane/pkg/keywords/primitive" // blank import
 )
+
+// ── Package-level sentinel errors ────────────────────────────────────────────
+
+// errSendStub is the sentinel returned by the mock station during error tests.
+var errSendStub = errors.New("stub: send failed")
 
 // ── Named constants ───────────────────────────────────────────────────────────
 
@@ -48,6 +52,9 @@ const (
 
 	// wantOneSent is the expected SentFrames count after one successful send.
 	wantOneSent = 1
+
+	// noSentFrames is the expected SentFrames count when no frame was sent.
+	noSentFrames = 0
 )
 
 // ── sendRawFrame tests ────────────────────────────────────────────────────────
@@ -64,7 +71,12 @@ func Test_primitive_sendRawFrame_HappyPath(t *testing.T) {
 	keywordFunc := resolveFunc(t, patternSendRawFrame)
 
 	// Invariant: the frame passed as []any must appear in SentFrames().
-	frame := []any{ocppCallType, "msg-001", "BootNotification", map[string]any{}}
+	frame := []any{
+		ocppCallType,
+		"msg-001",
+		"BootNotification",
+		map[string]any{},
+	}
 
 	args := api.NewArgs(map[string]any{
 		"frame":   frame,
@@ -123,14 +135,18 @@ func Test_primitive_sendRawFrame_SendError(t *testing.T) {
 	station := mock.NewMockStation()
 
 	// Configure the mock to fail on Send.
-	errSendStub := errors.New("stub: send failed")
 	station.SetSendError(errSendStub)
 
 	state.RegisterStation(handleSend, station)
 
 	keywordFunc := resolveFunc(t, patternSendRawFrame)
 
-	frame := []any{ocppCallType, "msg-002", "BootNotification", map[string]any{}}
+	frame := []any{
+		ocppCallType,
+		"msg-002",
+		"BootNotification",
+		map[string]any{},
+	}
 
 	args := api.NewArgs(map[string]any{
 		"frame":   frame,
@@ -205,9 +221,10 @@ func Test_primitive_sendRawBytes_MalformedHex(t *testing.T) {
 	// Invariant: no frame should have been sent on decode failure.
 	sent := station.SentFrames()
 
-	if len(sent) != 0 {
+	if len(sent) != noSentFrames {
 		t.Errorf(
-			"sendRawBytes with malformed hex: SentFrames() want 0, got %d",
+			"sendRawBytes with malformed hex: SentFrames() want %d, got %d",
+			noSentFrames,
 			len(sent),
 		)
 	}

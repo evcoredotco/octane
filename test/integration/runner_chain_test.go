@@ -1,7 +1,7 @@
 // Package integration_test — runner integration tests for Spec 005 Phase 6.
 //
 // Task: T-005-50
-// AC1: A 4-deep dependency chain executes in topological order and all stories pass.
+// AC1: A 4-deep dependency chain runs in topological order; all stories pass.
 
 package integration_test
 
@@ -185,5 +185,41 @@ func writeFile(t *testing.T, path, content string) {
 	err := os.WriteFile(path, []byte(content), 0o600)
 	if err != nil {
 		t.Fatalf("writeFile(%q): %v", path, err)
+	}
+}
+
+// noopCfg returns a runner.Config with NoCache true and all other fields at
+// their zero values, pointed at storyDir.
+func noopCfg(storyDir string) runner.Config {
+	return runner.Config{
+		StoryPaths:         []string{storyDir},
+		MaxParallel:        0,
+		LockTimeout:        0,
+		NoWait:             false,
+		ShardIndex:         0,
+		ShardTotal:         0,
+		CacheDir:           "",
+		NoCache:            true,
+		NoTraceOnPass:      false,
+		OCPPVersion:        "",
+		InsecureSkipVerify: false,
+	}
+}
+
+// cachedCfg returns a runner.Config with caching enabled, pointed at storyDir
+// and cacheDir, with all other fields at their zero values.
+func cachedCfg(storyDir, cacheDir string) runner.Config {
+	return runner.Config{
+		StoryPaths:         []string{storyDir},
+		MaxParallel:        0,
+		LockTimeout:        0,
+		NoWait:             false,
+		ShardIndex:         0,
+		ShardTotal:         0,
+		CacheDir:           cacheDir,
+		NoCache:            false,
+		NoTraceOnPass:      false,
+		OCPPVersion:        "",
+		InsecureSkipVerify: false,
 	}
 }

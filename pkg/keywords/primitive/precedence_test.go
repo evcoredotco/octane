@@ -98,7 +98,8 @@ func Test_primitive_precedence_domainWinsForOCPP16(t *testing.T) {
 
 	if match.Keyword.Layer != api.LayerDomain {
 		t.Errorf(
-			"Match.Keyword.Layer: want LayerDomain (domain wins over primitive), got %v",
+			"Match.Keyword.Layer: want LayerDomain "+
+				"(domain wins over primitive), got %v",
 			match.Keyword.Layer,
 		)
 	}

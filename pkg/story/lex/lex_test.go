@@ -402,7 +402,12 @@ func TestLexer(t *testing.T) {
 			input: "Meta\nBackground\n",
 			want: []lex.Token{
 				{Kind: lex.TokenMeta, Literal: litEmpty, Line: 1, Column: 1},
-				{Kind: lex.TokenBackground, Literal: litEmpty, Line: lineTwo, Column: 1},
+				{
+					Kind:    lex.TokenBackground,
+					Literal: litEmpty,
+					Line:    lineTwo,
+					Column:  1,
+				},
 			},
 		},
 
@@ -417,7 +422,12 @@ func TestLexer(t *testing.T) {
 			input: "Meta\n\nBackground\n",
 			want: []lex.Token{
 				{Kind: lex.TokenMeta, Literal: litEmpty, Line: 0, Column: 0},
-				{Kind: lex.TokenBackground, Literal: litEmpty, Line: 0, Column: 0},
+				{
+					Kind:    lex.TokenBackground,
+					Literal: litEmpty,
+					Line:    0,
+					Column:  0,
+				},
 			},
 		},
 

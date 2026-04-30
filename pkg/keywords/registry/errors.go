@@ -1,9 +1,3 @@
-// Package registry — typed resolver error values.
-//
-// This file defines [NoMatchError] and [TypeMismatchError], the two
-// typed errors returned by [Resolve] when step resolution fails.
-// See registry.go for the package-level documentation.
-
 package registry
 
 import "fmt"

@@ -109,19 +109,7 @@ func Test_runner_CacheTTLRunnerSecondRunIsHit(t *testing.T) {
 
 	writeFile(t, storyDir+"/ttl_story.story", storyTTL)
 
-	cfg := runner.Config{
-		StoryPaths:         []string{storyDir},
-		MaxParallel:        0,
-		LockTimeout:        0,
-		NoWait:             false,
-		ShardIndex:         0,
-		ShardTotal:         0,
-		CacheDir:           cacheDir,
-		NoCache:            false,
-		NoTraceOnPass:      false,
-		OCPPVersion:        "",
-		InsecureSkipVerify: false,
-	}
+	cfg := cachedCfg(storyDir, cacheDir)
 
 	// First run: story executes, result is cached (CacheMiss → write).
 	firstResult, err := runner.Run(context.Background(), cfg)

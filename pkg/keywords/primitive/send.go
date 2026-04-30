@@ -4,11 +4,15 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
 	"github.com/evcoreco/octane/pkg/keywords/registry"
 )
+
+// errFrameNotSlice is returned when the frame argument is not a JSON array.
+var errFrameNotSlice = errors.New("frame must be []any")
 
 func init() {
 	registry.Register(api.Keyword{
@@ -46,9 +50,9 @@ func sendRawFrame(
 	frame, ok := raw.([]any)
 	if !ok {
 		return fmt.Errorf(
-			"primitive: send raw frame on station %q: "+
-				"frame must be []any, got %T",
+			"primitive: send raw frame on station %q: %w, got %T",
 			handle,
+			errFrameNotSlice,
 			raw,
 		)
 	}

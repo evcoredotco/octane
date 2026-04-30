@@ -43,5 +43,10 @@ func Load(path string) (Config, error) {
 // --config flag and is therefore operator-controlled; the gosec G304
 // warning is intentionally suppressed.
 func readConfigFile(path string) ([]byte, error) {
-	return os.ReadFile(filepath.Clean(path))
+	data, err := os.ReadFile(filepath.Clean(path))
+	if err != nil {
+		return nil, fmt.Errorf("config: read file: %w", err)
+	}
+
+	return data, nil
 }

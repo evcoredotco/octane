@@ -14,6 +14,18 @@ import (
 	"github.com/evcoreco/octane/pkg/runner"
 )
 
+// schemaTestYear is the year used in buildMinimalResult time fixtures.
+const schemaTestYear = 2024
+
+// schemaTestMonth is the month used in time.Date for schema test fixtures.
+const schemaTestMonth = 1
+
+// minimalTotalStories is the total story count for the minimal test result.
+const minimalTotalStories = 1
+
+// noFailures is the expected failed story count in the passing minimal result.
+const noFailures = 0
+
 // requiredTopLevelKeys are the JSON keys that must appear at the top
 // level of every octane.json report.
 var requiredTopLevelKeys = []string{
@@ -29,16 +41,16 @@ var requiredTopLevelKeys = []string{
 // buildMinimalResult creates a minimal runner.RunResult suitable for
 // schema validation tests.
 func buildMinimalResult() *runner.RunResult {
-	now := time.Date(2024, 1, 15, 12, 0, 0, 0, time.UTC)
+	now := time.Date(schemaTestYear, schemaTestMonth, 15, 12, 0, 0, 0, time.UTC)
 
 	return &runner.RunResult{
 		RunID:      "01ARZ3NDEKTSV4RRFFQ69G5FAV",
 		StartedAt:  now,
 		FinishedAt: now.Add(5 * time.Second),
 		Summary: runner.Summary{
-			Total:     1,
-			Passed:    1,
-			Failed:    0,
+			Total:     minimalTotalStories,
+			Passed:    minimalTotalStories,
+			Failed:    noFailures,
 			Skipped:   0,
 			CacheHits: 0,
 		},
@@ -151,7 +163,8 @@ func assertSummaryShape(t *testing.T, top map[string]any) {
 		return
 	}
 
-	for _, key := range []string{"total", "passed", "failed", "skipped", "cacheHits"} {
+	summaryKeys := []string{"total", "passed", "failed", "skipped", "cacheHits"}
+	for _, key := range summaryKeys {
 		if _, exists := summaryMap[key]; !exists {
 			t.Errorf("summary: missing required key %q", key)
 		}

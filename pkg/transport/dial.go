@@ -3,6 +3,7 @@ package transport
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -39,6 +40,9 @@ const (
 	noSubprotocols = 0
 )
 
+// errUnsupportedScheme is returned when the URL scheme is not ws or wss.
+var errUnsupportedScheme = errors.New("transport: unsupported URL scheme (want ws or wss)")
+
 // allowedSchemes lists the URL schemes accepted by Dial.
 var allowedSchemes = map[string]struct{}{
 	"ws":  {},
@@ -70,10 +74,7 @@ func Dial(
 	}
 
 	if _, ok := allowedSchemes[parsed.Scheme]; !ok {
-		return nil, fmt.Errorf(
-			"transport: unsupported scheme %q (want ws or wss)",
-			parsed.Scheme,
-		)
+		return nil, fmt.Errorf("%w: got %q", errUnsupportedScheme, parsed.Scheme)
 	}
 
 	safeURL := sanitizeURL(parsed)

@@ -34,10 +34,8 @@ func fixedTime(offsetSeconds int) time.Time {
 	return base.Add(time.Duration(offsetSeconds) * time.Second)
 }
 
-// buildGoldenResult constructs the same canned runner.RunResult used by the
-// JSON golden test: three stories (passed, failed, skipped). The skipped
-// story has a cause chain.
-func buildGoldenResult() *runner.RunResult {
+// xmlPassedStory returns the passed BootNotification story fixture.
+func xmlPassedStory() runner.StoryResult {
 	passedTrace := &runner.Trace{
 		Frames: [][]byte{
 			[]byte(`[2,"abc123","BootNotification",{"reason":"PowerUp"}]`),
@@ -47,6 +45,71 @@ func buildGoldenResult() *runner.RunResult {
 		},
 	}
 
+	return runner.StoryResult{
+		Order:       0,
+		TestID:      "tc_boot_notification",
+		ScopeKey:    "CP01",
+		OCPPVersion: "1.6",
+		Status:      runner.StatusPassed,
+		CacheStatus: runner.CacheHitPass,
+		StartedAt:   fixedTime(0),
+		FinishedAt:  fixedTime(10),
+		Findings:    nil,
+		Trace:       passedTrace,
+		Cause:       "",
+		CauseChain:  nil,
+	}
+}
+
+// xmlFailedStory returns the failed Heartbeat story fixture.
+func xmlFailedStory() runner.StoryResult {
+	return runner.StoryResult{
+		Order:       1,
+		TestID:      "tc_heartbeat",
+		ScopeKey:    "CP01",
+		OCPPVersion: "1.6",
+		Status:      runner.StatusFailed,
+		CacheStatus: runner.CacheMiss,
+		StartedAt:   fixedTime(10),
+		FinishedAt:  fixedTime(20),
+		Findings: []runner.Finding{
+			{
+				Message:  "heartbeat interval mismatch: got 600, want 300",
+				Severity: "error",
+			},
+			{
+				Message:  "response took 250ms",
+				Severity: "warning",
+			},
+		},
+		Trace:      nil,
+		Cause:      "",
+		CauseChain: nil,
+	}
+}
+
+// xmlSkippedStory returns the skipped StatusNotification story fixture.
+func xmlSkippedStory() runner.StoryResult {
+	return runner.StoryResult{
+		Order:       2,
+		TestID:      "tc_status_notification",
+		ScopeKey:    "CP01",
+		OCPPVersion: "1.6",
+		Status:      runner.StatusSkipped,
+		CacheStatus: runner.CacheBypassed,
+		StartedAt:   fixedTime(20),
+		FinishedAt:  fixedTime(20),
+		Findings:    nil,
+		Trace:       nil,
+		Cause:       "tc_heartbeat/CP01",
+		CauseChain:  []string{"tc_heartbeat/CP01"},
+	}
+}
+
+// buildGoldenResult constructs the same canned runner.RunResult used by the
+// JSON golden test: three stories (passed, failed, skipped). The skipped
+// story has a cause chain.
+func buildGoldenResult() *runner.RunResult {
 	return &runner.RunResult{
 		RunID:      "01ARZ3NDEKTSV4RRFFQ69G5FAV",
 		StartedAt:  fixedTime(0),
@@ -59,57 +122,9 @@ func buildGoldenResult() *runner.RunResult {
 			CacheHits: 1,
 		},
 		Stories: []runner.StoryResult{
-			{
-				Order:       0,
-				TestID:      "tc_boot_notification",
-				ScopeKey:    "CP01",
-				OCPPVersion: "1.6",
-				Status:      runner.StatusPassed,
-				CacheStatus: runner.CacheHitPass,
-				StartedAt:   fixedTime(0),
-				FinishedAt:  fixedTime(10),
-				Findings:    nil,
-				Trace:       passedTrace,
-				Cause:       "",
-				CauseChain:  nil,
-			},
-			{
-				Order:       1,
-				TestID:      "tc_heartbeat",
-				ScopeKey:    "CP01",
-				OCPPVersion: "1.6",
-				Status:      runner.StatusFailed,
-				CacheStatus: runner.CacheMiss,
-				StartedAt:   fixedTime(10),
-				FinishedAt:  fixedTime(20),
-				Findings: []runner.Finding{
-					{
-						Message:  "heartbeat interval mismatch: got 600, want 300",
-						Severity: "error",
-					},
-					{
-						Message:  "response took 250ms",
-						Severity: "warning",
-					},
-				},
-				Trace:      nil,
-				Cause:      "",
-				CauseChain: nil,
-			},
-			{
-				Order:       2,
-				TestID:      "tc_status_notification",
-				ScopeKey:    "CP01",
-				OCPPVersion: "1.6",
-				Status:      runner.StatusSkipped,
-				CacheStatus: runner.CacheBypassed,
-				StartedAt:   fixedTime(20),
-				FinishedAt:  fixedTime(20),
-				Findings:    nil,
-				Trace:       nil,
-				Cause:       "tc_heartbeat/CP01",
-				CauseChain:  []string{"tc_heartbeat/CP01"},
-			},
+			xmlPassedStory(),
+			xmlFailedStory(),
+			xmlSkippedStory(),
 		},
 	}
 }
@@ -127,6 +142,24 @@ func readOutput(t *testing.T, dir string) []byte {
 	}
 
 	return data
+}
+
+// updateGoldenXMLFile rewrites the golden output.xml file with got.
+// Called by Test_robotxml_Golden when the -update flag is set.
+func updateGoldenXMLFile(t *testing.T, got []byte) {
+	t.Helper()
+
+	err := os.MkdirAll("testdata", 0o750)
+	if err != nil {
+		t.Fatalf("creating testdata: %v", err)
+	}
+
+	err = os.WriteFile(goldenFilePath, got, 0o600)
+	if err != nil {
+		t.Fatalf("updating golden file: %v", err)
+	}
+
+	t.Logf("golden file updated: %s", goldenFilePath)
 }
 
 // Test_robotxml_Golden verifies byte-deterministic Robot XML output. When the
@@ -172,17 +205,7 @@ func Test_robotxml_Golden(t *testing.T) {
 	}
 
 	if *updateFlag {
-		err := os.MkdirAll("testdata", 0o750)
-		if err != nil {
-			t.Fatalf("creating testdata: %v", err)
-		}
-
-		err = os.WriteFile(goldenFilePath, got, 0o600)
-		if err != nil {
-			t.Fatalf("updating golden file: %v", err)
-		}
-
-		t.Logf("golden file updated: %s", goldenFilePath)
+		updateGoldenXMLFile(t, got)
 
 		return
 	}

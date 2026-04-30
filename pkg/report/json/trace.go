@@ -1,8 +1,3 @@
-// Package json implements the JSON emitter for OCTANE run reports.
-// This file implements trace inclusion logic for the JSON emitter.
-//
-// Task: T-007-21.
-
 package json
 
 import (

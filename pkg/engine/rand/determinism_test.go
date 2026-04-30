@@ -22,6 +22,12 @@ const goldenIntnCount = 10
 // floatZero is the float64 lower bound for Float64 range checks.
 const floatZero = 0.0
 
+// intZero is the lower bound for Int63 non-negative assertions.
+const intZero = 0
+
+// maxFloat64Exclusive is the exclusive upper bound for Float64 range checks.
+const maxFloat64Exclusive = 1.0
+
 // goldenInt63 is the expected sequence of Int63 values from Deterministic
 // seeded with goldenSeed. If this sequence ever changes, the determinism
 // guarantee (AC6) has been broken.
@@ -159,21 +165,21 @@ func TestRealRandInterface(t *testing.T) {
 
 	for idx := range iterRange {
 		val := rng.Int63()
-		if val < 0 {
+		if val < intZero {
 			t.Errorf("Int63[%d]=%d is negative", idx, val)
 		}
 	}
 
 	for idx := range iterRange {
 		val := rng.Float64()
-		if val < floatZero || val >= 1.0 {
+		if val < floatZero || val >= maxFloat64Exclusive {
 			t.Errorf("Float64[%d]=%g out of [0.0, 1.0)", idx, val)
 		}
 	}
 
 	for idx := range iterRange {
 		val := rng.Intn(intnBound)
-		if val < 0 || val >= intnBound {
+		if val < intZero || val >= intnBound {
 			t.Errorf("Intn(intnBound)[%d]=%d out of [0, 100)", idx, val)
 		}
 	}

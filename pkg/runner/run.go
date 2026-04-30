@@ -48,6 +48,12 @@ const emptyCause = ""
 // components of the cache key that are not yet implemented.
 const placeholderSHA = "00000000"
 
+// errStationNotRegistered is returned when a station handle is not registered.
+var errStationNotRegistered = errors.New("runner: station not registered")
+
+// ocppVersionEmpty is used when the story does not declare an OCPP version.
+const ocppVersionEmpty = ""
+
 // runnerState implements api.State for use by keyword functions
 // during story execution. It wraps the station registry and the
 // deterministic clock injected by the runner.
@@ -89,7 +95,7 @@ func (rs *runnerState) Station(handle string) (api.Station, error) {
 
 	station, ok := rs.stations[handle]
 	if !ok {
-		return nil, fmt.Errorf("runner: station %q not registered", handle)
+		return nil, fmt.Errorf("runner: station %q: %w", handle, errStationNotRegistered)
 	}
 
 	return station, nil
@@ -420,7 +426,11 @@ func makeExecFunc(
 
 		// In-process deduplication via sync.Once (ADR 0019 fast path).
 		rawOnce, _ := inProcess.LoadOrStore(nodeID, &sync.Once{})
-		once := rawOnce.(*sync.Once) //nolint:forcetypeassert
+		once, ok := rawOnce.(*sync.Once)
+
+		if !ok {
+			panic("internal: inProcess value is not *sync.Once")
+		}
 
 		var lockedResult StoryResult
 
@@ -486,7 +496,7 @@ func executeWithLock(
 			Order:       0,
 			TestID:      storyNodeVal.story.Meta.ID,
 			ScopeKey:    storyNodeVal.scopeKey,
-			OCPPVersion: "",
+			OCPPVersion: ocppVersionEmpty,
 			Status:      StatusFailed,
 			CacheStatus: CacheMiss,
 			StartedAt:   startedAt,
@@ -791,7 +801,7 @@ func buildCacheKey(
 		TestID:          storyNodeVal.story.Meta.ID,
 		ScopeKey:        scopeKey,
 		CSMSEndpointSHA: placeholderSHA, // spec 002 placeholder
-		OctaneVersion:   "dev",          // spec 006 will inject the real version
+		OctaneVersion:   "dev",          // spec 006 injects real version
 		OCPPVersion:     ocppVer,
 		StoryContentSHA: placeholderSHA, // spec 001 content hash
 		ParameterSHA:    placeholderSHA, // spec 003 parameter hash
@@ -827,7 +837,7 @@ func buildRunResult(
 				Order:       orderIdx,
 				TestID:      storyID,
 				ScopeKey:    scopeKey,
-				OCPPVersion: "",
+				OCPPVersion: ocppVersionEmpty,
 				Status:      StatusSkipped,
 				CacheStatus: CacheMiss,
 				StartedAt:   time.Time{},
@@ -851,6 +861,8 @@ func buildRunResult(
 			summary.Failed++
 		case StatusSkipped:
 			summary.Skipped++
+		default:
+			// no-op: unrecognised status does not affect summary counts
 		}
 
 		if result.CacheStatus == CacheHitPass ||

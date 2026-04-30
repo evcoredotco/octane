@@ -53,19 +53,7 @@ func Test_runner_RunPerStationPrereqRunsTwice(t *testing.T) {
 	writeFile(t, storyDir+"/ps_prereq.story", storyPerStationPrereq)
 	writeFile(t, storyDir+"/ps_dependent.story", storyPerStationDependent)
 
-	cfg := runner.Config{
-		StoryPaths:         []string{storyDir},
-		MaxParallel:        0,
-		LockTimeout:        0,
-		NoWait:             false,
-		ShardIndex:         0,
-		ShardTotal:         0,
-		CacheDir:           "",
-		NoCache:            true,
-		NoTraceOnPass:      false,
-		OCPPVersion:        "",
-		InsecureSkipVerify: false,
-	}
+	cfg := noopCfg(storyDir)
 
 	result, err := runner.Run(context.Background(), cfg)
 	if err != nil {
