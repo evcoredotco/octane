@@ -6,6 +6,7 @@
 // frame and emits it on the station's wire.
 // AC2: "send raw bytes {bytes:string} on station {station:string}" decodes a
 // hex string and sends the resulting frame.
+
 package primitive_test
 
 import (
@@ -15,21 +16,26 @@ import (
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
 	"github.com/evcoreco/octane/pkg/keywords/api/mock"
-	// Blank import registers all primitive keywords at init() time.
-	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
 )
 
-// ── Named constants ───────────────────────────────────────────────────────────
+// ── Package-level sentinel errors ────────────────────────────────────────────
+
+// errSendStub is the sentinel returned by the mock station during error tests.
+var errSendStub = errors.New("stub: send failed")
+
+// ── Named constants ──────────────────────────────────────────────────────────
 
 const (
 	// handleSend is the station handle name used across send tests.
 	handleSend = "CP04"
 
 	// patternSendRawFrame is the step text for the send-raw-frame keyword.
-	patternSendRawFrame = "send raw frame {frame:any} on station {station:string}"
+	patternSendRawFrame = "send raw frame {frame:any}" +
+		" on station {station:string}"
 
 	// patternSendRawBytes is the step text for the send-raw-bytes keyword.
-	patternSendRawBytes = "send raw bytes {bytes:string} on station {station:string}"
+	patternSendRawBytes = "send raw bytes {bytes:string}" +
+		" on station {station:string}"
 
 	// hexValidFrame is a valid hex-encoded OCPP-J CALL frame:
 	// [2,"id","Action",{}] → as JSON bytes encoded to hex.
@@ -39,9 +45,18 @@ const (
 	// hexMalformed is a hex string that decodes to bytes that are not
 	// valid JSON (and therefore not a JSON array).
 	hexMalformed = "zzzz"
+
+	// ocppCallType is the OCPP-J message type for Call frames.
+	ocppCallType = float64(2)
+
+	// wantOneSent is the expected SentFrames count after one successful send.
+	wantOneSent = 1
+
+	// noSentFrames is the expected SentFrames count when no frame was sent.
+	noSentFrames = 0
 )
 
-// ── sendRawFrame tests ────────────────────────────────────────────────────────
+// ── sendRawFrame tests ───────────────────────────────────────────────────────
 
 // Test_primitive_sendRawFrame_HappyPath verifies that the keyword delivers the
 // frame to SentFrames() exactly once and with the correct contents (AC2).
@@ -55,7 +70,12 @@ func Test_primitive_sendRawFrame_HappyPath(t *testing.T) {
 	keywordFunc := resolveFunc(t, patternSendRawFrame)
 
 	// Invariant: the frame passed as []any must appear in SentFrames().
-	frame := []any{float64(2), "msg-001", "BootNotification", map[string]any{}}
+	frame := []any{
+		ocppCallType,
+		"msg-001",
+		"BootNotification",
+		map[string]any{},
+	}
 
 	args := api.NewArgs(map[string]any{
 		"frame":   frame,
@@ -69,7 +89,7 @@ func Test_primitive_sendRawFrame_HappyPath(t *testing.T) {
 
 	sent := station.SentFrames()
 
-	if len(sent) != 1 {
+	if len(sent) != wantOneSent {
 		t.Fatalf("SentFrames(): want 1 frame, got %d", len(sent))
 	}
 
@@ -114,14 +134,18 @@ func Test_primitive_sendRawFrame_SendError(t *testing.T) {
 	station := mock.NewMockStation()
 
 	// Configure the mock to fail on Send.
-	errSendStub := errors.New("stub: send failed")
 	station.SetSendError(errSendStub)
 
 	state.RegisterStation(handleSend, station)
 
 	keywordFunc := resolveFunc(t, patternSendRawFrame)
 
-	frame := []any{float64(2), "msg-002", "BootNotification", map[string]any{}}
+	frame := []any{
+		ocppCallType,
+		"msg-002",
+		"BootNotification",
+		map[string]any{},
+	}
 
 	args := api.NewArgs(map[string]any{
 		"frame":   frame,
@@ -136,14 +160,11 @@ func Test_primitive_sendRawFrame_SendError(t *testing.T) {
 	}
 
 	if !errors.Is(err, errSendStub) {
-		t.Errorf(
-			"sendRawFrame on Send error: want errors.Is(err, errSendStub), got %v",
-			err,
-		)
+		t.Errorf("sendRawFrame: want errors.Is(err, errSendStub), got %v", err)
 	}
 }
 
-// ── sendRawBytes tests ────────────────────────────────────────────────────────
+// ── sendRawBytes tests ───────────────────────────────────────────────────────
 
 // Test_primitive_sendRawBytes_HappyPath verifies that a valid hex string is
 // decoded, parsed as a JSON array, and delivered via Station.Send (AC2).
@@ -169,7 +190,7 @@ func Test_primitive_sendRawBytes_HappyPath(t *testing.T) {
 	// Invariant: exactly one frame must have been sent after decoding.
 	sent := station.SentFrames()
 
-	if len(sent) != 1 {
+	if len(sent) != wantOneSent {
 		t.Fatalf("SentFrames(): want 1 frame, got %d", len(sent))
 	}
 }
@@ -199,9 +220,10 @@ func Test_primitive_sendRawBytes_MalformedHex(t *testing.T) {
 	// Invariant: no frame should have been sent on decode failure.
 	sent := station.SentFrames()
 
-	if len(sent) != 0 {
+	if len(sent) != noSentFrames {
 		t.Errorf(
-			"sendRawBytes with malformed hex: SentFrames() want 0, got %d",
+			"sendRawBytes with malformed hex: SentFrames() want %d, got %d",
+			noSentFrames,
 			len(sent),
 		)
 	}

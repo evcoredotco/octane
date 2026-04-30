@@ -9,6 +9,36 @@ package levenshtein
 
 import "strings"
 
+// zeroDistance is the edit distance between two identical strings.
+const zeroDistance = 0
+
+// zeroLen is the empty-string length sentinel used in base-case checks.
+const zeroLen = 0
+
+// matrixOffset is the +1 added to string lengths when sizing the DP matrix.
+const matrixOffset = 1
+
+// startIndex is the first non-base-case row/column in the DP matrix.
+const startIndex = 1
+
+// noCandidate flags an uninitialised best-distance (no candidates seen yet).
+const noCandidate = -1
+
+// emptyResult is the empty string returned when no candidates are provided.
+const emptyResult = ""
+
+// zeroCol is the base-case column index (converting to empty string).
+const zeroCol = 0
+
+// zeroRow is the base-case row index (converting from empty string).
+const zeroRow = 0
+
+// prevOffset is the index offset used to access the previous row/column.
+const prevOffset = 1
+
+// editCost is the unit cost of a single insertion, deletion, or substitution.
+const editCost = 1
+
 // Distance returns the Levenshtein edit distance between strings
 // src and tgt. The comparison is case-insensitive: both inputs are
 // lower-cased before the distance is computed, so "Hello" and
@@ -21,26 +51,42 @@ func Distance(src, tgt string) int {
 	src = strings.ToLower(src)
 	tgt = strings.ToLower(tgt)
 
-	// Handle the degenerate cases first to avoid allocating a
-	// matrix when one or both strings are empty.
+	if d, ok := degenerateDistance(src, tgt); ok {
+		return d
+	}
+
+	rows := len(src) + matrixOffset
+	cols := len(tgt) + matrixOffset
+
+	matrix := buildMatrix(rows, cols)
+
+	fillMatrix(matrix, src, tgt, rows, cols)
+
+	return matrix[rows-prevOffset][cols-prevOffset]
+}
+
+// degenerateDistance handles the degenerate cases for Distance: equal
+// strings, or one of the strings being empty. It returns (distance, true)
+// when a degenerate case applies, and (0, false) otherwise.
+func degenerateDistance(src, tgt string) (int, bool) {
 	if src == tgt {
-		return 0
+		return zeroDistance, true
 	}
 
-	if len(src) == 0 {
-		return len(tgt)
+	if len(src) == zeroLen {
+		return len(tgt), true
 	}
 
-	if len(tgt) == 0 {
-		return len(src)
+	if len(tgt) == zeroLen {
+		return len(src), true
 	}
 
-	// Build the full rows×cols matrix where rows = len(src)+1 and
-	// cols = len(tgt)+1. matrix[row][col] holds the edit distance
-	// between src[:row] and tgt[:col].
-	rows := len(src) + 1
-	cols := len(tgt) + 1
+	return zeroDistance, false
+}
 
+// buildMatrix allocates and initialises the base-case rows and columns
+// of the Levenshtein DP matrix.
+func buildMatrix(rows, cols int) [][]int {
 	matrix := make([][]int, rows)
 	for row := range matrix {
 		matrix[row] = make([]int, cols)
@@ -49,28 +95,32 @@ func Distance(src, tgt string) int {
 	// Base cases: converting to/from the empty string costs one
 	// operation per character.
 	for row := range rows {
-		matrix[row][0] = row
+		matrix[row][zeroCol] = row
 	}
 
 	for col := range cols {
-		matrix[0][col] = col
+		matrix[zeroRow][col] = col
 	}
 
-	for row := 1; row < rows; row++ {
-		for col := 1; col < cols; col++ {
-			if src[row-1] == tgt[col-1] {
-				matrix[row][col] = matrix[row-1][col-1]
+	return matrix
+}
+
+// fillMatrix populates the inner cells of the DP matrix using the
+// standard Levenshtein recurrence.
+func fillMatrix(matrix [][]int, src, tgt string, rows, cols int) {
+	for row := startIndex; row < rows; row++ {
+		for col := startIndex; col < cols; col++ {
+			if src[row-prevOffset] == tgt[col-prevOffset] {
+				matrix[row][col] = matrix[row-prevOffset][col-prevOffset]
 			} else {
-				matrix[row][col] = 1 + minOf3(
-					matrix[row-1][col],   // deletion
-					matrix[row][col-1],   // insertion
-					matrix[row-1][col-1], // substitution
+				matrix[row][col] = editCost + minOf3(
+					matrix[row-prevOffset][col],            // deletion
+					matrix[row][col-prevOffset],            // insertion
+					matrix[row-prevOffset][col-prevOffset], // substitution
 				)
 			}
 		}
 	}
-
-	return matrix[rows-1][cols-1]
 }
 
 // Closest returns the element of candidates whose Levenshtein
@@ -81,23 +131,25 @@ func Distance(src, tgt string) int {
 //
 // An empty string is returned when candidates is empty.
 func Closest(needle string, candidates []string) string {
-	if len(candidates) == 0 {
-		return ""
+	if len(candidates) == zeroLen {
+		return emptyResult
 	}
 
-	best := ""
-	bestDist := -1
+	best := emptyResult
+	bestDist := noCandidate
 
 	for _, candidate := range candidates {
 		dist := Distance(needle, candidate)
 
 		switch {
-		case bestDist < 0 || dist < bestDist:
+		case bestDist < zeroDistance || dist < bestDist:
 			best = candidate
 			bestDist = dist
 		case dist == bestDist &&
 			strings.ToLower(candidate) < strings.ToLower(best):
 			best = candidate
+		default:
+			// dist > bestDist: current candidate is further; skip.
 		}
 	}
 

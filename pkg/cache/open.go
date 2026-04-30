@@ -10,10 +10,15 @@ import (
 	"github.com/evcoreco/octane/pkg/engine/clock"
 )
 
-// schemaVersion is the current schema version written into
-// version.json by [Open]. Readers compare this value against
-// the supported range to detect incompatible cache directories.
-const schemaVersion = 1
+const (
+	// schemaVersion is the current schema version written into
+	// version.json by [Open]. Readers compare this value against
+	// the supported range to detect incompatible cache directories.
+	schemaVersion = 1
+
+	// cacheDirPerm is the permission bits for cache sub-directories.
+	cacheDirPerm = 0o750
+)
 
 // versionStamp is the structure written to version.json at
 // cache-open time. It lets operators and future OCTANE versions
@@ -21,11 +26,11 @@ const schemaVersion = 1
 type versionStamp struct {
 	// SchemaVersion is the integer schema version of this
 	// cache directory. Currently always 1.
-	SchemaVersion int `json:"schema_version"`
+	SchemaVersion int `json:"schemaVersion"`
 
 	// CreatedAt is the RFC 3339 timestamp when the cache
 	// directory was first initialised.
-	CreatedAt time.Time `json:"created_at"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 // Open creates (or verifies) a content-addressed cache directory
@@ -42,14 +47,15 @@ type versionStamp struct {
 //
 // Open returns an error if dir cannot be created, if the directory
 // tree is not writable, or if the version stamp cannot be written.
-func Open(dir string) (Cache, error) {
+func Open(dir string) (*FileCache, error) {
 	subDirs := []string{
 		filepath.Join(dir, "results"),
 		filepath.Join(dir, "locks"),
 	}
 
 	for _, sub := range subDirs {
-		if err := os.MkdirAll(sub, 0o750); err != nil {
+		err := os.MkdirAll(sub, cacheDirPerm)
+		if err != nil {
 			return nil, fmt.Errorf(
 				"cache: create directory %q: %w",
 				sub,
@@ -58,7 +64,8 @@ func Open(dir string) (Cache, error) {
 		}
 	}
 
-	if err := writeVersionStamp(dir); err != nil {
+	err := writeVersionStamp(dir)
+	if err != nil {
 		return nil, err
 	}
 
@@ -70,14 +77,15 @@ func Open(dir string) (Cache, error) {
 // Inject a [clock.DeterministicClock] in tests that need precise
 // control over cache expiry without real wall-clock delay
 // (constitution principle IV).
-func OpenWithClock(dir string, clk clock.Clock) (Cache, error) {
+func OpenWithClock(dir string, clk clock.Clock) (*FileCache, error) {
 	subDirs := []string{
 		filepath.Join(dir, "results"),
 		filepath.Join(dir, "locks"),
 	}
 
 	for _, sub := range subDirs {
-		if err := os.MkdirAll(sub, 0o750); err != nil {
+		err := os.MkdirAll(sub, cacheDirPerm)
+		if err != nil {
 			return nil, fmt.Errorf(
 				"cache: create directory %q: %w",
 				sub,
@@ -86,7 +94,8 @@ func OpenWithClock(dir string, clk clock.Clock) (Cache, error) {
 		}
 	}
 
-	if err := writeVersionStamp(dir); err != nil {
+	err := writeVersionStamp(dir)
+	if err != nil {
 		return nil, err
 	}
 
@@ -99,7 +108,8 @@ func OpenWithClock(dir string, clk clock.Clock) (Cache, error) {
 func writeVersionStamp(dir string) error {
 	versionPath := filepath.Join(dir, "version.json")
 
-	if _, err := os.Stat(versionPath); err == nil {
+	_, statErr := os.Stat(versionPath)
+	if statErr == nil {
 		// File already exists; leave it untouched.
 		return nil
 	}
@@ -114,7 +124,8 @@ func writeVersionStamp(dir string) error {
 		return fmt.Errorf("cache: marshal version stamp: %w", err)
 	}
 
-	if err = atomicWriteFile(versionPath, data); err != nil {
+	err = atomicWriteFile(versionPath, data)
+	if err != nil {
 		return fmt.Errorf("cache: write version stamp: %w", err)
 	}
 

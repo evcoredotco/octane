@@ -1,8 +1,3 @@
-// Package runner — T-005-43: failure propagation (skipped dependents).
-//
-// This file contains the logic for cancelling an in-flight run when
-// context cancellation arrives. The per-story failure propagation is
-// handled in traversal.go (schedulerState.propagateFailures).
 package runner
 
 import "context"
@@ -16,7 +11,9 @@ func cancelPendingNodes(
 	state *schedulerState,
 ) {
 	cancelMsg := "skipped: run cancelled"
-	if ctxErr := ctx.Err(); ctxErr != nil {
+
+	ctxErr := ctx.Err()
+	if ctxErr != nil {
 		cancelMsg = "skipped: run cancelled: " + ctxErr.Error()
 	}
 
@@ -25,11 +22,13 @@ func cancelPendingNodes(
 			continue
 		}
 
-		storyID, scopeKey := splitNodeID(nodeID)
+		nodeParts := splitNodeID(nodeID)
+		storyID := nodeParts.storyID
+		scopeKey := nodeParts.scopeKey
 
 		state.status[nodeID] = nodeDone
 		state.result[nodeID] = StoryResult{
-			Order:       0,
+			Order:       zeroOrder,
 			TestID:      storyID,
 			ScopeKey:    scopeKey,
 			OCPPVersion: "",

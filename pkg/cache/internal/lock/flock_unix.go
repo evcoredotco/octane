@@ -9,6 +9,10 @@ import (
 	"syscall"
 )
 
+// lockFileMode is the permission mask applied when creating a lock file.
+// Owner-only read+write (0o600) matches the cache directory policy (ADR 0016).
+const lockFileMode = 0o600
+
 // lockFile opens (or creates) the file at path and acquires an
 // exclusive, non-blocking flock on it.
 //
@@ -24,17 +28,17 @@ import (
 //
 // This function is called by [Acquire] in acquire.go (T-005-32).
 func lockFile(path string) (*os.File, error) {
-	//nolint:gosec // G304: path is derived from the cache root + key hash, not user input
+	//nolint:gosec // G304: path from cache root + key hash, not user input
 	fileHandle, err := os.OpenFile(
 		path,
 		os.O_CREATE|os.O_RDWR,
-		0o600,
+		lockFileMode,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("lock: open lock file: %w", err)
 	}
 
-	//nolint:gosec // G115: uintptr→int conversion is the accepted syscall.Flock idiom
+	//nolint:gosec // G115: uintptr→int is the accepted syscall.Flock idiom
 	flockErr := syscall.Flock(
 		int(fileHandle.Fd()),
 		syscall.LOCK_EX|syscall.LOCK_NB,
@@ -62,7 +66,7 @@ func lockFile(path string) (*os.File, error) {
 //
 // This function is called by [lockCloser.Close] in acquire.go (T-005-32).
 func unlockFile(fileHandle *os.File) error {
-	//nolint:gosec // G115: uintptr→int conversion is the accepted syscall.Flock idiom
+	//nolint:gosec // G115: uintptr→int is the accepted syscall.Flock idiom
 	flockErr := syscall.Flock(int(fileHandle.Fd()), syscall.LOCK_UN)
 	closeErr := fileHandle.Close()
 

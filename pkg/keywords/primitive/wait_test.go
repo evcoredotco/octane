@@ -5,6 +5,7 @@
 // AC5: Given a primitive keyword "wait {duration:duration}", when the
 // keyword executes, then it sleeps the deterministic clock by exactly
 // that duration; in deterministic mode, no real wall-clock time elapses.
+
 package primitive_test
 
 import (
@@ -16,11 +17,9 @@ import (
 	"github.com/evcoreco/octane/pkg/engine/clock"
 	"github.com/evcoreco/octane/pkg/keywords/api"
 	"github.com/evcoreco/octane/pkg/keywords/api/mock"
-	// Blank import registers all primitive keywords at init() time.
-	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
 )
 
-// ── Named constants ───────────────────────────────────────────────────────────
+// ── Named constants ──────────────────────────────────────────────────────────
 
 const (
 	// patternWait is the step text for the wait keyword.
@@ -34,16 +33,41 @@ const (
 	// to avoid a data-race where Advance fires before Sleep registers its
 	// waiter. It is kept very short so the test suite stays fast.
 	advanceDelay = time.Millisecond
+
+	// testYear is the year used in deterministic clock seeds for wait tests.
+	testYear = 2026
+
+	// chanBufOne is the buffer size for single-result goroutine channels.
+	chanBufOne = 1
+
+	// realTimeLimitSec is the real-time ceiling (seconds) for
+	// determinism tests.
+	realTimeLimitSec = 2
+
+	// clockMonthJanuary is the month component (January) for
+	// deterministic clock seed values in wait tests.
+	clockMonthJanuary = 1
+
+	// clockDayFirst is the day component (1st) for deterministic clock
+	// seed values in wait tests.
+	clockDayFirst = 1
+
+	// zeroHMSN is the zero value for hour/minute/second/nanosecond in
+	// deterministic clock seeds.
+	zeroHMSN = 0
 )
 
-// ── tests ─────────────────────────────────────────────────────────────────────
+// ── tests ────────────────────────────────────────────────────────────────────
 
 // Test_primitive_wait_ReturnsNil verifies that the wait keyword returns nil
 // when the deterministic clock is advanced to satisfy the sleep (AC5).
 func Test_primitive_wait_ReturnsNil(t *testing.T) {
 	t.Parallel()
 
-	clk := clock.Deterministic(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
+	clk := clock.Deterministic(time.Date(
+		testYear, clockMonthJanuary, clockDayFirst,
+		zeroHMSN, zeroHMSN, zeroHMSN, zeroHMSN, time.UTC,
+	))
 
 	state := mock.NewMockState()
 	state.SetClock(clk)
@@ -54,7 +78,7 @@ func Test_primitive_wait_ReturnsNil(t *testing.T) {
 		"duration": waitDuration,
 	})
 
-	done := make(chan error, 1)
+	done := make(chan error, chanBufOne)
 
 	go func() {
 		done <- keywordFunc(context.Background(), state, args)
@@ -86,7 +110,10 @@ func Test_primitive_wait_ReturnsNil(t *testing.T) {
 func Test_primitive_wait_NoDeterministicClockRealTimeElapsed(t *testing.T) {
 	t.Parallel()
 
-	clk := clock.Deterministic(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
+	clk := clock.Deterministic(time.Date(
+		testYear, clockMonthJanuary, clockDayFirst,
+		zeroHMSN, zeroHMSN, zeroHMSN, zeroHMSN, time.UTC,
+	))
 
 	state := mock.NewMockState()
 	state.SetClock(clk)
@@ -97,7 +124,7 @@ func Test_primitive_wait_NoDeterministicClockRealTimeElapsed(t *testing.T) {
 		"duration": waitDuration,
 	})
 
-	done := make(chan error, 1)
+	done := make(chan error, chanBufOne)
 
 	go func() {
 		done <- keywordFunc(context.Background(), state, args)
@@ -109,7 +136,7 @@ func Test_primitive_wait_NoDeterministicClockRealTimeElapsed(t *testing.T) {
 
 	// Use a real-time timeout well below the logical wait duration to
 	// prove that no real wall-clock delay occurred.
-	realTimeLimit := 2 * time.Second
+	realTimeLimit := realTimeLimitSec * time.Second
 	limitCtx, cancel := context.WithTimeout(context.Background(), realTimeLimit)
 
 	defer cancel()
@@ -139,7 +166,10 @@ func Test_primitive_wait_ContextCancelled(t *testing.T) {
 
 	// Use a deterministic clock that we deliberately never advance.
 	// The keyword should unblock via context cancellation instead.
-	clk := clock.Deterministic(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
+	clk := clock.Deterministic(time.Date(
+		testYear, clockMonthJanuary, clockDayFirst,
+		zeroHMSN, zeroHMSN, zeroHMSN, zeroHMSN, time.UTC,
+	))
 
 	state := mock.NewMockState()
 	state.SetClock(clk)
@@ -152,7 +182,7 @@ func Test_primitive_wait_ContextCancelled(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	done := make(chan error, 1)
+	done := make(chan error, chanBufOne)
 
 	go func() {
 		done <- keywordFunc(ctx, state, args)

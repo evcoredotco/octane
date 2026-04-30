@@ -1,6 +1,9 @@
 package wire
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 // Encode serializes an OCPP-J frame to canonical JSON.
 //
@@ -13,5 +16,10 @@ import "encoding/json"
 // cannot represent (e.g. a channel or a function). For well-formed OCPP-J
 // frames this will never occur.
 func Encode(frame []any) ([]byte, error) {
-	return json.Marshal(frame)
+	data, err := json.Marshal(frame)
+	if err != nil {
+		return nil, fmt.Errorf("wire: encode frame: %w", err)
+	}
+
+	return data, nil
 }

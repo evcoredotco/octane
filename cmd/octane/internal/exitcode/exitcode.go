@@ -1,7 +1,5 @@
 package exitcode
 
-import "os"
-
 // Process exit codes used by the octane CLI (spec 006 §10).
 //
 // OK (0) and TestFailed (1) follow universal CI convention.
@@ -49,11 +47,3 @@ const (
 	// transport fails to connect or communicate. See spec 002.
 	TransportError = 70
 )
-
-// Exec terminates the current process with code. It is a thin
-// wrapper around os.Exit that provides a single call site for
-// all process-exit decisions in the CLI, making it easy to
-// audit and to intercept in tests that capture the exit code.
-func Exec(code int) {
-	os.Exit(code)
-}

@@ -53,7 +53,7 @@ format: ## Run gofmt, gofumpt, golines, gci.
 
 .PHONY: lint
 lint: ## Run golangci-lint, go vet, staticcheck.
-	$(GOLANGCI_LINT) run --timeout 5m
+	$(GOLANGCI_LINT) run --config golangci.yml --timeout 5m
 	$(GO) vet $(PKG)
 
 .PHONY: test

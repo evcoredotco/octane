@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
-	"github.com/evcoreco/octane/pkg/keywords/registry"
 )
 
 // errConnectionNotOpen is the sentinel wrapped by assertConnectionOpen when
@@ -16,22 +15,6 @@ var errConnectionNotOpen = errors.New("connection is not open")
 // errConnectionNotClosed is the sentinel wrapped by assertConnectionClosed
 // when the station exists but [api.Station.IsOpen] reports true.
 var errConnectionNotClosed = errors.New("connection is not closed")
-
-func init() {
-	registry.Register(api.Keyword{
-		Pattern:     "the connection on station {station:string} is open",
-		Layer:       api.LayerPrimitive,
-		OCPPVersion: 0,
-		Func:        assertConnectionOpen,
-	})
-
-	registry.Register(api.Keyword{
-		Pattern:     "the connection on station {station:string} is closed",
-		Layer:       api.LayerPrimitive,
-		OCPPVersion: 0,
-		Func:        assertConnectionClosed,
-	})
-}
 
 // assertConnectionOpen implements the assertion keyword:
 //

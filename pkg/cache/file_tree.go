@@ -12,6 +12,24 @@ import (
 	"github.com/evcoreco/octane/pkg/engine/clock"
 )
 
+// cacheDirMode is the permission bits for cache entry directories (rwxr-x---).
+const cacheDirMode = 0o750
+
+// cacheFileMode is the permission bits for cache data files (rw-------).
+const cacheFileMode = 0o600
+
+// zeroTTLSeconds is the TTL value written into result.json when no
+// TTL is set (meaning the entry never expires on its own).
+const zeroTTLSeconds = int64(0)
+
+// emptyTraceLen is the zero-length sentinel used to test whether a trace
+// byte slice is non-empty before writing trace.json.
+const emptyTraceLen = 0
+
+// zeroTTLDuration is the zero time.Duration sentinel used to check whether
+// a cache entry has a TTL configured.
+const zeroTTLDuration = 0
+
 // resultEnvelope is the JSON structure persisted as result.json.
 // It wraps [Entry] fields with metadata required by ADR 0016
 // §"Result file schema".
@@ -21,15 +39,15 @@ import (
 // the file.
 type resultEnvelope struct {
 	// SchemaVersion is always [schemaVersion] (currently 1).
-	SchemaVersion int `json:"schema_version"`
+	SchemaVersion int `json:"schemaVersion"`
 
 	// WrittenAt is the UTC wall-clock time when this entry was
 	// persisted. Used for TTL checks and age-based pruning.
-	WrittenAt time.Time `json:"written_at"`
+	WrittenAt time.Time `json:"writtenAt"`
 
 	// TTLSeconds is the maximum age of this entry in seconds
 	// before it is considered stale. Zero means no TTL.
-	TTLSeconds int64 `json:"ttl_seconds"`
+	TTLSeconds int64 `json:"ttlSeconds"`
 
 	// Result holds the raw JSON bytes of the test result. It MUST
 	// NOT contain credentials (constitution principle X).
@@ -37,7 +55,7 @@ type resultEnvelope struct {
 
 	// TracePresent indicates whether a sibling trace.json file
 	// was written for this entry.
-	TracePresent bool `json:"trace_present"`
+	TracePresent bool `json:"tracePresent"`
 }
 
 // FileCache is the content-addressed file tree implementation of
@@ -58,14 +76,6 @@ type FileCache struct {
 	clk clock.Clock
 }
 
-// resultDir returns the directory path for a given hash, including
-// the two-character fanout prefix:
-//
-//	<dir>/results/<hash[:2]>/<hash>/
-func (fc *FileCache) resultDir(hash string) string {
-	return filepath.Join(fc.dir, "results", hash[:2], hash)
-}
-
 // Get retrieves the cache entry for the given key.
 //
 // Get computes the key hash, reads
@@ -84,32 +94,17 @@ func (fc *FileCache) Get(
 	ctx context.Context,
 	key Key,
 ) (*Entry, error) {
-	if err := ctx.Err(); err != nil {
+	err := ctx.Err()
+	if err != nil {
 		return nil, fmt.Errorf("cache: Get: %w", err)
 	}
 
 	hash := key.Hash()
 	resultPath := filepath.Join(fc.resultDir(hash), "result.json")
 
-	data, err := cacheReadFile(resultPath)
+	env, err := readResultEnvelope(resultPath)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return nil, ErrCacheMiss
-		}
-
-		return nil, fmt.Errorf("cache: read result.json: %w", err)
-	}
-
-	var env resultEnvelope
-
-	if err = json.Unmarshal(data, &env); err != nil {
-		// Treat corrupt entry as a cache miss so the runner
-		// re-executes and overwrites the bad file.
-		return nil, ErrCacheMiss
-	}
-
-	if env.SchemaVersion != schemaVersion {
-		return nil, ErrCacheMiss
+		return nil, err
 	}
 
 	entry := &Entry{
@@ -128,15 +123,52 @@ func (fc *FileCache) Get(
 	// a partially-restored cache (AC8) may be missing trace files
 	// while result.json is intact.
 	if env.TracePresent {
-		tracePath := filepath.Join(fc.resultDir(hash), "trace.json")
-
-		traceData, traceErr := cacheReadFile(tracePath)
-		if traceErr == nil {
-			entry.Trace = traceData
-		}
+		entry.Trace = readOptionalTrace(fc.resultDir(hash))
 	}
 
 	return entry, nil
+}
+
+// readResultEnvelope reads and decodes result.json at resultPath.
+// It translates os.ErrNotExist and JSON parse failures to
+// [ErrCacheMiss]. Any other I/O error is returned as-is.
+func readResultEnvelope(resultPath string) (*resultEnvelope, error) {
+	data, err := cacheReadFile(resultPath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, ErrCacheMiss
+		}
+
+		return nil, fmt.Errorf("cache: read result.json: %w", err)
+	}
+
+	var env resultEnvelope
+
+	err = json.Unmarshal(data, &env)
+	if err != nil {
+		// Treat corrupt entry as a cache miss so the runner
+		// re-executes and overwrites the bad file.
+		return nil, ErrCacheMiss
+	}
+
+	if env.SchemaVersion != schemaVersion {
+		return nil, ErrCacheMiss
+	}
+
+	return &env, nil
+}
+
+// readOptionalTrace attempts to read trace.json from entryDir.
+// A missing or unreadable file returns nil (non-fatal per AC8).
+func readOptionalTrace(entryDir string) []byte {
+	tracePath := filepath.Join(entryDir, "trace.json")
+
+	data, err := cacheReadFile(tracePath)
+	if err != nil {
+		return nil
+	}
+
+	return data
 }
 
 // Put writes a cache entry for the given key using the atomic
@@ -158,45 +190,72 @@ func (fc *FileCache) Put(
 	key Key,
 	entry Entry,
 ) error {
-	if err := ctx.Err(); err != nil {
+	err := ctx.Err()
+	if err != nil {
 		return fmt.Errorf("cache: Put: %w", err)
 	}
 
 	hash := key.Hash()
 	dir := fc.resultDir(hash)
 
-	if err := os.MkdirAll(dir, 0o750); err != nil {
+	err = os.MkdirAll(dir, cacheDirMode)
+	if err != nil {
 		return fmt.Errorf("cache: create entry dir: %w", err)
 	}
 
-	tracePresent := len(entry.Trace) > 0
+	tracePresent := len(entry.Trace) > emptyTraceLen
 
 	if tracePresent {
-		tracePath := filepath.Join(dir, "trace.json")
-
-		if err := atomicWriteFile(tracePath, entry.Trace); err != nil {
+		err := atomicWriteFile(
+			filepath.Join(dir, "trace.json"),
+			entry.Trace,
+		)
+		if err != nil {
 			return fmt.Errorf("cache: write trace.json: %w", err)
 		}
 	}
 
-	ttlSecs := int64(0)
-	if entry.TTL > 0 {
+	writtenAt := resolveWrittenAt(entry.WrittenAt, fc.clk.Now)
+
+	env := buildEnvelope(entry, writtenAt, tracePresent)
+
+	return writeEnvelope(dir, env)
+}
+
+// resolveWrittenAt returns provided if non-zero, otherwise calls now() and
+// returns the result in UTC. This keeps Put's branch count low.
+func resolveWrittenAt(provided time.Time, now func() time.Time) time.Time {
+	if !provided.IsZero() {
+		return provided
+	}
+
+	return now().UTC()
+}
+
+// buildEnvelope constructs the [resultEnvelope] for the given entry,
+// resolved writtenAt timestamp, and tracePresent flag.
+func buildEnvelope(
+	entry Entry,
+	writtenAt time.Time,
+	tracePresent bool,
+) resultEnvelope {
+	ttlSecs := zeroTTLSeconds
+	if entry.TTL > zeroTTLDuration {
 		ttlSecs = int64(entry.TTL.Seconds())
 	}
 
-	writtenAt := entry.WrittenAt
-	if writtenAt.IsZero() {
-		writtenAt = fc.clk.Now().UTC()
-	}
-
-	env := resultEnvelope{
+	return resultEnvelope{
 		SchemaVersion: schemaVersion,
 		WrittenAt:     writtenAt,
 		TTLSeconds:    ttlSecs,
 		Result:        json.RawMessage(entry.Result),
 		TracePresent:  tracePresent,
 	}
+}
 
+// writeEnvelope marshals env to JSON and atomically writes it as
+// result.json inside dir, then fsyncs the directory.
+func writeEnvelope(dir string, env resultEnvelope) error {
 	data, err := json.Marshal(env)
 	if err != nil {
 		return fmt.Errorf("cache: marshal result envelope: %w", err)
@@ -204,15 +263,25 @@ func (fc *FileCache) Put(
 
 	resultPath := filepath.Join(dir, "result.json")
 
-	if err = atomicWriteFile(resultPath, data); err != nil {
+	err = atomicWriteFile(resultPath, data)
+	if err != nil {
 		return fmt.Errorf("cache: write result.json: %w", err)
 	}
 
-	if err = fsyncDir(dir); err != nil {
+	err = fsyncDir(dir)
+	if err != nil {
 		return fmt.Errorf("cache: fsync entry dir: %w", err)
 	}
 
 	return nil
+}
+
+// resultDir returns the directory path for a given hash, including
+// the two-character fanout prefix:
+//
+//	<dir>/results/<hash[:2]>/<hash>/
+func (fc *FileCache) resultDir(hash string) string {
+	return filepath.Join(fc.dir, "results", hash[:2], hash)
 }
 
 // cacheReadFile reads a cache file at the given path.
@@ -224,7 +293,11 @@ func (fc *FileCache) Put(
 // cache-internal.
 func cacheReadFile(path string) ([]byte, error) {
 	data, err := os.ReadFile(path) //nolint:gosec // G304: cache path
-	return data, err
+	if err != nil {
+		return nil, fmt.Errorf("cache: read file: %w", err)
+	}
+
+	return data, nil
 }
 
 // atomicWriteFile writes data to path using the atomic
@@ -240,8 +313,12 @@ func cacheReadFile(path string) ([]byte, error) {
 func atomicWriteFile(path string, data []byte) error {
 	tmp := path + ".tmp"
 
-	//nolint:gosec // G304: tmp path is derived from a cache path, not user input
-	file, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
+	//nolint:gosec // G304: tmp path is from a cache path, not user input
+	file, err := os.OpenFile(
+		tmp,
+		os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
+		cacheFileMode,
+	)
 	if err != nil {
 		return fmt.Errorf("open temp file: %w", err)
 	}
@@ -268,7 +345,8 @@ func atomicWriteFile(path string, data []byte) error {
 		return fmt.Errorf("close temp file: %w", closeErr)
 	}
 
-	if err = os.Rename(tmp, path); err != nil {
+	err = os.Rename(tmp, path)
+	if err != nil {
 		_ = os.Remove(tmp)
 
 		return fmt.Errorf("rename temp file: %w", err)
@@ -294,7 +372,8 @@ func fsyncDir(dir string) error {
 	// Sync error on directories is non-fatal on non-Linux platforms.
 	_ = dirHandle.Sync()
 
-	if err = dirHandle.Close(); err != nil {
+	err = dirHandle.Close()
+	if err != nil {
 		return fmt.Errorf("close dir after fsync: %w", err)
 	}
 

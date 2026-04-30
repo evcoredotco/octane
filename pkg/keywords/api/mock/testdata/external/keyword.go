@@ -97,7 +97,8 @@ func sendBootNotification(
 		state.Now().Format(time.RFC3339),
 	)
 
-	if err = station.Send(ctx, bootNotificationFrame); err != nil {
+	err = station.Send(ctx, bootNotificationFrame)
+	if err != nil {
 		return fmt.Errorf(
 			"sendBootNotification: send failed: %w",
 			err,

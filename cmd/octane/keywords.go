@@ -5,53 +5,71 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
-
+	"github.com/evcoreco/octane/pkg/keywords/api"
 	"github.com/evcoreco/octane/pkg/keywords/registry"
+	"github.com/spf13/cobra"
 )
 
+// ocppVersionAny is the zero value for api.OCPPVersion, meaning that
+// keyword resolution is not restricted to a particular OCPP version.
+// Primitive keywords (the only ones registered without a domain import)
+// are always eligible at this version value.
+const ocppVersionAny api.OCPPVersion = 0
+
+// newKeywordsCmd constructs and returns the "octane keywords" subcommand
+// group, including "list" and "resolve" subcommands.
+//
 //nolint:exhaustruct // cobra.Command has many optional fields
-var keywordsCmd = &cobra.Command{
-	Use:   "keywords",
-	Short: "Inspect registered keywords",
+func newKeywordsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "keywords",
+		Short: "Inspect registered keywords",
+	}
+
+	cmd.AddCommand(newKeywordsListCmd())
+	cmd.AddCommand(newKeywordsResolveCmd())
+
+	return cmd
 }
 
+// newKeywordsListCmd constructs the "octane keywords list" subcommand.
+//
 //nolint:exhaustruct // cobra.Command has many optional fields
-var keywordsListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "Print all registered keywords",
-	Long: `list prints every keyword registered in the global keyword registry,
+func newKeywordsListCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "list",
+		Short: "Print all registered keywords",
+		Long: `list prints every keyword registered in the keyword registry,
 sorted by layer (primitive then domain), OCPP version, and pattern.
 
 Each line is formatted as:
   [<layer>] [<ocpp-version>] <pattern>`,
-	RunE: keywordsList,
+		RunE: keywordsList,
+	}
 }
 
+// newKeywordsResolveCmd constructs the "octane keywords resolve" subcommand.
+//
 //nolint:exhaustruct // cobra.Command has many optional fields
-var keywordsResolveCmd = &cobra.Command{
-	Use:   "resolve <step-text>",
-	Short: "Resolve a step text to a keyword pattern",
-	Long: `resolve matches <step-text> against the registered keywords and prints
-the matched pattern and extracted arguments.
+func newKeywordsResolveCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "resolve <step-text>",
+		Short: "Resolve a step text to a keyword pattern",
+		Long: `resolve matches <step-text> against registered keywords
+and prints the matched pattern and extracted arguments.
 
 If no keyword matches, the command prints a "no match" message with
 the closest suggestion (if any) and exits 0.`,
-	Args: cobra.ExactArgs(1),
-	RunE: keywordsResolve,
-}
-
-func init() {
-	keywordsCmd.AddCommand(keywordsListCmd)
-	keywordsCmd.AddCommand(keywordsResolveCmd)
-	rootCmd.AddCommand(keywordsCmd)
+		Args: cobra.ExactArgs(exactlyOneArg),
+		RunE: keywordsResolve,
+	}
 }
 
 // keywordsList is the RunE function for "octane keywords list".
 func keywordsList(_ *cobra.Command, _ []string) error {
 	all := registry.All()
 
-	if len(all) == 0 {
+	if len(all) == zeroIntDefault {
 		_, _ = fmt.Fprintln(os.Stdout, "(no keywords registered)")
 
 		return nil
@@ -75,15 +93,15 @@ func keywordsList(_ *cobra.Command, _ []string) error {
 // prints the matched pattern, layer, and OCPP version, or a "no
 // match" message with the closest suggestion when resolution fails.
 func keywordsResolve(_ *cobra.Command, args []string) error {
-	stepText := args[0]
+	stepText := args[firstArgIndex]
 
-	// Resolve with the zero OCPPVersion; primitive keywords (the
+	// Resolve with ocppVersionAny; primitive keywords (the
 	// only ones registered without a domain import) are always
-	// eligible. Domain keywords require a version filter — pass 0
-	// to enumerate all version-agnostic primitives.
-	match, err := registry.Resolve(stepText, 0)
+	// eligible. Domain keywords require a version filter — pass
+	// ocppVersionAny to enumerate all version-agnostic primitives.
+	match, err := registry.Resolve(stepText, ocppVersionAny)
 	if err != nil {
-		var noMatch *registry.ErrNoMatch
+		var noMatch *registry.NoMatchError
 
 		if errors.As(err, &noMatch) {
 			_, _ = fmt.Fprintf(os.Stdout, "no match for: %q\n", stepText)

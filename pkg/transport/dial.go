@@ -3,10 +3,12 @@ package transport
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -27,12 +29,32 @@ const (
 	// the reader goroutine from blocking on a single slow Expect call while
 	// still giving callers a window to drain.
 	inboundBufSize = 64
+
+	// noMaxBytes indicates that MaxFrameBytes is unset (use default).
+	noMaxBytes = 0
+
+	// noTimeout indicates that HandshakeTimeout is unset (use default).
+	noTimeout = 0
+
+	// noSubprotocols indicates that the subprotocols list is empty.
+	noSubprotocols = 0
+
+	// zeroMaxBytes is the zero int64 returned for maxBytes on error paths.
+	// Required by the add-constant linter rule.
+	zeroMaxBytes = int64(0)
 )
 
-// allowedSchemes lists the URL schemes accepted by Dial.
-var allowedSchemes = map[string]struct{}{
-	"ws":  {},
-	"wss": {},
+// errUnsupportedScheme is returned when the URL scheme is not ws or wss.
+var errUnsupportedScheme = errors.New(
+	"transport: unsupported URL scheme (want ws or wss)",
+)
+
+// allowedSchemes returns the set of URL schemes accepted by Dial.
+func allowedSchemes() map[string]struct{} {
+	return map[string]struct{}{
+		"ws":  {},
+		"wss": {},
+	}
 }
 
 // Dial opens a WebSocket connection to rawURL and returns a [Station] handle.
@@ -41,7 +63,7 @@ var allowedSchemes = map[string]struct{}{
 // handshake with the subprotocol list in opts.Subprotocols and validates the
 // server's selection. If the server selects a subprotocol not in the list (or
 // omits the header entirely), Dial closes the connection and returns
-// [*ErrSubprotocolMismatch].
+// [*SubprotocolMismatchError].
 //
 // TLS verification is on by default. Setting [DialOptions.InsecureSkipVerify]
 // to true disables certificate validation and emits a WARNING via [log/slog].
@@ -53,56 +75,82 @@ func Dial(
 	ctx context.Context,
 	rawURL string,
 	opts DialOptions,
-) (Station, error) {
+) (*Handle, error) {
 	parsed, err := url.Parse(rawURL)
 	if err != nil {
 		return nil, fmt.Errorf("transport: invalid URL: %w", err)
 	}
 
-	if _, ok := allowedSchemes[parsed.Scheme]; !ok {
+	if _, ok := allowedSchemes()[parsed.Scheme]; !ok {
 		return nil, fmt.Errorf(
-			"transport: unsupported scheme %q (want ws or wss)",
+			"%w: got %q",
+			errUnsupportedScheme,
 			parsed.Scheme,
 		)
 	}
 
 	safeURL := sanitizeURL(parsed)
 
-	tlsCfg := buildTLSConfig(safeURL, opts)
-	maxBytes := opts.MaxFrameBytes
+	conn, maxBytes, err := dialWebSocket(ctx, rawURL, safeURL, opts)
+	if err != nil {
+		return nil, err
+	}
 
-	if maxBytes <= 0 {
+	return newStationHandle(
+		context.WithoutCancel(ctx),
+		conn,
+		maxBytes,
+	), nil
+}
+
+// dialWebSocket performs the raw WebSocket handshake and subprotocol
+// validation. It returns the open connection and the effective max-bytes
+// limit, or an error.
+func dialWebSocket(
+	ctx context.Context,
+	rawURL string,
+	safeURL string,
+	opts DialOptions,
+) (*websocket.Conn, int64, error) {
+	tlsCfg := buildTLSConfig(safeURL, opts)
+
+	maxBytes := opts.MaxFrameBytes
+	if maxBytes <= noMaxBytes {
 		maxBytes = defaultMaxFrameBytes
 	}
 
 	timeout := opts.HandshakeTimeout
-	if timeout == 0 {
+	if timeout == noTimeout {
 		timeout = defaultHandshakeTimeout
 	}
 
 	dialCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	wsOpts := &websocket.DialOptions{
-		Subprotocols:    opts.Subprotocols,
-		CompressionMode: websocket.CompressionDisabled,
-		HTTPClient:      buildHTTPClient(tlsCfg),
+	wsOpts := new(websocket.DialOptions)
+	wsOpts.Subprotocols = opts.Subprotocols
+	wsOpts.CompressionMode = websocket.CompressionDisabled
+	wsOpts.HTTPClient = buildHTTPClient(tlsCfg)
+
+	conn, resp, err := websocket.Dial(dialCtx, rawURL, wsOpts)
+	if resp != nil && resp.Body != nil {
+		_ = resp.Body.Close()
 	}
 
-	conn, _, err := websocket.Dial(dialCtx, rawURL, wsOpts)
 	if err != nil {
-		return nil, wrapDialError(safeURL, err)
+		return nil, zeroMaxBytes, wrapDialError(safeURL, err)
 	}
 
 	conn.SetReadLimit(maxBytes)
 
-	if err = validateSubprotocol(conn, opts.Subprotocols); err != nil {
+	err = validateSubprotocol(conn, opts.Subprotocols)
+	if err != nil {
 		_ = conn.Close(websocket.StatusNormalClosure, "subprotocol mismatch")
 
-		return nil, err
+		return nil, zeroMaxBytes, err
 	}
 
-	return newStationHandle(conn, maxBytes), nil
+	return conn, maxBytes, nil
 }
 
 // sanitizeURL strips userinfo (credentials) from the parsed URL so that the
@@ -117,12 +165,12 @@ func sanitizeURL(parsed *url.URL) string {
 
 // validateSubprotocol checks that the server chose a subprotocol from the
 // requested list. It returns nil when the list is empty (caller has no
-// preference). On mismatch it returns *ErrSubprotocolMismatch.
+// preference). On mismatch it returns *SubprotocolMismatchError.
 func validateSubprotocol(
 	conn *websocket.Conn,
 	subprotocols []string,
 ) error {
-	if len(subprotocols) == 0 {
+	if len(subprotocols) == noSubprotocols {
 		return nil
 	}
 
@@ -132,7 +180,7 @@ func validateSubprotocol(
 		return nil
 	}
 
-	return &ErrSubprotocolMismatch{
+	return &SubprotocolMismatchError{
 		Requested: subprotocols,
 		Got:       negotiated,
 	}
@@ -154,7 +202,7 @@ func buildTLSConfig(safeURL string, opts DialOptions) *tls.Config {
 
 	base := opts.TLSConfig
 	if base == nil {
-		base = &tls.Config{}
+		base = new(tls.Config)
 	}
 
 	cfg := base.Clone()
@@ -172,7 +220,7 @@ func buildTLSConfig(safeURL string, opts DialOptions) *tls.Config {
 				"banner-level finding",
 		)
 
-		cfg.InsecureSkipVerify = true //nolint:gosec // G402: operator opt-in
+		cfg.InsecureSkipVerify = true
 	}
 
 	return cfg
@@ -182,21 +230,24 @@ func buildTLSConfig(safeURL string, opts DialOptions) *tls.Config {
 // If tlsCfg is nil the client's transport uses system defaults.
 func buildHTTPClient(tlsCfg *tls.Config) *http.Client {
 	if tlsCfg == nil {
-		return nil // nil instructs the websocket library to use the default client
+		// nil instructs the websocket library to use the default client.
+		return nil
 	}
 
-	return &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: tlsCfg,
-		},
-	}
+	transport := new(http.Transport)
+	transport.TLSClientConfig = tlsCfg
+
+	client := new(http.Client)
+	client.Transport = transport
+
+	return client
 }
 
 // wrapDialError converts a raw dial error into a typed transport error where
 // the cause is recognisable as a TLS failure. safeURL has userinfo stripped.
 func wrapDialError(safeURL string, cause error) error {
 	if isTLSError(cause) {
-		return &ErrTLSValidation{
+		return &TLSValidationError{
 			URL:   safeURL,
 			Cause: cause,
 		}
@@ -216,7 +267,7 @@ func isTLSError(err error) bool {
 
 	msg := err.Error()
 
-	for _, marker := range tlsErrorMarkers {
+	for _, marker := range tlsErrorMarkers() {
 		if strings.Contains(msg, marker) {
 			return true
 		}
@@ -225,22 +276,19 @@ func isTLSError(err error) bool {
 	return false
 }
 
-// tlsErrorMarkers identifies TLS/x509 errors by error-string prefix.
-// Deliberately narrow: "certificate" was removed (too broad — a CSMS could
-// return "certificate" in an HTTP 400 body, causing a false ErrTLSValidation).
-var tlsErrorMarkers = []string{
-	"tls: ",
-	"x509: ",
-	"handshake failure",
+// tlsErrorMarkers returns the slice of substrings that identify TLS/x509
+// errors. Deliberately narrow: "certificate" was removed (too broad — a CSMS
+// could return "certificate" in an HTTP 400 body, causing a false
+// TLSValidationError).
+func tlsErrorMarkers() []string {
+	return []string{
+		"tls: ",
+		"x509: ",
+		"handshake failure",
+	}
 }
 
 // contains reports whether needle is an element of haystack.
 func contains(haystack []string, needle string) bool {
-	for _, item := range haystack {
-		if item == needle {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(haystack, needle)
 }

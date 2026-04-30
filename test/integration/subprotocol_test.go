@@ -12,12 +12,11 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
-
 	"github.com/evcoreco/octane/pkg/transport"
 )
 
 // TestSubprotocolMismatch asserts that when the server negotiates a different
-// subprotocol than the one requested, Dial returns *transport.ErrSubprotocolMismatch
+// subprotocol than the one requested, Dial returns *transport.SubprotocolMismatchError
 // with the Got field set to the server-selected subprotocol.
 func TestSubprotocolMismatch(t *testing.T) {
 	t.Parallel()
@@ -47,10 +46,10 @@ func TestSubprotocolMismatch(t *testing.T) {
 		t.Fatal("expected subprotocol mismatch error, got nil")
 	}
 
-	var mismatch *transport.ErrSubprotocolMismatch
+	var mismatch *transport.SubprotocolMismatchError
 	if !errors.As(err, &mismatch) {
 		t.Errorf(
-			"expected *transport.ErrSubprotocolMismatch, got %T: %v",
+			"expected *transport.SubprotocolMismatchError, got %T: %v",
 			err,
 			err,
 		)

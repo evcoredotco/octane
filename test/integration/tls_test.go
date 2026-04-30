@@ -12,13 +12,12 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
-
 	"github.com/evcoreco/octane/pkg/transport"
 )
 
 // TestTLSValidationError asserts that dialling a wss:// endpoint whose
 // certificate is signed by an untrusted CA causes Dial to return
-// *transport.ErrTLSValidation, exercising the TLS error-wrapping path without
+// *transport.TLSValidationError, exercising the TLS error-wrapping path without
 // requiring a live remote server.
 func TestTLSValidationError(t *testing.T) {
 	t.Parallel()
@@ -49,8 +48,8 @@ func TestTLSValidationError(t *testing.T) {
 		t.Fatal("expected TLS error, got nil")
 	}
 
-	var tlsErr *transport.ErrTLSValidation
+	var tlsErr *transport.TLSValidationError
 	if !errors.As(err, &tlsErr) {
-		t.Errorf("expected *transport.ErrTLSValidation, got %T: %v", err, err)
+		t.Errorf("expected *transport.TLSValidationError, got %T: %v", err, err)
 	}
 }

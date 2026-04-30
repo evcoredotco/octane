@@ -6,11 +6,23 @@
 //
 // Usage:
 //
-//	octane [--config path] [--verbose] [--no-cache] [--cache-dir dir] <command>
+//	octane [--config path] [--verbose] [--no-cache] [--cache-dir dir] <cmd>
 //
 // See "octane help <command>" for details on each subcommand.
 package main
 
+import "os"
+
 func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			if ep, ok := r.(exitPanic); ok {
+				os.Exit(ep.code)
+			}
+
+			panic(r)
+		}
+	}()
+
 	Execute()
 }

@@ -19,9 +19,10 @@
 package registry
 
 import (
+	"cmp"
 	"fmt"
 	"runtime"
-	"sort"
+	"slices"
 	"sync"
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
@@ -55,14 +56,22 @@ type registryKey struct {
 }
 
 // global is the package-level registry state. It is never replaced;
-// only its fields are mutated under mu.
-var global = struct { //nolint:exhaustruct // zero value is correct initial state
+// only its fields are mutated under mu. Zero value is correct.
+var global = struct { //nolint:exhaustruct,gochecknoglobals
 	mu      sync.RWMutex
 	entries []entry
 	index   map[registryKey]string // maps key → formatted caller
 }{
 	index: make(map[registryKey]string),
 }
+
+// callerSkip is the runtime.Callers skip depth used to capture the
+// call site of [Register]. A value of 2 skips callerLocation itself
+// and Register, landing on the actual registrant.
+const callerSkip = 2
+
+// emptyLen is the zero-length sentinel used in slice reset and length checks.
+const emptyLen = 0
 
 // Register adds keyword to the global keyword registry. It panics if a
 // keyword with the same (Layer, OCPPVersion, Pattern) triple has
@@ -75,8 +84,8 @@ var global = struct { //nolint:exhaustruct // zero value is correct initial stat
 // permitted but unusual.
 func Register(keyword api.Keyword) {
 	caller := callerLocation(
-		2,
-	) //nolint:mnd // 2 = skip runtime.Callers + this func
+		callerSkip,
+	)
 
 	key := registryKey{
 		layer:   keyword.Layer,
@@ -125,19 +134,16 @@ func All() []api.Keyword {
 		result[idx] = ent.keyword
 	}
 
-	sort.SliceStable(result, func(left, right int) bool {
-		lkw := result[left]
-		rkw := result[right]
-
-		if lkw.Layer != rkw.Layer {
-			return lkw.Layer < rkw.Layer
+	slices.SortStableFunc(result, func(left, right api.Keyword) int {
+		if left.Layer != right.Layer {
+			return cmp.Compare(left.Layer, right.Layer)
 		}
 
-		if lkw.OCPPVersion != rkw.OCPPVersion {
-			return lkw.OCPPVersion < rkw.OCPPVersion
+		if left.OCPPVersion != right.OCPPVersion {
+			return cmp.Compare(left.OCPPVersion, right.OCPPVersion)
 		}
 
-		return lkw.Pattern < rkw.Pattern
+		return cmp.Compare(left.Pattern, right.Pattern)
 	})
 
 	return result
@@ -151,7 +157,7 @@ func reset() {
 	global.mu.Lock()
 	defer global.mu.Unlock()
 
-	global.entries = global.entries[:0]
+	global.entries = global.entries[:emptyLen]
 	global.index = make(map[registryKey]string)
 }
 
@@ -163,7 +169,7 @@ func callerLocation(skip int) string {
 	var pcs [1]uintptr
 
 	count := runtime.Callers(skip+1, pcs[:])
-	if count == 0 {
+	if count == emptyLen {
 		return "<unknown>"
 	}
 

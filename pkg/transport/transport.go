@@ -3,8 +3,9 @@
 // a single [Station] interface that keyword authors (spec 003) call without
 // coupling to a specific WebSocket implementation.
 //
-// TLS verification is on by default. Disabling it via [DialOptions.InsecureSkipVerify]
-// emits a banner-level finding in every report (constitution principle X).
+// TLS verification is on by default. Disabling it via
+// [DialOptions.InsecureSkipVerify] emits a banner-level finding in
+// every report (constitution principle X).
 //
 // All randomness and clocks consumed by callers of this package must be
 // injected via the engine primitives in pkg/engine/clock and pkg/engine/rand
@@ -28,14 +29,14 @@ type Station interface {
 	// to the WebSocket. Blocks until the frame is on the wire or ctx is
 	// cancelled.
 	//
-	// Returns [ErrStationClosed] if the station has already been closed.
+	// Returns [StationClosedError] if the station has already been closed.
 	Send(ctx context.Context, frame []any) error
 
 	// Expect blocks until an inbound OCPP-J frame arrives, ctx is cancelled,
 	// or the connection is closed. Frames are delivered in FIFO order.
 	//
-	// Returns [ErrStationClosed] if the station has already been closed.
-	// Returns [ErrFrameTooLarge] if the inbound frame exceeds the configured
+	// Returns [StationClosedError] if the station has already been closed.
+	// Returns [FrameTooLargeError] if the inbound frame exceeds the configured
 	// [DialOptions.MaxFrameBytes] limit.
 	Expect(ctx context.Context) ([]any, error)
 
@@ -61,7 +62,7 @@ type DialOptions struct {
 	//
 	// If the CSMS selects a protocol not in this list, or omits the
 	// Sec-WebSocket-Protocol response header entirely, Dial returns
-	// [ErrSubprotocolMismatch].
+	// [SubprotocolMismatchError].
 	Subprotocols []string
 
 	// TLSConfig overrides the default TLS configuration. Nil means use
@@ -82,7 +83,7 @@ type DialOptions struct {
 	// Zero means use the default (1 MiB).
 	//
 	// Frames that exceed this limit cause [Expect] to return
-	// [ErrFrameTooLarge].
+	// [FrameTooLargeError].
 	MaxFrameBytes int64
 
 	// HandshakeTimeout limits the time allowed for the WebSocket upgrade.

@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 	mrand "math/rand/v2"
-	"sort"
+	"slices"
 	"testing"
 
 	"github.com/evcoreco/octane/pkg/runner/internal/dag"
@@ -54,6 +54,30 @@ const edgeProbabilityNumerator = 3
 // nodePrefix is the prefix prepended to integer indices when creating
 // node IDs, giving a predictable lexicographic sort order.
 const nodePrefix = "node_"
+
+// emptyNodeID is the empty string used as a zero-value node ID in dag.Edge
+// sentinel returns (the "no edge" case in maybeAddEdge).
+const emptyNodeID = ""
+
+// emptyOrderLen is the zero-length sentinel compared against len(order)
+// in the empty-graph test.
+const emptyOrderLen = 0
+
+// independentLastIdx is the last valid index when iterating in reverse
+// over a slice of independentNodeCount elements.
+const independentLastIdx = independentNodeCount - 1
+
+// loopStep is the constant +1 or -1 increment used in the edge-building
+// loops inside buildRandomDAG.
+const loopStep = 1
+
+// zeroIdx is the zero lower-bound used in the reverse-iteration loop
+// of the lexicographic tie-breaking test.
+const zeroIdx = 0
+
+// exactlyOnce is the expected count for each node in a valid topological
+// order: every node must appear exactly once.
+const exactlyOnce = 1
 
 // Test_dag_TopologicalOrder_validDAG is a property test that generates
 // random acyclic graphs (edges always run from lower to higher index,
@@ -102,18 +126,20 @@ func Test_dag_TopologicalOrder_cycleReturnsErrCycle(t *testing.T) {
 	grph.AddNode(dag.Node{ID: cycleNodeC})
 
 	// Build A→B→C first (no cycle yet), then close C→A.
-	if err := grph.AddEdge(dag.Edge{From: cycleNodeA, To: cycleNodeB}); err != nil {
+	err := grph.AddEdge(dag.Edge{From: cycleNodeA, To: cycleNodeB})
+	if err != nil {
 		t.Fatalf("AddEdge A→B: unexpected error: %v", err)
 	}
 
-	if err := grph.AddEdge(dag.Edge{From: cycleNodeB, To: cycleNodeC}); err != nil {
+	err = grph.AddEdge(dag.Edge{From: cycleNodeB, To: cycleNodeC})
+	if err != nil {
 		t.Fatalf("AddEdge B→C: unexpected error: %v", err)
 	}
 
 	// C→A closes the cycle; AddEdge should detect and return *ErrCycle.
 	cycleErr := grph.AddEdge(dag.Edge{From: cycleNodeC, To: cycleNodeA})
 
-	var errCycle *dag.ErrCycle
+	var errCycle *dag.CycleError
 	if !errors.As(cycleErr, &errCycle) {
 		t.Fatalf("AddEdge C→A: expected *ErrCycle, got %v", cycleErr)
 	}
@@ -140,7 +166,7 @@ func Test_dag_TopologicalOrder_lexicographicIndependentNodes(t *testing.T) {
 
 	// Add nodes in reverse lexicographic order to confirm the sort is
 	// performed by TopologicalOrder, not by insertion order.
-	for idx := independentNodeCount - 1; idx >= 0; idx-- {
+	for idx := independentLastIdx; idx >= zeroIdx; idx-- {
 		grph.AddNode(dag.Node{ID: ids[idx]})
 	}
 
@@ -175,7 +201,7 @@ func Test_dag_TopologicalOrder_emptyGraph(t *testing.T) {
 		t.Fatalf("empty graph: expected nil error, got %v", err)
 	}
 
-	if len(order) != 0 {
+	if len(order) != emptyOrderLen {
 		t.Errorf("empty graph: expected empty slice, got %v", order)
 	}
 }
@@ -183,6 +209,30 @@ func Test_dag_TopologicalOrder_emptyGraph(t *testing.T) {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+// maybeAddEdge attempts to add an edge from ids[from] to ids[toNode] with
+// a probability of edgeProbabilityNumerator/edgeProbabilityDenominator.
+// It returns the added edge and true when the edge was accepted by the
+// graph; otherwise it returns a zero Edge and false.
+func maybeAddEdge(
+	rng *mrand.Rand,
+	grph *dag.Graph,
+	ids []string,
+	from, toNode int,
+) (dag.Edge, bool) {
+	if rng.IntN(edgeProbabilityDenominator) >= edgeProbabilityNumerator {
+		return dag.Edge{From: emptyNodeID, To: emptyNodeID}, false
+	}
+
+	edge := dag.Edge{From: ids[from], To: ids[toNode]}
+
+	err := grph.AddEdge(edge)
+	if err != nil {
+		return dag.Edge{From: emptyNodeID, To: emptyNodeID}, false
+	}
+
+	return edge, true
+}
 
 // buildRandomDAG creates a new *dag.Graph with a random number of nodes
 // [minNodesProperty, maxNodesProperty] and random acyclic edges (only
@@ -202,14 +252,10 @@ func buildRandomDAG(rng *mrand.Rand) (*dag.Graph, []dag.Edge) {
 
 	var edges []dag.Edge
 
-	for from := 0; from < nodeCount-1; from++ {
-		for to := from + 1; to < nodeCount; to++ {
-			// Add this edge with 30 % probability to keep graphs sparse.
-			if rng.IntN(edgeProbabilityDenominator) < edgeProbabilityNumerator {
-				edge := dag.Edge{From: ids[from], To: ids[to]}
-				if err := grph.AddEdge(edge); err == nil {
-					edges = append(edges, edge)
-				}
+	for from := range nodeCount - loopStep {
+		for to := from + loopStep; to < nodeCount; to++ {
+			if edge, ok := maybeAddEdge(rng, grph, ids, from, to); ok {
+				edges = append(edges, edge)
 			}
 		}
 	}
@@ -226,7 +272,7 @@ func buildSortedIDs(n int) []string {
 		ids[idx] = fmt.Sprintf("%s%02d", nodePrefix, idx)
 	}
 
-	sort.Strings(ids)
+	slices.Sort(ids)
 
 	return ids
 }
@@ -260,7 +306,7 @@ func assertNodesExactlyOnce(
 	}
 
 	for _, node := range wantNodes {
-		if seen[node.ID] != 1 {
+		if seen[node.ID] != exactlyOnce {
 			t.Errorf(
 				"iter %d: node %q appears %d times, want exactly 1",
 				iter, node.ID, seen[node.ID],

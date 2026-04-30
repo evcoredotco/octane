@@ -1,4 +1,5 @@
 // Package story_test — black-box tests for the story parser (T-001-31).
+
 package story_test
 
 import (
@@ -11,6 +12,11 @@ import (
 	"github.com/evcoreco/octane/pkg/story/internal/serialize"
 )
 
+const (
+	noStories    = 0
+	firstIterIdx = 1
+)
+
 // TestDeterminism parses every .story file under scenarios/ 1 000 times and
 // asserts that the JSON-serialized AST is byte-identical on every iteration.
 // This covers AC5: the parser must produce the same output for the same input
@@ -20,37 +26,48 @@ func TestDeterminism(t *testing.T) {
 
 	root := filepath.Join("..", "..", "scenarios")
 
-	var storyPaths []string
-
-	err := filepath.WalkDir(
-		root,
-		func(path string, d os.DirEntry, walkErr error) error {
-			if walkErr != nil {
-				return walkErr
-			}
-
-			if !d.IsDir() && filepath.Ext(path) == ".story" {
-				storyPaths = append(storyPaths, path)
-			}
-
-			return nil
-		},
-	)
-	if err != nil {
-		t.Fatalf("walking scenarios/: %v", err)
-	}
-
-	if len(storyPaths) == 0 {
-		t.Fatal("no .story files found under scenarios/")
-	}
+	storyPaths := collectDeterminismPaths(t, root)
 
 	for _, p := range storyPaths {
-		p := p // capture for sub-test
-
 		t.Run(filepath.ToSlash(p), func(t *testing.T) {
 			t.Parallel()
 			runDeterminismCheck(t, p)
 		})
+	}
+}
+
+// collectDeterminismPaths walks root and returns all .story file paths.
+// It calls t.Fatal when the walk fails or yields no files.
+func collectDeterminismPaths(t *testing.T, root string) []string {
+	t.Helper()
+
+	var storyPaths []string
+
+	err := filepath.WalkDir(root, collectStoryEntry(&storyPaths))
+	if err != nil {
+		t.Fatalf("walking scenarios/: %v", err)
+	}
+
+	if len(storyPaths) == noStories {
+		t.Fatal("no .story files found under scenarios/")
+	}
+
+	return storyPaths
+}
+
+// collectStoryEntry returns a WalkDir callback that appends .story file paths
+// to dst.
+func collectStoryEntry(dst *[]string) func(string, os.DirEntry, error) error {
+	return func(path string, d os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+
+		if !d.IsDir() && filepath.Ext(path) == ".story" {
+			*dst = append(*dst, path)
+		}
+
+		return nil
 	}
 }
 
@@ -60,9 +77,7 @@ func TestDeterminism(t *testing.T) {
 func runDeterminismCheck(t *testing.T, path string) {
 	t.Helper()
 
-	src, readErr := os.ReadFile(
-		path,
-	) //nolint:gosec // test file, path from walk
+	src, readErr := os.ReadFile(filepath.Clean(path))
 	if readErr != nil {
 		t.Fatalf("reading %s: %v", path, readErr)
 	}
@@ -79,7 +94,7 @@ func runDeterminismCheck(t *testing.T, path string) {
 
 	const iterations = 1000
 
-	for idx := 1; idx < iterations; idx++ {
+	for idx := firstIterIdx; idx < iterations; idx++ {
 		assertIterationMatch(t, path, src, ref, idx)
 	}
 }

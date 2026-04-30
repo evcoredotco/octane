@@ -1,15 +1,17 @@
-// Package json implements the JSON emitter for OCTANE run reports.
+// Package reportjson implements the JSON emitter for OCTANE run reports.
 // The public entry point is [WriteJSON], which projects a
 // [runner.RunResult] into a byte-deterministic octane.json file.
 //
 // Task: T-007-20.
-package json
+package reportjson
 
 import (
+	"cmp"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/evcoreco/octane/pkg/report"
@@ -17,17 +19,30 @@ import (
 	"github.com/evcoreco/octane/pkg/runner"
 )
 
-// outputFileName is the name of the JSON report file written into the
-// output directory.
-const outputFileName = "octane.json"
+const (
+	// outputFileName is the name of the JSON report file written into the
+	// output directory.
+	outputFileName = "octane.json"
+
+	// dirPerm is the permission bits for the output directory created by
+	// WriteJSON.
+	dirPerm = 0o700
+
+	// filePerm is the permission bits for the JSON report file written by
+	// WriteJSON.
+	filePerm = 0o600
+
+	// emptyLen is the sentinel zero used in len() == 0 guards.
+	emptyLen = 0
+)
 
 // jsonReport is the top-level JSON serialization struct for the report.
 type jsonReport struct {
-	SchemaVersion int         `json:"schema_version"`
-	OctaneVersion string      `json:"octane_version"`
-	RunID         string      `json:"run_id"`
-	StartedAt     string      `json:"started_at"`
-	FinishedAt    string      `json:"finished_at"`
+	SchemaVersion int         `json:"schemaVersion"`
+	OctaneVersion string      `json:"octaneVersion"`
+	RunID         string      `json:"runId"`
+	StartedAt     string      `json:"startedAt"`
+	FinishedAt    string      `json:"finishedAt"`
 	Summary       jsonSummary `json:"summary"`
 	Stories       []jsonStory `json:"stories"`
 }
@@ -38,24 +53,24 @@ type jsonSummary struct {
 	Passed    int `json:"passed"`
 	Failed    int `json:"failed"`
 	Skipped   int `json:"skipped"`
-	CacheHits int `json:"cache_hits"`
+	CacheHits int `json:"cacheHits"`
 }
 
 // jsonStory is the JSON serialization struct for a single story result.
 type jsonStory struct {
-	TestID       string        `json:"test_id"`
-	ScopeKey     string        `json:"scope_key"`
-	OCPPVersion  string        `json:"ocpp_version"`
+	TestID       string        `json:"testId"`
+	ScopeKey     string        `json:"scopeKey"`
+	OCPPVersion  string        `json:"ocppVersion"`
 	Status       string        `json:"status"`
-	CacheStatus  string        `json:"cache_status"`
-	StartedAt    string        `json:"started_at"`
-	FinishedAt   string        `json:"finished_at"`
-	DurationMS   int64         `json:"duration_ms"`
+	CacheStatus  string        `json:"cacheStatus"`
+	StartedAt    string        `json:"startedAt"`
+	FinishedAt   string        `json:"finishedAt"`
+	DurationMS   int64         `json:"durationMs"`
 	Findings     []jsonFinding `json:"findings"`
-	TracePresent bool          `json:"trace_present"`
+	TracePresent bool          `json:"tracePresent"`
 	Trace        *jsonTrace    `json:"trace,omitempty"`
 	Cause        string        `json:"cause,omitempty"`
-	CauseChain   []string      `json:"cause_chain,omitempty"`
+	CauseChain   []string      `json:"causeChain,omitempty"`
 }
 
 // jsonFinding is the JSON serialization struct for a diagnostic finding.
@@ -82,16 +97,22 @@ func WriteJSON(
 
 	data, err := json.MarshalIndent(jrep, "", "  ")
 	if err != nil {
-		return err
+		return fmt.Errorf("report: marshal JSON: %w", err)
 	}
 
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return err
+	err = os.MkdirAll(dir, dirPerm)
+	if err != nil {
+		return fmt.Errorf("report: create output dir: %w", err)
 	}
 
 	outPath := filepath.Join(dir, outputFileName)
 
-	return os.WriteFile(outPath, data, 0o600)
+	err = os.WriteFile(outPath, data, filePerm)
+	if err != nil {
+		return fmt.Errorf("report: write output file: %w", err)
+	}
+
+	return nil
 }
 
 // buildJSONReport converts a model.Report to the jsonReport
@@ -165,7 +186,7 @@ func buildJSONStory(
 // buildJSONFindings converts a slice of model.Finding to a slice of
 // jsonFinding, sorted by (severity desc, message asc).
 func buildJSONFindings(src []model.Finding) []jsonFinding {
-	if len(src) == 0 {
+	if len(src) == emptyLen {
 		return nil
 	}
 
@@ -178,13 +199,13 @@ func buildJSONFindings(src []model.Finding) []jsonFinding {
 		}
 	}
 
-	sort.Slice(out, func(idx, jdx int) bool {
-		if out[idx].Severity != out[jdx].Severity {
-			// Higher severity (lexicographically larger) sorts first.
-			return out[idx].Severity > out[jdx].Severity
-		}
-
-		return out[idx].Message < out[jdx].Message
+	slices.SortFunc(out, func(a, b jsonFinding) int {
+		// Higher severity (lexicographically larger) sorts first, then
+		// sort by message for determinism within the same severity.
+		return cmp.Or(
+			cmp.Compare(b.Severity, a.Severity),
+			cmp.Compare(a.Message, b.Message),
+		)
 	})
 
 	return out

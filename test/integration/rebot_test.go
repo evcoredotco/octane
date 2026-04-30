@@ -91,7 +91,8 @@ func buildRebotResult() *runner.RunResult {
 func TestRebot_RobotXML(t *testing.T) {
 	t.Parallel()
 
-	if _, err := exec.LookPath("docker"); err != nil {
+	_, dockerErr := exec.LookPath("docker")
+	if dockerErr != nil {
 		t.Skip("docker not found on PATH; skipping rebot integration test")
 	}
 
@@ -101,14 +102,16 @@ func TestRebot_RobotXML(t *testing.T) {
 	result := buildRebotResult()
 	opts := report.RobotXMLOptions{SuiteName: "OCTANE Conformance"}
 
-	if err := robotxml.WriteRobotXML(result, inDir, opts); err != nil {
-		t.Fatalf("WriteRobotXML: %v", err)
+	writeErr := robotxml.WriteRobotXML(result, inDir, opts)
+	if writeErr != nil {
+		t.Fatalf("WriteRobotXML: %v", writeErr)
 	}
 
 	xmlPath := filepath.Join(inDir, "output.xml")
 
-	if _, err := os.Stat(xmlPath); err != nil {
-		t.Fatalf("output.xml not created: %v", err)
+	_, statErr := os.Stat(xmlPath)
+	if statErr != nil {
+		t.Fatalf("output.xml not created: %v", statErr)
 	}
 
 	// Run: docker run --rm \

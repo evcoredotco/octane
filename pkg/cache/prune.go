@@ -10,6 +10,12 @@ import (
 	"time"
 )
 
+// noMaxAge indicates that age-based pruning is disabled (maxAge == 0).
+const noMaxAge = 0
+
+// emptyDirLen is the entry count that identifies an empty directory.
+const emptyDirLen = 0
+
 // Prune removes cache entries that have exceeded their maximum age
 // or whose TTL has expired, then removes any empty fanout
 // directories under <dir>/results/.
@@ -48,24 +54,56 @@ func (fc *FileCache) Prune(
 	}
 
 	for _, fanout := range fanouts {
-		if err = ctx.Err(); err != nil {
-			return fmt.Errorf("cache: prune: %w", err)
-		}
-
-		if !fanout.IsDir() {
-			continue
-		}
-
-		fanoutPath := filepath.Join(resultsDir, fanout.Name())
-
-		if err = pruneEntriesUnder(fanoutPath, now, maxAge); err != nil {
+		err = pruneOneFanout(ctx, fanout, resultsDir, now, maxAge)
+		if err != nil {
 			return err
 		}
+	}
 
-		// Remove the fanout directory if it is now empty.
-		if dirIsEmpty(fanoutPath) {
-			_ = os.Remove(fanoutPath)
-		}
+	return nil
+}
+
+// pruneOneFanout checks ctx cancellation and delegates to [pruneFanout]
+// for a single fanout directory entry. Extracted to keep [Prune]'s
+// cognitive complexity within the configured limit.
+func pruneOneFanout(
+	ctx context.Context,
+	fanout os.DirEntry,
+	resultsDir string,
+	now time.Time,
+	maxAge time.Duration,
+) error {
+	err := ctx.Err()
+	if err != nil {
+		return fmt.Errorf("cache: prune: %w", err)
+	}
+
+	return pruneFanout(fanout, resultsDir, now, maxAge)
+}
+
+// pruneFanout prunes a single fanout directory entry. Non-directory
+// entries are skipped. After pruning expired entries inside
+// fanoutEntry, the fanout directory itself is removed when empty.
+func pruneFanout(
+	fanoutEntry os.DirEntry,
+	resultsDir string,
+	now time.Time,
+	maxAge time.Duration,
+) error {
+	if !fanoutEntry.IsDir() {
+		return nil
+	}
+
+	fanoutPath := filepath.Join(resultsDir, fanoutEntry.Name())
+
+	err := pruneEntriesUnder(fanoutPath, now, maxAge)
+	if err != nil {
+		return err
+	}
+
+	// Remove the fanout directory if it is now empty.
+	if dirIsEmpty(fanoutPath) {
+		_ = os.Remove(fanoutPath)
 	}
 
 	return nil
@@ -95,16 +133,33 @@ func pruneEntriesUnder(
 
 		entryDir := filepath.Join(fanoutDir, ent.Name())
 
-		if shouldPrune(entryDir, now, maxAge) {
-			if err = os.RemoveAll(entryDir); err != nil &&
-				!errors.Is(err, os.ErrNotExist) {
-				return fmt.Errorf(
-					"cache: prune: remove entry %q: %w",
-					entryDir,
-					err,
-				)
-			}
+		err = pruneEntryDir(entryDir, now, maxAge)
+		if err != nil {
+			return err
 		}
+	}
+
+	return nil
+}
+
+// pruneEntryDir removes entryDir when it should be pruned, ignoring
+// [os.ErrNotExist] (concurrent prune or already removed).
+func pruneEntryDir(
+	entryDir string,
+	now time.Time,
+	maxAge time.Duration,
+) error {
+	if !shouldPrune(entryDir, now, maxAge) {
+		return nil
+	}
+
+	err := os.RemoveAll(entryDir)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf(
+			"cache: prune: remove entry %q: %w",
+			entryDir,
+			err,
+		)
 	}
 
 	return nil
@@ -128,13 +183,14 @@ func shouldPrune(entryDir string, now time.Time, maxAge time.Duration) bool {
 
 	var env resultEnvelope
 
-	if err = json.Unmarshal(data, &env); err != nil {
+	err = json.Unmarshal(data, &env)
+	if err != nil {
 		// Corrupt JSON — prune.
 		return true
 	}
 
 	// Age-based pruning: entry is older than maxAge.
-	if maxAge > 0 && now.After(env.WrittenAt.Add(maxAge)) {
+	if maxAge > noMaxAge && now.After(env.WrittenAt.Add(maxAge)) {
 		return true
 	}
 
@@ -157,5 +213,5 @@ func dirIsEmpty(dir string) bool {
 		return false
 	}
 
-	return len(entries) == 0
+	return len(entries) == emptyDirLen
 }

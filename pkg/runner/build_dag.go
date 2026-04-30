@@ -1,13 +1,7 @@
-// Package runner — T-005-40: story → DAG node conversion.
-//
-// buildDAG converts a slice of parsed story ASTs into a dependency
-// graph. Each (story, scope-key) pair becomes one DAG node; edges
-// encode the Depends: prerequisites declared in each story's Meta
-// section. The function returns ErrCycle (wrapping *dag.ErrCycle)
-// when a cycle is detected.
 package runner
 
 import (
+	"crypto/sha256"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -15,6 +9,14 @@ import (
 	"github.com/evcoreco/octane/pkg/runner/internal/dag"
 	"github.com/evcoreco/octane/pkg/story/ast"
 )
+
+// minStationCount is the minimum number of stations enforced by
+// effectiveStationCount when both the story value and the override
+// are zero or negative.
+const minStationCount = 1
+
+// zeroOverride is the sentinel for a zero/unset station-count override.
+const zeroOverride = 0
 
 // storyNode is the internal representation of a single DAG node
 // before results are collected. It pairs the original AST with the
@@ -47,10 +49,10 @@ func makeNodeID(storyID, scopeKey string) string {
 }
 
 // ErrCycle is returned by [Run] when the dependency graph contains
-// a cycle. The underlying *dag.ErrCycle carries the offending edges.
+// a cycle. The underlying *dag.CycleError carries the offending edges.
 // Callers may use errors.As to extract edge details:
 //
-//	var cycle *dag.ErrCycle
+//	var cycle *dag.CycleError
 //	if errors.As(err, &cycle) { ... }
 var ErrCycle = errors.New("runner: dependency cycle detected")
 
@@ -86,8 +88,7 @@ func scopeKeysFor(scope ast.Scope, stationCount int, runID string) []string {
 	case ast.ScopeGlobal:
 		return []string{""}
 
-	default:
-		// ScopePerStation is the default.
+	case ast.ScopePerStation:
 		keys := make([]string, stationCount)
 
 		for idx := range stationCount {
@@ -96,6 +97,9 @@ func scopeKeysFor(scope ast.Scope, stationCount int, runID string) []string {
 
 		return keys
 	}
+
+	// Unreachable: all Scope values handled above.
+	return nil
 }
 
 // buildDAG constructs the dependency DAG from the provided stories.
@@ -105,7 +109,7 @@ func scopeKeysFor(scope ast.Scope, stationCount int, runID string) []string {
 // declared in each of its Depends entries. The resulting graph is
 // suitable for topological ordering by dag.TopologicalOrder.
 //
-// buildDAG returns ErrCycle (wrapping *dag.ErrCycle) when a cycle
+// buildDAG returns ErrCycle (wrapping *dag.CycleError) when a cycle
 // is detected during edge insertion.
 func buildDAG(
 	stories []*ast.Story,
@@ -119,7 +123,7 @@ func buildDAG(
 	}
 
 	grph := dag.New()
-	nodes := make([]storyNode, 0, len(stories))
+	nodes := make([]storyNode, emptySliceLen, len(stories))
 	nodeIdx := make(map[string]int, len(stories))
 
 	// Pre-scan: collect story IDs that appear as prerequisites in any
@@ -130,95 +134,19 @@ func buildDAG(
 	// same story when scope = per-run or scope = global.
 	prereqIDs := collectPrereqIDs(stories)
 
-	// First pass: create standalone nodes for stories that are NOT
-	// referenced as prerequisites. Each such story runs independently,
-	// once per station handle declared in its Meta.Stations field.
-	for _, storyAST := range stories {
-		if prereqIDs[storyAST.Meta.ID] {
-			// This story will be instantiated by addDepEdges below
-			// with the correct scope (per-station, per-run, or global).
-			continue
-		}
-
-		stationCount := effectiveStationCount(
-			storyAST.Meta.Stations,
-			stationCountOverride,
-		)
-
-		scopeKeys := scopeKeysFor(
-			ast.ScopePerStation,
-			stationCount,
-			runID,
-		)
-
-		for _, scopeKey := range scopeKeys {
-			nid := makeNodeID(storyAST.Meta.ID, scopeKey)
-
-			if _, exists := nodeIdx[nid]; exists {
-				continue
-			}
-
-			storyNodeVal := storyNode{
-				story:    storyAST,
-				scopeKey: scopeKey,
-				nodeID:   nid,
-			}
-
-			grph.AddNode(dag.Node{ID: nid})
-
-			nodeIdx[nid] = len(nodes)
-			nodes = append(nodes, storyNodeVal)
-		}
-	}
+	// First pass: create standalone nodes.
+	dagFirstPass(
+		stories, prereqIDs, runID, stationCountOverride,
+		grph, &nodes, nodeIdx,
+	)
 
 	// Second pass: add edges for each story's declared Depends.
-	for _, storyAST := range stories {
-		stationCount := effectiveStationCount(
-			storyAST.Meta.Stations,
-			stationCountOverride,
-		)
-
-		dependentScopeKeys := scopeKeysFor(
-			ast.ScopePerStation,
-			stationCount,
-			runID,
-		)
-
-		for _, depScopeKey := range dependentScopeKeys {
-			dependentNID := makeNodeID(storyAST.Meta.ID, depScopeKey)
-
-			// Ensure the dependent node exists only when this story has
-			// dependencies. A story with no Depends skipped in the first
-			// pass (because it is a prereq of another story) should NOT
-			// be recreated here with its per-station scope key — it will
-			// be instantiated by addDepEdges with the correct scope when
-			// a dependent story references it.
-			if len(storyAST.Meta.Depends) > 0 {
-				ensureNodeExists(
-					dependentNID,
-					storyAST,
-					depScopeKey,
-					grph,
-					&nodes,
-					nodeIdx,
-				)
-			}
-
-			for _, dep := range storyAST.Meta.Depends {
-				if err := addDepEdges(
-					dep,
-					dependentNID,
-					idx,
-					stationCountOverride,
-					runID,
-					grph,
-					&nodes,
-					nodeIdx,
-				); err != nil {
-					return nil, err
-				}
-			}
-		}
+	err := dagSecondPass(
+		stories, idx, runID, stationCountOverride,
+		grph, &nodes, nodeIdx,
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	return &buildDAGResult{
@@ -228,17 +156,163 @@ func buildDAG(
 	}, nil
 }
 
+// addStandaloneNode inserts a single (storyAST, scopeKey) node into
+// grph and nodeIdx when it does not already exist.
+func addStandaloneNode(
+	storyAST *ast.Story,
+	scopeKey string,
+	grph *dag.Graph,
+	nodes *[]storyNode,
+	nodeIdx map[string]int,
+) {
+	nid := makeNodeID(storyAST.Meta.ID, scopeKey)
+
+	if _, exists := nodeIdx[nid]; exists {
+		return
+	}
+
+	grph.AddNode(dag.Node{ID: nid})
+
+	nodeIdx[nid] = len(*nodes)
+	*nodes = append(*nodes, storyNode{
+		story:    storyAST,
+		scopeKey: scopeKey,
+		nodeID:   nid,
+	})
+}
+
+// dagFirstPass creates standalone nodes for stories that are NOT referenced
+// as prerequisites. Each such story runs once per station handle.
+func dagFirstPass(
+	stories []*ast.Story,
+	prereqIDs map[string]bool,
+	runID string,
+	stationCountOverride int,
+	grph *dag.Graph,
+	nodes *[]storyNode,
+	nodeIdx map[string]int,
+) {
+	for _, storyAST := range stories {
+		if prereqIDs[storyAST.Meta.ID] {
+			continue
+		}
+
+		stationCount := effectiveStationCount(
+			storyAST.Meta.Stations, stationCountOverride,
+		)
+		scopeKeys := scopeKeysFor(
+			ast.ScopePerStation, stationCount, runID,
+		)
+
+		for _, scopeKey := range scopeKeys {
+			addStandaloneNode(storyAST, scopeKey, grph, nodes, nodeIdx)
+		}
+	}
+}
+
+// dagSecondPass adds dependency edges for every story that declares Depends.
+// It ensures that dependent nodes exist before inserting edges.
+func dagSecondPass(
+	stories []*ast.Story,
+	idx storyIndex,
+	runID string,
+	stationCountOverride int,
+	grph *dag.Graph,
+	nodes *[]storyNode,
+	nodeIdx map[string]int,
+) error {
+	for _, storyAST := range stories {
+		err := addStoryEdges(
+			storyAST, idx, runID, stationCountOverride,
+			grph, nodes, nodeIdx,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// addEdgesForScopeKey processes all Depends entries for one (story,
+// scopeKey) pair. It ensures the dependent node exists, then inserts
+// each dependency edge.
+func addEdgesForScopeKey(
+	storyAST *ast.Story,
+	depScopeKey string,
+	idx storyIndex,
+	stationCountOverride int,
+	runID string,
+	grph *dag.Graph,
+	nodes *[]storyNode,
+	nodeIdx map[string]int,
+) error {
+	dependentNID := makeNodeID(storyAST.Meta.ID, depScopeKey)
+
+	if len(storyAST.Meta.Depends) > emptySliceLen {
+		ensureNodeExists(
+			dependentNID, storyAST, depScopeKey,
+			grph, nodes, nodeIdx,
+		)
+	}
+
+	for _, dep := range storyAST.Meta.Depends {
+		err := addDepEdges(
+			dep, dependentNID, idx,
+			stationCountOverride, runID,
+			grph, nodes, nodeIdx,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// addStoryEdges adds edges for all Depends entries in storyAST, for each
+// of its per-station scope keys.
+func addStoryEdges(
+	storyAST *ast.Story,
+	idx storyIndex,
+	runID string,
+	stationCountOverride int,
+	grph *dag.Graph,
+	nodes *[]storyNode,
+	nodeIdx map[string]int,
+) error {
+	stationCount := effectiveStationCount(
+		storyAST.Meta.Stations, stationCountOverride,
+	)
+	dependentScopeKeys := scopeKeysFor(
+		ast.ScopePerStation, stationCount, runID,
+	)
+
+	for _, depScopeKey := range dependentScopeKeys {
+		err := addEdgesForScopeKey(
+			storyAST, depScopeKey, idx,
+			stationCountOverride, runID,
+			grph, nodes, nodeIdx,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // effectiveStationCount returns stationCount or stationCountOverride
 // when the override is positive, enforcing a minimum of 1.
 func effectiveStationCount(stationCount, override int) int {
 	count := stationCount
 
-	if override > 0 {
+	if override > zeroOverride {
 		count = override
 	}
 
-	if count < 1 {
-		count = 1
+	if count < minStationCount {
+		count = minStationCount
 	}
 
 	return count
@@ -271,8 +345,8 @@ func addDepEdges(
 	var prereqScopeKeys []string
 
 	if dep.Scope == ast.ScopePerStation {
-		_, depScopeKey := splitNodeID(dependentNID)
-		prereqScopeKeys = []string{depScopeKey}
+		depParts := splitNodeID(dependentNID)
+		prereqScopeKeys = []string{depParts.scopeKey}
 	} else {
 		prereqStationCount := effectiveStationCount(
 			prereqStory.Meta.Stations,
@@ -286,32 +360,42 @@ func addDepEdges(
 		prereqNID := makeNodeID(dep.ID, prereqScopeKey)
 
 		ensureNodeExists(
-			prereqNID,
-			prereqStory,
-			prereqScopeKey,
-			grph,
-			nodes,
-			nodeIdx,
+			prereqNID, prereqStory, prereqScopeKey,
+			grph, nodes, nodeIdx,
 		)
 
-		edge := dag.Edge{From: prereqNID, To: dependentNID}
-
-		if err := grph.AddEdge(edge); err != nil {
-			var errCycle *dag.ErrCycle
-			if errors.As(err, &errCycle) {
-				return fmt.Errorf("%w: %w", ErrCycle, errCycle)
-			}
-
-			return fmt.Errorf(
-				"runner: add edge %s→%s: %w",
-				prereqNID,
-				dependentNID,
-				err,
-			)
+		err := addEdgeChecked(
+			grph, prereqNID, dependentNID,
+		)
+		if err != nil {
+			return err
 		}
 	}
 
 	return nil
+}
+
+// addEdgeChecked inserts a directed edge from prereqNID to dependentNID and
+// wraps any error. Cycle errors are wrapped with ErrCycle.
+func addEdgeChecked(
+	grph *dag.Graph,
+	prereqNID string,
+	dependentNID string,
+) error {
+	err := grph.AddEdge(dag.Edge{From: prereqNID, To: dependentNID})
+	if err == nil {
+		return nil
+	}
+
+	var errCycle *dag.CycleError
+	if errors.As(err, &errCycle) {
+		return fmt.Errorf("%w: %w", ErrCycle, errCycle)
+	}
+
+	return fmt.Errorf(
+		"runner: add edge %s→%s: %w",
+		prereqNID, dependentNID, err,
+	)
 }
 
 // ensureNodeExists adds a storyNode to grph and nodeIdx when it
@@ -347,25 +431,23 @@ func ensureNodeExists(
 //
 //	binary.BigEndian.Uint64(sha256(test_id)[:8]) % shardTotal == shardIndex
 func inShardFilter(testID string, shardIndex, shardTotal int) bool {
-	if shardTotal <= 0 {
+	if shardTotal <= minShardTotal {
 		return true
 	}
 
 	digest := sha256Sum(testID)
 	shardNum := binary.BigEndian.Uint64(digest[:8])
 
-	// Modulo result is in [0, shardTotal), which fits in int since
-	// shardTotal is a positive int. The conversion is safe.
-	assignedShard := int(
-		shardNum % uint64(shardTotal),
-	) //nolint:gosec // G115: value < shardTotal ≤ math.MaxInt
+	// Compare in uint64 space to avoid int overflow on 32-bit systems.
+	// shardTotal and shardIndex are validated non-negative ints by the caller.
+	assignedShardU64 := shardNum % safeUint64(shardTotal)
 
-	return assignedShard == shardIndex
+	return assignedShardU64 == safeUint64(shardIndex)
 }
 
 // sha256Sum returns the SHA-256 digest of text.
 // Separated from inShardFilter to keep cyclomatic complexity low.
-func sha256Sum(text string) [32]byte {
+func sha256Sum(text string) [sha256.Size]byte {
 	return sha256Of([]byte(text))
 }
 

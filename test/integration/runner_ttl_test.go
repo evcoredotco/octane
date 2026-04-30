@@ -3,6 +3,7 @@
 // Task: T-005-57
 // AC10: Cache-TTL: the cache treats an entry with an expired TTL as a miss and
 // causes the runner to re-execute the story.
+
 package integration_test
 
 import (
@@ -15,6 +16,16 @@ import (
 	"github.com/evcoreco/octane/pkg/cache"
 	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
 	"github.com/evcoreco/octane/pkg/runner"
+)
+
+const (
+	// zeroSHA is the placeholder SHA string used in TTL test cache keys.
+	zeroSHA = "00000000"
+	// singleStory is the expected story count for single-story TTL runs.
+	singleStory = 1
+	// firstStoryIdx is the index of the first (and only) story in a
+	// single-story result slice.
+	firstStoryIdx = 0
 )
 
 // storyTTL is a single passing story used for the TTL expiry test.
@@ -32,7 +43,8 @@ Scenario: TTL story passes
 // valueTTLOne is the 1-second TTL used in the expiry assertions.
 const valueTTLOne = 1 * time.Second
 
-// valueTTLWait is the wait period (1100ms) that guarantees the 1s TTL has expired.
+// valueTTLWait is the wait period (1100ms) that guarantees the 1s TTL
+// has expired.
 const valueTTLWait = 1100 * time.Millisecond
 
 // Test_runner_CacheTTLDirectExpiry validates that a cache entry written with a
@@ -58,25 +70,28 @@ func Test_runner_CacheTTLDirectExpiry(t *testing.T) {
 	key := cache.Key{
 		TestID:          "ttl_story",
 		ScopeKey:        "CP01",
-		CSMSEndpointSHA: "00000000",
+		CSMSEndpointSHA: zeroSHA,
 		OctaneVersion:   "dev",
 		OCPPVersion:     "unknown",
-		StoryContentSHA: "00000000",
-		ParameterSHA:    "00000000",
+		StoryContentSHA: zeroSHA,
+		ParameterSHA:    zeroSHA,
 	}
 
 	entry := cache.Entry{
 		Result:    resultJSON,
+		Trace:     nil,
 		WrittenAt: time.Now().UTC(),
 		TTL:       valueTTLOne,
 	}
 
-	if err = storyCache.Put(context.Background(), key, entry); err != nil {
+	err = storyCache.Put(context.Background(), key, entry)
+	if err != nil {
 		t.Fatalf("cache.Put: %v", err)
 	}
 
 	// Invariant: entry is readable immediately (not yet expired).
-	if _, getErr := storyCache.Get(context.Background(), key); getErr != nil {
+	_, getErr := storyCache.Get(context.Background(), key)
+	if getErr != nil {
 		t.Fatalf("cache.Get before expiry: want hit, got %v", getErr)
 	}
 
@@ -104,11 +119,7 @@ func Test_runner_CacheTTLRunnerSecondRunIsHit(t *testing.T) {
 
 	writeFile(t, storyDir+"/ttl_story.story", storyTTL)
 
-	cfg := runner.Config{
-		StoryPaths: []string{storyDir},
-		NoCache:    false,
-		CacheDir:   cacheDir,
-	}
+	cfg := cachedCfg(storyDir, cacheDir)
 
 	// First run: story executes, result is cached (CacheMiss → write).
 	firstResult, err := runner.Run(context.Background(), cfg)
@@ -116,15 +127,19 @@ func Test_runner_CacheTTLRunnerSecondRunIsHit(t *testing.T) {
 		t.Fatalf("first runner.Run: %v", err)
 	}
 
-	if len(firstResult.Stories) != 1 {
-		t.Fatalf("first run: want 1 story, got %d", len(firstResult.Stories))
+	if len(firstResult.Stories) != singleStory {
+		t.Fatalf(
+			"first run: want %d story, got %d",
+			singleStory,
+			len(firstResult.Stories),
+		)
 	}
 
 	// Invariant: first run must be a cache miss.
-	if firstResult.Stories[0].CacheStatus != runner.CacheMiss {
+	if firstResult.Stories[firstStoryIdx].CacheStatus != runner.CacheMiss {
 		t.Errorf(
 			"first run: want CacheMiss, got %s",
-			firstResult.Stories[0].CacheStatus,
+			firstResult.Stories[firstStoryIdx].CacheStatus,
 		)
 	}
 
@@ -134,27 +149,40 @@ func Test_runner_CacheTTLRunnerSecondRunIsHit(t *testing.T) {
 		t.Fatalf("second runner.Run: %v", err)
 	}
 
-	if len(secondResult.Stories) != 1 {
-		t.Fatalf("second run: want 1 story, got %d", len(secondResult.Stories))
-	}
-
-	// Invariant: second run (no TTL expiry) must be a cache hit.
-	isHit := secondResult.Stories[0].CacheStatus == runner.CacheHitPass ||
-		secondResult.Stories[0].CacheStatus == runner.CacheHitSkip
-	if !isHit {
-		t.Errorf(
-			"second run: want CacheHit*, got %s",
-			secondResult.Stories[0].CacheStatus,
+	if len(secondResult.Stories) != singleStory {
+		t.Fatalf(
+			"second run: want %d story, got %d",
+			singleStory,
+			len(secondResult.Stories),
 		)
 	}
 
-	// Invariant: Summary.CacheHits must be 1.
+	assertTTLSecondRunHit(t, secondResult)
+}
+
+// assertTTLSecondRunHit checks that the second run produced a cache hit and
+// that Summary.CacheHits is 1.
+func assertTTLSecondRunHit(
+	t *testing.T,
+	result *runner.RunResult,
+) {
+	t.Helper()
+
+	isHit := result.Stories[firstStoryIdx].CacheStatus == runner.CacheHitPass ||
+		result.Stories[firstStoryIdx].CacheStatus == runner.CacheHitSkip
+	if !isHit {
+		t.Errorf(
+			"second run: want CacheHit*, got %s",
+			result.Stories[firstStoryIdx].CacheStatus,
+		)
+	}
+
 	const expectedCacheHits = 1
-	if secondResult.Summary.CacheHits != expectedCacheHits {
+	if result.Summary.CacheHits != expectedCacheHits {
 		t.Errorf(
 			"second run: Summary.CacheHits: want %d, got %d",
 			expectedCacheHits,
-			secondResult.Summary.CacheHits,
+			result.Summary.CacheHits,
 		)
 	}
 }
