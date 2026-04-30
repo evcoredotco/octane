@@ -90,7 +90,11 @@ func Dial(
 		HTTPClient:      buildHTTPClient(tlsCfg),
 	}
 
-	conn, _, err := websocket.Dial(dialCtx, rawURL, wsOpts)
+	conn, resp, err := websocket.Dial(dialCtx, rawURL, wsOpts)
+	if resp != nil && resp.Body != nil {
+		_ = resp.Body.Close()
+	}
+
 	if err != nil {
 		return nil, wrapDialError(safeURL, err)
 	}
@@ -104,7 +108,7 @@ func Dial(
 		return nil, err
 	}
 
-	return newStationHandle(conn, maxBytes), nil
+	return newStationHandle(context.WithoutCancel(ctx), conn, maxBytes), nil
 }
 
 // sanitizeURL strips userinfo (credentials) from the parsed URL so that the

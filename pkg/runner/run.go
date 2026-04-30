@@ -108,7 +108,12 @@ func (rs *runnerState) Sleep(
 	ctx context.Context,
 	duration time.Duration,
 ) error {
-	return rs.clk.Sleep(ctx, duration)
+	err := rs.clk.Sleep(ctx, duration)
+	if err != nil {
+		return fmt.Errorf("runner: sleep: %w", err)
+	}
+
+	return nil
 }
 
 // Stash implements api.State.
@@ -689,7 +694,7 @@ func runStep(
 			Severity: "error",
 		})
 
-		return err
+		return fmt.Errorf("runner: resolve keyword: %w", err)
 	}
 
 	err = match.Keyword.Func(ctx, state, match.Args)
@@ -699,7 +704,7 @@ func runStep(
 			Severity: "error",
 		})
 
-		return err
+		return fmt.Errorf("runner: execute keyword: %w", err)
 	}
 
 	return nil
@@ -935,8 +940,11 @@ func walkStoryFiles(root string) ([]*ast.Story, error) {
 			return nil
 		},
 	)
+	if err != nil {
+		return nil, fmt.Errorf("runner: walk stories: %w", err)
+	}
 
-	return stories, err
+	return stories, nil
 }
 
 // filterByOCPPVersion removes stories that do not declare the

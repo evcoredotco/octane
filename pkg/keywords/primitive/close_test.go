@@ -18,6 +18,7 @@ package primitive_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -156,11 +157,21 @@ type closeErrorStation struct {
 }
 
 func (s *closeErrorStation) Send(ctx context.Context, frame []any) error {
-	return s.inner.Send(ctx, frame)
+	err := s.inner.Send(ctx, frame)
+	if err != nil {
+		return fmt.Errorf("test: send: %w", err)
+	}
+
+	return nil
 }
 
 func (s *closeErrorStation) Expect(ctx context.Context) ([]any, error) {
-	return s.inner.Expect(ctx)
+	frame, err := s.inner.Expect(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("test: expect: %w", err)
+	}
+
+	return frame, nil
 }
 
 func (s *closeErrorStation) Close() error {

@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"time"
 
@@ -48,7 +49,7 @@ func AcquireLock(
 			return nil, ErrLockTimeout
 		}
 
-		return nil, err
+		return nil, fmt.Errorf("cache: acquire lock: %w", err)
 	}
 
 	return closer, nil

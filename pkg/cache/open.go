@@ -21,11 +21,11 @@ const schemaVersion = 1
 type versionStamp struct {
 	// SchemaVersion is the integer schema version of this
 	// cache directory. Currently always 1.
-	SchemaVersion int `json:"schema_version"`
+	SchemaVersion int `json:"schemaVersion"`
 
 	// CreatedAt is the RFC 3339 timestamp when the cache
 	// directory was first initialised.
-	CreatedAt time.Time `json:"created_at"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 // Open creates (or verifies) a content-addressed cache directory

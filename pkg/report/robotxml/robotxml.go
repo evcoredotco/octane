@@ -127,12 +127,12 @@ func WriteRobotXML(
 
 	data, err := xml.MarshalIndent(root, emptySource, "  ")
 	if err != nil {
-		return err
+		return fmt.Errorf("report: marshal XML: %w", err)
 	}
 
 	err = os.MkdirAll(dir, dirMode)
 	if err != nil {
-		return err
+		return fmt.Errorf("report: create output dir: %w", err)
 	}
 
 	outPath := filepath.Join(dir, outputFileName)
@@ -142,7 +142,12 @@ func WriteRobotXML(
 	payload = append(payload, data...)
 	payload = append(payload, '\n')
 
-	return os.WriteFile(outPath, payload, fileMode)
+	err = os.WriteFile(outPath, payload, fileMode)
+	if err != nil {
+		return fmt.Errorf("report: write output file: %w", err)
+	}
+
+	return nil
 }
 
 // ---------------------------------------------------------------------------

@@ -59,22 +59,22 @@ func validateRunIDEntry(
 		return
 	}
 
-	runID, ok := top["run_id"].(string)
+	runID, ok := top["runId"].(string)
 	if !ok || runID == "" {
-		t.Errorf("%s: missing or empty run_id", reportPath)
+		t.Errorf("%s: missing or empty runId", reportPath)
 
 		return
 	}
 
 	if runID != entry.Name() {
 		t.Errorf(
-			"%s: run_id %q does not match directory name %q",
+			"%s: runId %q does not match directory name %q",
 			reportPath, runID, entry.Name(),
 		)
 	}
 
 	if _, dup := seenRunIDs[runID]; dup {
-		t.Errorf("duplicate run_id %q across concurrent writes", runID)
+		t.Errorf("duplicate runId %q across concurrent writes", runID)
 	}
 
 	seenRunIDs[runID] = struct{}{}

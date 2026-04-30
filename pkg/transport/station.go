@@ -36,8 +36,12 @@ type stationHandle struct {
 // The caller is responsible for calling conn.SetReadLimit before invoking
 // newStationHandle. Closing the connection (via Close) causes the next
 // conn.Read to return an error, which terminates the goroutine.
-func newStationHandle(conn *websocket.Conn, maxBytes int64) Station {
-	readerCtx, cancel := context.WithCancel(context.Background())
+func newStationHandle(
+	ctx context.Context,
+	conn *websocket.Conn,
+	maxBytes int64,
+) Station {
+	readerCtx, cancel := context.WithCancel(ctx)
 
 	handle := &stationHandle{
 		conn:       conn,
@@ -97,7 +101,7 @@ func (sta *stationHandle) Expect(ctx context.Context) ([]any, error) {
 		return frame, nil
 
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return nil, fmt.Errorf("transport: expect context: %w", ctx.Err())
 
 	case <-sta.closed:
 		// Drain one buffered frame before signalling closure so that

@@ -17,43 +17,43 @@ type Config struct {
 	// StoriesDir is the root directory that [octane run] searches
 	// for .story files when no positional story paths are given.
 	// Default: "scenarios".
-	StoriesDir string `yaml:"stories_dir"`
+	StoriesDir string `yaml:"storiesDir"`
 
 	// CacheDir overrides the default cache directory
 	// ($XDG_CACHE_HOME/octane/cache/ or ~/.cache/octane/cache/).
 	// When empty the runner resolves the directory from environment
 	// variables at runtime.
-	CacheDir string `yaml:"cache_dir"`
+	CacheDir string `yaml:"cacheDir"`
 
 	// MaxParallel is the maximum number of stories that may execute
 	// concurrently. A value of 1 (the default) produces sequential
 	// execution. Values greater than 1 enable the parallel worker
 	// pool (ADR 0019).
-	MaxParallel int `yaml:"max_parallel"`
+	MaxParallel int `yaml:"maxParallel"`
 
 	// OCPPVersion restricts the run to stories declaring this OCPP
 	// version (e.g., "1.6"). When empty all
 	// stories are eligible regardless of their declared version.
-	OCPPVersion string `yaml:"ocpp_version"`
+	OCPPVersion string `yaml:"ocppVersion"`
 
 	// LockTimeout is the maximum duration the runner waits when
 	// acquiring a per-cache-key flock. Defaults to 60 s (spec 005
 	// G6). A zero value in the YAML is replaced by the default at
 	// [Default] time.
-	LockTimeout time.Duration `yaml:"lock_timeout"`
+	LockTimeout time.Duration `yaml:"lockTimeout"`
 
 	// InsecureSkipVerify disables TLS certificate verification for
 	// WebSocket connections. Setting this to true causes the CLI to
 	// emit a warning banner before executing any stories. It should
 	// never be used in production environments.
-	InsecureSkipVerify bool `yaml:"insecure_skip_verify"`
+	InsecureSkipVerify bool `yaml:"insecureSkipVerify"`
 
 	// FailOn controls which story outcomes are counted as run-level
 	// failures for the purposes of the process exit code. Accepted
 	// values are "any" (default) and "major". "any" causes the
 	// binary to exit with [exitcode.TestFailed] when at least one
 	// story has status=failed. "major" is reserved for future use.
-	FailOn string `yaml:"fail_on"`
+	FailOn string `yaml:"failOn"`
 }
 
 // Default returns the built-in baseline configuration. It is used

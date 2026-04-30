@@ -2,6 +2,7 @@ package registry
 
 import (
 	"errors"
+	"fmt"
 	"sort"
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
@@ -180,7 +181,10 @@ func tryMatch(step string, keyword api.Keyword) (Match, bool, error) {
 			}
 		}
 
-		return Match{}, false, coerceErr
+		return Match{}, false, fmt.Errorf(
+			"registry: coerce args: %w",
+			coerceErr,
+		)
 	}
 
 	result := Match{

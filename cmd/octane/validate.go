@@ -129,6 +129,9 @@ func collectStoryFiles(root string) ([]string, error) {
 			return nil
 		},
 	)
+	if err != nil {
+		return nil, fmt.Errorf("validate: walk stories: %w", err)
+	}
 
-	return files, err
+	return files, nil
 }

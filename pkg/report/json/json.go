@@ -8,6 +8,7 @@ package json
 import (
 	"cmp"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -24,11 +25,11 @@ const outputFileName = "octane.json"
 
 // jsonReport is the top-level JSON serialization struct for the report.
 type jsonReport struct {
-	SchemaVersion int         `json:"schema_version"`
-	OctaneVersion string      `json:"octane_version"`
-	RunID         string      `json:"run_id"`
-	StartedAt     string      `json:"started_at"`
-	FinishedAt    string      `json:"finished_at"`
+	SchemaVersion int         `json:"schemaVersion"`
+	OctaneVersion string      `json:"octaneVersion"`
+	RunID         string      `json:"runId"`
+	StartedAt     string      `json:"startedAt"`
+	FinishedAt    string      `json:"finishedAt"`
 	Summary       jsonSummary `json:"summary"`
 	Stories       []jsonStory `json:"stories"`
 }
@@ -39,24 +40,24 @@ type jsonSummary struct {
 	Passed    int `json:"passed"`
 	Failed    int `json:"failed"`
 	Skipped   int `json:"skipped"`
-	CacheHits int `json:"cache_hits"`
+	CacheHits int `json:"cacheHits"`
 }
 
 // jsonStory is the JSON serialization struct for a single story result.
 type jsonStory struct {
-	TestID       string        `json:"test_id"`
-	ScopeKey     string        `json:"scope_key"`
-	OCPPVersion  string        `json:"ocpp_version"`
+	TestID       string        `json:"testId"`
+	ScopeKey     string        `json:"scopeKey"`
+	OCPPVersion  string        `json:"ocppVersion"`
 	Status       string        `json:"status"`
-	CacheStatus  string        `json:"cache_status"`
-	StartedAt    string        `json:"started_at"`
-	FinishedAt   string        `json:"finished_at"`
-	DurationMS   int64         `json:"duration_ms"`
+	CacheStatus  string        `json:"cacheStatus"`
+	StartedAt    string        `json:"startedAt"`
+	FinishedAt   string        `json:"finishedAt"`
+	DurationMS   int64         `json:"durationMs"`
 	Findings     []jsonFinding `json:"findings"`
-	TracePresent bool          `json:"trace_present"`
+	TracePresent bool          `json:"tracePresent"`
 	Trace        *jsonTrace    `json:"trace,omitempty"`
 	Cause        string        `json:"cause,omitempty"`
-	CauseChain   []string      `json:"cause_chain,omitempty"`
+	CauseChain   []string      `json:"causeChain,omitempty"`
 }
 
 // jsonFinding is the JSON serialization struct for a diagnostic finding.
@@ -83,17 +84,22 @@ func WriteJSON(
 
 	data, err := json.MarshalIndent(jrep, "", "  ")
 	if err != nil {
-		return err
+		return fmt.Errorf("report: marshal JSON: %w", err)
 	}
 
 	err = os.MkdirAll(dir, 0o700)
 	if err != nil {
-		return err
+		return fmt.Errorf("report: create output dir: %w", err)
 	}
 
 	outPath := filepath.Join(dir, outputFileName)
 
-	return os.WriteFile(outPath, data, 0o600)
+	err = os.WriteFile(outPath, data, 0o600)
+	if err != nil {
+		return fmt.Errorf("report: write output file: %w", err)
+	}
+
+	return nil
 }
 
 // buildJSONReport converts a model.Report to the jsonReport

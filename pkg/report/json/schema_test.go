@@ -17,11 +17,11 @@ import (
 // requiredTopLevelKeys are the JSON keys that must appear at the top
 // level of every octane.json report.
 var requiredTopLevelKeys = []string{
-	"schema_version",
-	"octane_version",
-	"run_id",
-	"started_at",
-	"finished_at",
+	"schemaVersion",
+	"octaneVersion",
+	"runId",
+	"startedAt",
+	"finishedAt",
 	"summary",
 	"stories",
 }
@@ -104,33 +104,33 @@ func Test_json_Schema(t *testing.T) {
 	assertStoriesShape(t, top)
 }
 
-// assertOctaneVersion verifies that octane_version is a non-empty string.
+// assertOctaneVersion verifies that octaneVersion is a non-empty string.
 func assertOctaneVersion(t *testing.T, top map[string]any) {
 	t.Helper()
 
-	val, present := top["octane_version"]
+	val, present := top["octaneVersion"]
 	if !present {
 		return
 	}
 
 	str, isStr := val.(string)
 	if !isStr || str == "" {
-		t.Errorf("octane_version: got %v, want non-empty string", val)
+		t.Errorf("octaneVersion: got %v, want non-empty string", val)
 	}
 }
 
-// assertSchemaVersion verifies that schema_version is a non-zero number.
+// assertSchemaVersion verifies that schemaVersion is a non-zero number.
 func assertSchemaVersion(t *testing.T, top map[string]any) {
 	t.Helper()
 
-	val, present := top["schema_version"]
+	val, present := top["schemaVersion"]
 	if !present {
 		return
 	}
 
 	num, isFloat := val.(float64)
 	if !isFloat || num <= 0 {
-		t.Errorf("schema_version: got %v, want positive integer", val)
+		t.Errorf("schemaVersion: got %v, want positive integer", val)
 	}
 }
 
@@ -151,7 +151,7 @@ func assertSummaryShape(t *testing.T, top map[string]any) {
 		return
 	}
 
-	for _, key := range []string{"total", "passed", "failed", "skipped", "cache_hits"} {
+	for _, key := range []string{"total", "passed", "failed", "skipped", "cacheHits"} {
 		if _, exists := summaryMap[key]; !exists {
 			t.Errorf("summary: missing required key %q", key)
 		}

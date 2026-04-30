@@ -135,7 +135,12 @@ func (s *State) SetClock(clk clock.Clock) {
 // [State.SetClock] to inject a [clock.DeterministicClock] in tests that
 // must advance time without real wall-clock delay.
 func (s *State) Sleep(ctx context.Context, d time.Duration) error {
-	return s.clk.Sleep(ctx, d)
+	err := s.clk.Sleep(ctx, d)
+	if err != nil {
+		return fmt.Errorf("mock: clock sleep: %w", err)
+	}
+
+	return nil
 }
 
 // RegisterStation adds station under handle so that [State.Station] can
@@ -225,7 +230,7 @@ func NewMockStation() *Station {
 func (st *Station) Send(ctx context.Context, frame []any) error {
 	err := ctx.Err()
 	if err != nil {
-		return err
+		return fmt.Errorf("mock: send context: %w", err)
 	}
 
 	if st.sendErr != nil {
@@ -260,7 +265,7 @@ func (st *Station) Expect(ctx context.Context) ([]any, error) {
 
 	<-ctx.Done()
 
-	return nil, ctx.Err()
+	return nil, fmt.Errorf("mock: expect context: %w", ctx.Err())
 }
 
 // SentFrames returns a copy of every frame recorded by [Station.Send] in

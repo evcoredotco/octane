@@ -27,15 +27,15 @@ const cacheFileMode = 0o600
 // the file.
 type resultEnvelope struct {
 	// SchemaVersion is always [schemaVersion] (currently 1).
-	SchemaVersion int `json:"schema_version"`
+	SchemaVersion int `json:"schemaVersion"`
 
 	// WrittenAt is the UTC wall-clock time when this entry was
 	// persisted. Used for TTL checks and age-based pruning.
-	WrittenAt time.Time `json:"written_at"`
+	WrittenAt time.Time `json:"writtenAt"`
 
 	// TTLSeconds is the maximum age of this entry in seconds
 	// before it is considered stale. Zero means no TTL.
-	TTLSeconds int64 `json:"ttl_seconds"`
+	TTLSeconds int64 `json:"ttlSeconds"`
 
 	// Result holds the raw JSON bytes of the test result. It MUST
 	// NOT contain credentials (constitution principle X).
@@ -43,7 +43,7 @@ type resultEnvelope struct {
 
 	// TracePresent indicates whether a sibling trace.json file
 	// was written for this entry.
-	TracePresent bool `json:"trace_present"`
+	TracePresent bool `json:"tracePresent"`
 }
 
 // FileCache is the content-addressed file tree implementation of
@@ -237,8 +237,11 @@ func (fc *FileCache) resultDir(hash string) string {
 // cache-internal.
 func cacheReadFile(path string) ([]byte, error) {
 	data, err := os.ReadFile(path) //nolint:gosec // G304: cache path
+	if err != nil {
+		return nil, fmt.Errorf("cache: read file: %w", err)
+	}
 
-	return data, err
+	return data, nil
 }
 
 // atomicWriteFile writes data to path using the atomic
