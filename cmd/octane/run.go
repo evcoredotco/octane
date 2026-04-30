@@ -10,14 +10,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/cobra"
-
 	"github.com/evcoreco/octane/cmd/octane/internal/config"
 	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
 	reportpkg "github.com/evcoreco/octane/pkg/report"
 	reportjson "github.com/evcoreco/octane/pkg/report/json"
 	"github.com/evcoreco/octane/pkg/report/robotxml"
 	"github.com/evcoreco/octane/pkg/runner"
+	"github.com/spf13/cobra"
 )
 
 // Sentinel errors for parseShard. These are package-level so callers can

@@ -176,24 +176,27 @@ func (fc *FileCache) Put(
 	key Key,
 	entry Entry,
 ) error {
-	if err := ctx.Err(); err != nil {
+	err := ctx.Err()
+	if err != nil {
 		return fmt.Errorf("cache: Put: %w", err)
 	}
 
 	hash := key.Hash()
 	dir := fc.resultDir(hash)
 
-	if err := os.MkdirAll(dir, cacheDirMode); err != nil {
+	err = os.MkdirAll(dir, cacheDirMode)
+	if err != nil {
 		return fmt.Errorf("cache: create entry dir: %w", err)
 	}
 
 	tracePresent := len(entry.Trace) > 0
 
 	if tracePresent {
-		if err := atomicWriteFile(
+		err := atomicWriteFile(
 			filepath.Join(dir, "trace.json"),
 			entry.Trace,
-		); err != nil {
+		)
+		if err != nil {
 			return fmt.Errorf("cache: write trace.json: %w", err)
 		}
 	}

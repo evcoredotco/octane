@@ -361,9 +361,10 @@ func addDepEdges(
 			grph, nodes, nodeIdx,
 		)
 
-		if err := addEdgeChecked(
+		err := addEdgeChecked(
 			grph, prereqNID, dependentNID,
-		); err != nil {
+		)
+		if err != nil {
 			return err
 		}
 	}

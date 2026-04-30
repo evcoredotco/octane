@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
-
 	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
 	// Side-effect import: registers primitive keywords at init time.
 	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
+	"github.com/spf13/cobra"
 )
 
 // version is the binary version string, injected at build time by goreleaser

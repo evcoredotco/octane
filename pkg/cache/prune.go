@@ -70,7 +70,8 @@ func pruneOneFanout(
 	now time.Time,
 	maxAge time.Duration,
 ) error {
-	if err := ctx.Err(); err != nil {
+	err := ctx.Err()
+	if err != nil {
 		return fmt.Errorf("cache: prune: %w", err)
 	}
 
@@ -92,7 +93,8 @@ func pruneFanout(
 
 	fanoutPath := filepath.Join(resultsDir, fanoutEntry.Name())
 
-	if err := pruneEntriesUnder(fanoutPath, now, maxAge); err != nil {
+	err := pruneEntriesUnder(fanoutPath, now, maxAge)
+	if err != nil {
 		return err
 	}
 
@@ -128,7 +130,8 @@ func pruneEntriesUnder(
 
 		entryDir := filepath.Join(fanoutDir, ent.Name())
 
-		if err = pruneEntryDir(entryDir, now, maxAge); err != nil {
+		err = pruneEntryDir(entryDir, now, maxAge)
+		if err != nil {
 			return err
 		}
 	}
