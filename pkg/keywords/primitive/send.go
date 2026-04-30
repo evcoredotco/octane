@@ -19,7 +19,8 @@ func init() {
 	})
 
 	registry.Register(api.Keyword{
-		Pattern:     "send raw bytes {bytes:string} on station {station:string}",
+		Pattern: "send raw bytes {bytes:string}" +
+			" on station {station:string}",
 		Layer:       api.LayerPrimitive,
 		OCPPVersion: 0,
 		Func:        sendRawBytes,

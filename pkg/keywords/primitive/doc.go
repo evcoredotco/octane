@@ -15,7 +15,8 @@
 // # Connection primitives (spec 004 §10, items 1–3, 9–10)
 //
 //   - "open a WebSocket to {url:string} as station {station:string}"
-//   - "open a WebSocket to {url:string} as station {station:string} with subprotocol {subprotocol:string}"
+//   - "open a WebSocket to {url:string} as station {station:string}
+//     with subprotocol {subprotocol:string}"
 //   - "close station {station:string}"
 //   - "the connection on station {station:string} is open"
 //   - "the connection on station {station:string} is closed"
@@ -33,11 +34,13 @@
 // # Expect primitives (spec 004 §10, items 6–7)
 //
 //   - "expect any frame on station {station:string} within {timeout:duration}"
-//   - "expect a frame of type {messageType:int} on station {station:string} within {timeout:duration}"
+//   - "expect a frame of type {messageType:int} on station
+//     {station:string} within {timeout:duration}"
 //
 // Both expect keywords derive their deadline from [api.State.Now] so that
 // deterministic-clock scenarios never advance real wall time. When the
-// deadline elapses before a matching frame arrives, they return [*TimeoutError].
+// deadline elapses before a matching frame arrives, they return
+// [*TimeoutError].
 //
 // # Wait primitive (spec 004 §10, item 8)
 //

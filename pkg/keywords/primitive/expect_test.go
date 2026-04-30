@@ -4,8 +4,9 @@
 // Task: T-004-14
 // AC3: "expect any frame on station {station:string} within {timeout:duration}"
 // returns nil when a frame arrives within the timeout and stashes the frame.
-// AC4: When no frame arrives within the timeout the keyword returns *TimeoutError
-// carrying the configured timeout and the deterministic-clock deadline.
+// AC4: When no frame arrives within the timeout the keyword returns
+// *TimeoutError carrying the configured timeout and the deterministic-clock
+// deadline.
 
 package primitive_test
 
@@ -17,7 +18,7 @@ import (
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
 	"github.com/evcoreco/octane/pkg/keywords/api/mock"
-	"github.com/evcoreco/octane/pkg/keywords/primitive" // registers primitive keywords; exposes TimeoutError
+	"github.com/evcoreco/octane/pkg/keywords/primitive" // Side-effect: registers primitive keywords; exposes TimeoutError.
 )
 
 // ── Named constants ───────────────────────────────────────────────────────────
@@ -27,7 +28,8 @@ const (
 	handleExpect = "CP05"
 
 	// patternExpectAny is the step text for the expect-any-frame keyword.
-	patternExpectAny = "expect any frame on station {station:string} within {timeout:duration}"
+	patternExpectAny = "expect any frame on station {station:string}" +
+		" within {timeout:duration}"
 
 	// patternExpectOfType is the step text for the expect-frame-of-type keyword.
 	patternExpectOfType = "expect a frame of type {messageType:int} on station" +
@@ -119,7 +121,7 @@ func Test_primitive_expectAnyFrame_Timeout(t *testing.T) {
 
 	if !errors.As(err, &timeoutErr) {
 		t.Fatalf(
-			"expectAnyFrame (no frames): want *primitive.TimeoutError via errors.As, got %T: %v",
+			"expectAnyFrame: want *primitive.TimeoutError, got %T: %v",
 			err,
 			err,
 		)
@@ -143,7 +145,7 @@ func Test_primitive_expectAnyFrame_Timeout(t *testing.T) {
 		)
 	}
 
-	// Invariant: TimeoutError.Deadline must equal frozenNow + timeout (deterministic clock).
+	// Invariant: TimeoutError.Deadline must equal frozenNow + timeout.
 	wantDeadline := frozenNow.Add(timeoutShort)
 
 	if !timeoutErr.Deadline.Equal(wantDeadline) {
@@ -222,7 +224,7 @@ func Test_primitive_expectFrameOfType_WrongTypeThenTimeout(t *testing.T) {
 
 	err := keywordFunc(context.Background(), state, args)
 
-	// Invariant: wrong-type frames must be skipped; eventual timeout returns *TimeoutError.
+	// Invariant: wrong-type frames must be skipped; timeout returns *TimeoutError.
 	if err == nil {
 		t.Fatal(
 			"expectFrameOfType (wrong type): want error, got nil",
@@ -233,7 +235,7 @@ func Test_primitive_expectFrameOfType_WrongTypeThenTimeout(t *testing.T) {
 
 	if !errors.As(err, &timeoutErr) {
 		t.Fatalf(
-			"expectFrameOfType (wrong type): want *primitive.TimeoutError via errors.As, got %T: %v",
+			"expectFrameOfType: want *primitive.TimeoutError, got %T: %v",
 			err,
 			err,
 		)

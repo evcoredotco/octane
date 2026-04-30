@@ -8,7 +8,7 @@
 
 package runner
 
-import "sort"
+import "slices"
 
 // nodeStatus is the internal execution state of a single DAG node
 // within the scheduler's three-set model (ADR 0019).
@@ -107,7 +107,7 @@ func (ss *schedulerState) eligibleNodes() []string {
 		}
 	}
 
-	sort.Strings(eligible)
+	slices.Sort(eligible)
 
 	return eligible
 }

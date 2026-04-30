@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
-
 	"github.com/evcoreco/octane/pkg/keywords/registry"
+	"github.com/spf13/cobra"
 )
 
 //nolint:exhaustruct // cobra.Command has many optional fields
@@ -32,8 +31,8 @@ Each line is formatted as:
 var keywordsResolveCmd = &cobra.Command{
 	Use:   "resolve <step-text>",
 	Short: "Resolve a step text to a keyword pattern",
-	Long: `resolve matches <step-text> against the registered keywords and prints
-the matched pattern and extracted arguments.
+	Long: `resolve matches <step-text> against registered keywords
+and prints the matched pattern and extracted arguments.
 
 If no keyword matches, the command prints a "no match" message with
 the closest suggestion (if any) and exits 0.`,

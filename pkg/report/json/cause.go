@@ -9,6 +9,10 @@ import (
 	"github.com/evcoreco/octane/pkg/report/model"
 )
 
+// emptyCauseChain is the minimum chain length that triggers defensive
+// fallback logic in walkCauseChain.
+const emptyCauseChain = 0
+
 // walkCauseChain returns the cause chain for a story. When the
 // model.StoryReport already has a non-empty CauseChain it is returned
 // as-is. When the chain is empty but a Cause is set, a single-element
@@ -20,7 +24,7 @@ import (
 // other code paths (e.g. tests constructing StoryResult by hand) may
 // omit CauseChain.
 func walkCauseChain(src model.StoryReport) []string {
-	if len(src.CauseChain) > 0 {
+	if len(src.CauseChain) > emptyCauseChain {
 		return src.CauseChain
 	}
 

@@ -33,6 +33,8 @@ func TestLexer(t *testing.T) {
 		litBut         = "But"
 		litIndent      = "    " // exactly four spaces
 		litColon       = ":"
+		litEmpty       = "" // empty Literal field sentinel
+		lineTwo        = 2  // second line in two-line inputs
 	)
 
 	tests := []struct {
@@ -275,7 +277,7 @@ func TestLexer(t *testing.T) {
 			name:  "eof_empty_input",
 			input: "",
 			want: []lex.Token{
-				{Kind: lex.TokenEOF, Literal: "", Line: 0, Column: 0},
+				{Kind: lex.TokenEOF, Literal: litEmpty, Line: 0, Column: 0},
 			},
 		},
 
@@ -309,7 +311,7 @@ func TestLexer(t *testing.T) {
 			name:  "wrong_indent_width_two_spaces",
 			input: "  Given something\n",
 			want: []lex.Token{
-				{Kind: lex.TokenIllegal, Literal: "", Line: 0, Column: 0},
+				{Kind: lex.TokenIllegal, Literal: litEmpty, Line: 0, Column: 0},
 			},
 		},
 		{
@@ -377,16 +379,16 @@ func TestLexer(t *testing.T) {
 			name:  "meta_entry_queue_order",
 			input: "    Spec-Ref: TC-001\n",
 			want: []lex.Token{
-				{Kind: lex.TokenIndent, Literal: "", Line: 0, Column: 0},
+				{Kind: lex.TokenIndent, Literal: litEmpty, Line: 0, Column: 0},
 				{
 					Kind:    lex.TokenMetaKey,
 					Literal: "Spec-Ref",
 					Line:    0,
 					Column:  0,
 				},
-				{Kind: lex.TokenColon, Literal: "", Line: 0, Column: 0},
+				{Kind: lex.TokenColon, Literal: litEmpty, Line: 0, Column: 0},
 				{Kind: lex.TokenValue, Literal: "TC-001", Line: 0, Column: 0},
-				{Kind: lex.TokenEOF, Literal: "", Line: 0, Column: 0},
+				{Kind: lex.TokenEOF, Literal: litEmpty, Line: 0, Column: 0},
 			},
 		},
 
@@ -399,8 +401,8 @@ func TestLexer(t *testing.T) {
 			name:  "line_tracking_second_line",
 			input: "Meta\nBackground\n",
 			want: []lex.Token{
-				{Kind: lex.TokenMeta, Literal: "", Line: 1, Column: 1},
-				{Kind: lex.TokenBackground, Literal: "", Line: 2, Column: 1},
+				{Kind: lex.TokenMeta, Literal: litEmpty, Line: 1, Column: 1},
+				{Kind: lex.TokenBackground, Literal: litEmpty, Line: lineTwo, Column: 1},
 			},
 		},
 
@@ -414,8 +416,8 @@ func TestLexer(t *testing.T) {
 			name:  "blank_lines_skipped",
 			input: "Meta\n\nBackground\n",
 			want: []lex.Token{
-				{Kind: lex.TokenMeta, Literal: "", Line: 0, Column: 0},
-				{Kind: lex.TokenBackground, Literal: "", Line: 0, Column: 0},
+				{Kind: lex.TokenMeta, Literal: litEmpty, Line: 0, Column: 0},
+				{Kind: lex.TokenBackground, Literal: litEmpty, Line: 0, Column: 0},
 			},
 		},
 
@@ -429,9 +431,9 @@ func TestLexer(t *testing.T) {
 			name:  "step_keyword_no_text",
 			input: "    Given\n",
 			want: []lex.Token{
-				{Kind: lex.TokenIndent, Literal: "", Line: 0, Column: 0},
-				{Kind: lex.TokenGiven, Literal: "", Line: 0, Column: 0},
-				{Kind: lex.TokenText, Literal: "", Line: 0, Column: 0},
+				{Kind: lex.TokenIndent, Literal: litEmpty, Line: 0, Column: 0},
+				{Kind: lex.TokenGiven, Literal: litEmpty, Line: 0, Column: 0},
+				{Kind: lex.TokenText, Literal: litEmpty, Line: 0, Column: 0},
 			},
 		},
 
@@ -445,9 +447,9 @@ func TestLexer(t *testing.T) {
 			name:  "meta_value_leading_space_trimmed",
 			input: "    Tags:   boot  \n",
 			want: []lex.Token{
-				{Kind: lex.TokenIndent, Literal: "", Line: 0, Column: 0},
+				{Kind: lex.TokenIndent, Literal: litEmpty, Line: 0, Column: 0},
 				{Kind: lex.TokenMetaKey, Literal: "Tags", Line: 0, Column: 0},
-				{Kind: lex.TokenColon, Literal: "", Line: 0, Column: 0},
+				{Kind: lex.TokenColon, Literal: litEmpty, Line: 0, Column: 0},
 				{Kind: lex.TokenValue, Literal: "boot", Line: 0, Column: 0},
 			},
 		},
@@ -462,9 +464,9 @@ func TestLexer(t *testing.T) {
 			name:  "eof_repeated",
 			input: "",
 			want: []lex.Token{
-				{Kind: lex.TokenEOF, Literal: "", Line: 0, Column: 0},
-				{Kind: lex.TokenEOF, Literal: "", Line: 0, Column: 0},
-				{Kind: lex.TokenEOF, Literal: "", Line: 0, Column: 0},
+				{Kind: lex.TokenEOF, Literal: litEmpty, Line: 0, Column: 0},
+				{Kind: lex.TokenEOF, Literal: litEmpty, Line: 0, Column: 0},
+				{Kind: lex.TokenEOF, Literal: litEmpty, Line: 0, Column: 0},
 			},
 		},
 	}
@@ -567,8 +569,9 @@ func TestLexerPeek(t *testing.T) {
 	next := lexer.Next()
 
 	if next.Kind == first.Kind && next.Literal == first.Literal {
-		t.Errorf(
-			"Next() returned the same token twice; Peek appears to have consumed ahead",
+		t.Error(
+			"Next() returned the same token twice;" +
+				" Peek appears to have consumed ahead",
 		)
 	}
 }

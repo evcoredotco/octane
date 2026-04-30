@@ -1,5 +1,3 @@
-// Package story — see parse.go for package documentation.
-
 package story
 
 import (

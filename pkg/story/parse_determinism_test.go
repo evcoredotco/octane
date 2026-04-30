@@ -12,6 +12,11 @@ import (
 	"github.com/evcoreco/octane/pkg/story/internal/serialize"
 )
 
+const (
+	noStories    = 0
+	firstIterIdx = 1
+)
+
 // TestDeterminism parses every .story file under scenarios/ 1 000 times and
 // asserts that the JSON-serialized AST is byte-identical on every iteration.
 // This covers AC5: the parser must produce the same output for the same input
@@ -41,7 +46,7 @@ func TestDeterminism(t *testing.T) {
 		t.Fatalf("walking scenarios/: %v", err)
 	}
 
-	if len(storyPaths) == 0 {
+	if len(storyPaths) == noStories {
 		t.Fatal("no .story files found under scenarios/")
 	}
 
@@ -59,9 +64,7 @@ func TestDeterminism(t *testing.T) {
 func runDeterminismCheck(t *testing.T, path string) {
 	t.Helper()
 
-	src, readErr := os.ReadFile(
-		path,
-	)
+	src, readErr := os.ReadFile(filepath.Clean(path))
 	if readErr != nil {
 		t.Fatalf("reading %s: %v", path, readErr)
 	}
@@ -78,7 +81,7 @@ func runDeterminismCheck(t *testing.T, path string) {
 
 	const iterations = 1000
 
-	for idx := 1; idx < iterations; idx++ {
+	for idx := firstIterIdx; idx < iterations; idx++ {
 		assertIterationMatch(t, path, src, ref, idx)
 	}
 }

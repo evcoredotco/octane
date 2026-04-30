@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -42,7 +43,5 @@ func Load(path string) (Config, error) {
 // --config flag and is therefore operator-controlled; the gosec G304
 // warning is intentionally suppressed.
 func readConfigFile(path string) ([]byte, error) {
-	return os.ReadFile(
-		path,
-	)
+	return os.ReadFile(filepath.Clean(path))
 }

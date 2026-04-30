@@ -11,7 +11,8 @@ import (
 
 func init() {
 	registry.Register(api.Keyword{
-		Pattern:     "expect any frame on station {station:string} within {timeout:duration}",
+		Pattern: "expect any frame on station" +
+			" {station:string} within {timeout:duration}",
 		Layer:       api.LayerPrimitive,
 		OCPPVersion: 0,
 		Func:        expectAnyFrame,

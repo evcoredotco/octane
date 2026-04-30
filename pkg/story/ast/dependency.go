@@ -1,5 +1,3 @@
-// Package ast — see ast.go for package documentation.
-
 package ast
 
 // Scope controls how many times a prerequisite story runs relative to its

@@ -1,5 +1,3 @@
-// Package story — see parse.go for package documentation.
-
 package story
 
 import (
@@ -9,6 +7,10 @@ import (
 	"github.com/evcoreco/octane/pkg/story/ast"
 	"github.com/evcoreco/octane/pkg/story/lex"
 )
+
+// indentedColumn is the minimum column value that indicates a token
+// was preceded by at least one space of indentation.
+const indentedColumn = 1
 
 // indentSize is the minimum number of leading spaces for an indented step.
 const indentSize = 4
@@ -181,7 +183,7 @@ func isIndentToken(tok lex.Token) bool {
 // at column >= 2 without a preceding TokenIndent. Any TokenIllegal whose
 // column is > 1 (i.e. it was indented) is treated as a bare action step.
 func isBareStepToken(tok lex.Token) bool {
-	return tok.Kind == lex.TokenIllegal && tok.Column > 1
+	return tok.Kind == lex.TokenIllegal && tok.Column > indentedColumn
 }
 
 // parseSteps collects step lines while the next token is an indent of at

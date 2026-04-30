@@ -10,6 +10,9 @@ import (
 	"time"
 )
 
+// noMaxAge indicates that age-based pruning is disabled (maxAge == 0).
+const noMaxAge = 0
+
 // Prune removes cache entries that have exceeded their maximum age
 // or whose TTL has expired, then removes any empty fanout
 // directories under <dir>/results/.
@@ -138,7 +141,7 @@ func shouldPrune(entryDir string, now time.Time, maxAge time.Duration) bool {
 	}
 
 	// Age-based pruning: entry is older than maxAge.
-	if maxAge > 0 && now.After(env.WrittenAt.Add(maxAge)) {
+	if maxAge > noMaxAge && now.After(env.WrittenAt.Add(maxAge)) {
 		return true
 	}
 

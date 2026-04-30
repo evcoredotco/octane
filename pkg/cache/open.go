@@ -10,10 +10,15 @@ import (
 	"github.com/evcoreco/octane/pkg/engine/clock"
 )
 
-// schemaVersion is the current schema version written into
-// version.json by [Open]. Readers compare this value against
-// the supported range to detect incompatible cache directories.
-const schemaVersion = 1
+const (
+	// schemaVersion is the current schema version written into
+	// version.json by [Open]. Readers compare this value against
+	// the supported range to detect incompatible cache directories.
+	schemaVersion = 1
+
+	// cacheDirPerm is the permission bits for cache sub-directories.
+	cacheDirPerm = 0o750
+)
 
 // versionStamp is the structure written to version.json at
 // cache-open time. It lets operators and future OCTANE versions
@@ -49,7 +54,7 @@ func Open(dir string) (Cache, error) {
 	}
 
 	for _, sub := range subDirs {
-		err := os.MkdirAll(sub, 0o750)
+		err := os.MkdirAll(sub, cacheDirPerm)
 		if err != nil {
 			return nil, fmt.Errorf(
 				"cache: create directory %q: %w",
@@ -79,7 +84,7 @@ func OpenWithClock(dir string, clk clock.Clock) (Cache, error) {
 	}
 
 	for _, sub := range subDirs {
-		err := os.MkdirAll(sub, 0o750)
+		err := os.MkdirAll(sub, cacheDirPerm)
 		if err != nil {
 			return nil, fmt.Errorf(
 				"cache: create directory %q: %w",

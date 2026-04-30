@@ -1,20 +1,26 @@
 package registry
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
-	"sort"
+	"slices"
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
 	"github.com/evcoreco/octane/pkg/keywords/registry/internal/levenshtein"
 	"github.com/evcoreco/octane/pkg/keywords/registry/internal/pattern"
 )
 
-// maxLevenshteinSuggestion is the inclusive upper bound on the
-// Levenshtein edit distance for a pattern to be included as a
-// "did you mean?" suggestion in [NoMatchError.Closest]. Patterns
-// farther than this distance are not surfaced.
-const maxLevenshteinSuggestion = 5
+const (
+	// maxLevenshteinSuggestion is the inclusive upper bound on the
+	// Levenshtein edit distance for a pattern to be included as a
+	// "did you mean?" suggestion in [NoMatchError.Closest]. Patterns
+	// farther than this distance are not surfaced.
+	maxLevenshteinSuggestion = 5
+
+	// noSuggestion is returned by closestPattern when no close match is found.
+	noSuggestion = ""
+)
 
 // Match is the successful result of a [Resolve] call. It pairs the
 // matched [api.Keyword] with the bound [api.Args] whose values have
@@ -99,17 +105,14 @@ func eligibleCandidates(
 		out = append(out, keyword)
 	}
 
-	sort.SliceStable(out, func(left, right int) bool {
-		leftKeyword := out[left]
-		rightKeyword := out[right]
-
-		if leftKeyword.Layer != rightKeyword.Layer {
+	slices.SortStableFunc(out, func(left, right api.Keyword) int {
+		if left.Layer != right.Layer {
 			// Higher Layer value wins (domain=2 before primitive=1).
-			return leftKeyword.Layer > rightKeyword.Layer
+			return cmp.Compare(right.Layer, left.Layer)
 		}
 
 		// Longer patterns are more specific; try them first.
-		return len(leftKeyword.Pattern) > len(rightKeyword.Pattern)
+		return cmp.Compare(len(right.Pattern), len(left.Pattern))
 	})
 
 	return out
@@ -206,12 +209,12 @@ func closestPattern(step string, all []api.Keyword) string {
 	}
 
 	closest := levenshtein.Closest(step, patterns)
-	if closest == "" {
-		return ""
+	if closest == noSuggestion {
+		return noSuggestion
 	}
 
 	if levenshtein.Distance(step, closest) > maxLevenshteinSuggestion {
-		return ""
+		return noSuggestion
 	}
 
 	return closest

@@ -19,9 +19,10 @@
 package registry
 
 import (
+	"cmp"
 	"fmt"
 	"runtime"
-	"sort"
+	"slices"
 	"sync"
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
@@ -56,7 +57,7 @@ type registryKey struct {
 
 // global is the package-level registry state. It is never replaced;
 // only its fields are mutated under mu.
-var global = struct { //nolint:exhaustruct // zero value is correct initial state
+var global = struct { //nolint:exhaustruct // zero value correct
 	mu      sync.RWMutex
 	entries []entry
 	index   map[registryKey]string // maps key → formatted caller
@@ -130,19 +131,16 @@ func All() []api.Keyword {
 		result[idx] = ent.keyword
 	}
 
-	sort.SliceStable(result, func(left, right int) bool {
-		lkw := result[left]
-		rkw := result[right]
-
-		if lkw.Layer != rkw.Layer {
-			return lkw.Layer < rkw.Layer
+	slices.SortStableFunc(result, func(left, right api.Keyword) int {
+		if left.Layer != right.Layer {
+			return cmp.Compare(left.Layer, right.Layer)
 		}
 
-		if lkw.OCPPVersion != rkw.OCPPVersion {
-			return lkw.OCPPVersion < rkw.OCPPVersion
+		if left.OCPPVersion != right.OCPPVersion {
+			return cmp.Compare(left.OCPPVersion, right.OCPPVersion)
 		}
 
-		return lkw.Pattern < rkw.Pattern
+		return cmp.Compare(left.Pattern, right.Pattern)
 	})
 
 	return result

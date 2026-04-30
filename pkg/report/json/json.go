@@ -19,9 +19,19 @@ import (
 	"github.com/evcoreco/octane/pkg/runner"
 )
 
-// outputFileName is the name of the JSON report file written into the
-// output directory.
-const outputFileName = "octane.json"
+const (
+	// outputFileName is the name of the JSON report file written into the
+	// output directory.
+	outputFileName = "octane.json"
+
+	// dirPerm is the permission bits for the output directory created by
+	// WriteJSON.
+	dirPerm = 0o700
+
+	// filePerm is the permission bits for the JSON report file written by
+	// WriteJSON.
+	filePerm = 0o600
+)
 
 // jsonReport is the top-level JSON serialization struct for the report.
 type jsonReport struct {
@@ -87,14 +97,14 @@ func WriteJSON(
 		return fmt.Errorf("report: marshal JSON: %w", err)
 	}
 
-	err = os.MkdirAll(dir, 0o700)
+	err = os.MkdirAll(dir, dirPerm)
 	if err != nil {
 		return fmt.Errorf("report: create output dir: %w", err)
 	}
 
 	outPath := filepath.Join(dir, outputFileName)
 
-	err = os.WriteFile(outPath, data, 0o600)
+	err = os.WriteFile(outPath, data, filePerm)
 	if err != nil {
 		return fmt.Errorf("report: write output file: %w", err)
 	}

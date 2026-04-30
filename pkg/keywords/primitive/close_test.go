@@ -174,7 +174,7 @@ func (s *closeErrorStation) Expect(ctx context.Context) ([]any, error) {
 	return frame, nil
 }
 
-func (s *closeErrorStation) Close() error {
+func (*closeErrorStation) Close() error {
 	return errCloseStub
 }
 

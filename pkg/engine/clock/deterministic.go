@@ -2,6 +2,7 @@ package clock
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 )
@@ -60,7 +61,7 @@ func (c *DeterministicClock) Sleep(ctx context.Context, d time.Duration) error {
 	case <-ctx.Done():
 		c.deregister(wtr)
 
-		return ctx.Err()
+		return fmt.Errorf("clock: context cancelled: %w", ctx.Err())
 	}
 }
 

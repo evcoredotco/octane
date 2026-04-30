@@ -28,6 +28,15 @@ const (
 	// the reader goroutine from blocking on a single slow Expect call while
 	// still giving callers a window to drain.
 	inboundBufSize = 64
+
+	// noMaxBytes indicates that MaxFrameBytes is unset (use default).
+	noMaxBytes = 0
+
+	// noTimeout indicates that HandshakeTimeout is unset (use default).
+	noTimeout = 0
+
+	// noSubprotocols indicates that the subprotocols list is empty.
+	noSubprotocols = 0
 )
 
 // allowedSchemes lists the URL schemes accepted by Dial.
@@ -72,23 +81,22 @@ func Dial(
 	tlsCfg := buildTLSConfig(safeURL, opts)
 	maxBytes := opts.MaxFrameBytes
 
-	if maxBytes <= 0 {
+	if maxBytes <= noMaxBytes {
 		maxBytes = defaultMaxFrameBytes
 	}
 
 	timeout := opts.HandshakeTimeout
-	if timeout == 0 {
+	if timeout == noTimeout {
 		timeout = defaultHandshakeTimeout
 	}
 
 	dialCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	wsOpts := &websocket.DialOptions{
-		Subprotocols:    opts.Subprotocols,
-		CompressionMode: websocket.CompressionDisabled,
-		HTTPClient:      buildHTTPClient(tlsCfg),
-	}
+	wsOpts := new(websocket.DialOptions)
+	wsOpts.Subprotocols = opts.Subprotocols
+	wsOpts.CompressionMode = websocket.CompressionDisabled
+	wsOpts.HTTPClient = buildHTTPClient(tlsCfg)
 
 	conn, resp, err := websocket.Dial(dialCtx, rawURL, wsOpts)
 	if resp != nil && resp.Body != nil {
@@ -128,7 +136,7 @@ func validateSubprotocol(
 	conn *websocket.Conn,
 	subprotocols []string,
 ) error {
-	if len(subprotocols) == 0 {
+	if len(subprotocols) == noSubprotocols {
 		return nil
 	}
 
@@ -160,7 +168,7 @@ func buildTLSConfig(safeURL string, opts DialOptions) *tls.Config {
 
 	base := opts.TLSConfig
 	if base == nil {
-		base = &tls.Config{}
+		base = new(tls.Config)
 	}
 
 	cfg := base.Clone()
@@ -192,11 +200,13 @@ func buildHTTPClient(tlsCfg *tls.Config) *http.Client {
 		return nil
 	}
 
-	return &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: tlsCfg,
-		},
-	}
+	transport := new(http.Transport)
+	transport.TLSClientConfig = tlsCfg
+
+	client := new(http.Client)
+	client.Transport = transport
+
+	return client
 }
 
 // wrapDialError converts a raw dial error into a typed transport error where

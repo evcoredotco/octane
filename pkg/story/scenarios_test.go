@@ -21,21 +21,26 @@ import (
 // TestScenariosGolden regenerates golden fixture files instead of comparing.
 var update = flag.Bool("update", false, "regenerate golden fixture files")
 
+const (
+	scenariosDir  = "scenarios"
+	parentDir     = ".."
+	noFiles       = 0
+	goldenDirPerm = 0o750
+)
+
 // TestScenariosParseClean asserts that every .story file under scenarios/
 // parses without error (AC8). Failures here are blockers: they indicate
 // either a broken story file or a parser regression.
 func TestScenariosParseClean(t *testing.T) {
 	t.Parallel()
 
-	paths := collectStoryPaths(t, filepath.Join("..", "..", "scenarios"))
+	paths := collectStoryPaths(t, filepath.Join(parentDir, parentDir, scenariosDir))
 
 	for _, path := range paths {
 		t.Run(filepath.ToSlash(path), func(t *testing.T) {
 			t.Parallel()
 
-			src, err := os.ReadFile(
-				path,
-			)
+			src, err := os.ReadFile(filepath.Clean(path))
 			if err != nil {
 				t.Fatalf("read %s: %v", path, err)
 			}
@@ -57,8 +62,8 @@ func TestScenariosParseClean(t *testing.T) {
 func TestScenariosGolden(t *testing.T) {
 	t.Parallel()
 
-	scenariosRoot := filepath.Join("..", "..", "scenarios")
-	goldenRoot := filepath.Join("testdata", "scenarios")
+	scenariosRoot := filepath.Join(parentDir, parentDir, scenariosDir)
+	goldenRoot := filepath.Join("testdata", scenariosDir)
 
 	paths := collectStoryPaths(t, scenariosRoot)
 
@@ -81,9 +86,7 @@ func runGoldenCheck(
 ) {
 	t.Helper()
 
-	src, err := os.ReadFile(
-		path,
-	)
+	src, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		t.Fatalf("read %s: %v", path, err)
 	}
@@ -111,9 +114,7 @@ func runGoldenCheck(
 		return
 	}
 
-	existing, readErr := os.ReadFile(
-		goldenPath,
-	)
+	existing, readErr := os.ReadFile(filepath.Clean(goldenPath))
 	if os.IsNotExist(readErr) {
 		// First-run bootstrap: write the golden file.
 		writeGolden(t, goldenPath, got)
@@ -161,7 +162,7 @@ func collectStoryPaths(t *testing.T, root string) []string {
 		t.Fatalf("walk %s: %v", root, err)
 	}
 
-	if len(paths) == 0 {
+	if len(paths) == noFiles {
 		t.Fatalf("no .story files found under %s", root)
 	}
 
@@ -173,16 +174,12 @@ func collectStoryPaths(t *testing.T, root string) []string {
 func writeGolden(t *testing.T, path string, data []byte) {
 	t.Helper()
 
-	err := os.MkdirAll(filepath.Dir(path), 0o750)
+	err := os.MkdirAll(filepath.Dir(path), goldenDirPerm)
 	if err != nil {
 		t.Fatalf("mkdir %s: %v", filepath.Dir(path), err)
 	}
 
-	err = os.WriteFile(
-		path,
-		data,
-		0o600,
-	)
+	err = os.WriteFile(filepath.Clean(path), data, 0o600)
 	if err != nil {
 		t.Fatalf("write golden %s: %v", path, err)
 	}

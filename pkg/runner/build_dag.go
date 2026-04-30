@@ -9,6 +9,7 @@
 package runner
 
 import (
+	"crypto/sha256"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -359,18 +360,16 @@ func inShardFilter(testID string, shardIndex, shardTotal int) bool {
 	digest := sha256Sum(testID)
 	shardNum := binary.BigEndian.Uint64(digest[:8])
 
-	// Modulo result is in [0, shardTotal), which fits in int since
-	// shardTotal is a positive int. The conversion is safe.
-	assignedShard := int(
-		shardNum % uint64(shardTotal),
-	)
+	// Compare in uint64 space to avoid int overflow on 32-bit systems.
+	// shardTotal and shardIndex are validated non-negative ints by the caller.
+	assignedShardU64 := shardNum % safeUint64(shardTotal)
 
-	return assignedShard == shardIndex
+	return assignedShardU64 == safeUint64(shardIndex)
 }
 
 // sha256Sum returns the SHA-256 digest of text.
 // Separated from inShardFilter to keep cyclomatic complexity low.
-func sha256Sum(text string) [32]byte {
+func sha256Sum(text string) [sha256.Size]byte {
 	return sha256Of([]byte(text))
 }
 

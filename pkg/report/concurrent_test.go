@@ -41,9 +41,7 @@ func validateRunIDEntry(
 
 	reportPath := filepath.Join(sharedDir, entry.Name(), "octane.json")
 
-	data, readErr := os.ReadFile(
-		reportPath,
-	)
+	data, readErr := os.ReadFile(filepath.Clean(reportPath))
 	if readErr != nil {
 		t.Errorf("reading %s: %v", reportPath, readErr)
 

@@ -2,6 +2,7 @@ package clock
 
 import (
 	"context"
+	"fmt"
 	"time"
 )
 
@@ -28,7 +29,7 @@ func (*realClock) Sleep(ctx context.Context, d time.Duration) error {
 	case <-timer.C:
 		return nil
 	case <-ctx.Done():
-		return ctx.Err()
+		return fmt.Errorf("clock: context cancelled: %w", ctx.Err())
 	}
 }
 

@@ -2,8 +2,13 @@ package config
 
 import "time"
 
-// defaultLockTimeoutSeconds is the default lock timeout in seconds.
-const defaultLockTimeoutSeconds = 60
+const (
+	// defaultLockTimeoutSeconds is the default lock timeout in seconds.
+	defaultLockTimeoutSeconds = 60
+
+	// defaultMaxParallel is the default number of parallel story workers.
+	defaultMaxParallel = 1
+)
 
 // Config is the authoritative runtime configuration for the octane
 // CLI. It is populated by combining defaults, YAML file values,
@@ -63,7 +68,7 @@ func Default() Config {
 	return Config{
 		StoriesDir:         "scenarios",
 		CacheDir:           "",
-		MaxParallel:        1,
+		MaxParallel:        defaultMaxParallel,
 		OCPPVersion:        "",
 		LockTimeout:        defaultLockTimeoutSeconds * time.Second,
 		InsecureSkipVerify: false,

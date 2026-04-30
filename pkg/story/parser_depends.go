@@ -18,6 +18,9 @@ const subIndentMinLen = 4
 // emptyStr is a named empty string required by the add-constant rule.
 const emptyStr = ""
 
+// noEntryIdx is the sentinel value meaning no Depends entry has been started.
+const noEntryIdx = -1
+
 // isSubIndent returns true when tok is an indent token whose literal
 // is longer than the standard four-space top-level indent.
 func isSubIndent(tok lex.Token) bool {
@@ -69,7 +72,7 @@ func (p *parser) parseDepends() ([]ast.Dependency, error) {
 		entryIndex int
 	)
 
-	entryIndex = -1
+	entryIndex = noEntryIdx
 
 	for isSubIndent(p.lex.Peek()) {
 		_ = p.lex.Next() // consume the sub-indent token
@@ -155,6 +158,7 @@ func (p *parser) parseDepends() ([]ast.Dependency, error) {
 
 // consumeColonValue consumes a TokenColon and then a TokenValue from the
 // stream and returns both tokens. It returns a typed error on any mismatch.
+// The first return is the colon token, the second is the value token.
 func (p *parser) consumeColonValue(
 	keyTok lex.Token,
 	entryIndex int,

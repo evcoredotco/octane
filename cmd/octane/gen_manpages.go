@@ -8,10 +8,18 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
+)
 
-	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
+const (
+	// defaultManSection is the default man page section number.
+	defaultManSection = 1
+
+	// outDirPerm is the permission mode for the man page output directory.
+	// 0o755 is intentional: man pages are public documentation.
+	outDirPerm = 0o755
 )
 
 // genManPagesFlags holds the parsed flag values for the gen-manpages
@@ -35,7 +43,7 @@ func init() {
 	flags.IntVar(
 		&genManPagesFlags.section,
 		"section",
-		1,
+		defaultManSection,
 		"man section number (currently only section 1 is generated from cobra)",
 	)
 
@@ -63,11 +71,7 @@ func runGenManPages(_ *cobra.Command, _ []string) error {
 	outDir := genManPagesFlags.outDir
 	section := genManPagesFlags.section
 
-	//nolint:gosec // G301: outDir is operator-supplied; 0755 is intentional for public man directories
-	err := os.MkdirAll(
-		outDir,
-		0o755,
-	)
+	err := os.MkdirAll(outDir, outDirPerm)
 	if err != nil {
 		dieErrf(
 			exitcode.ToolError,
@@ -79,10 +83,9 @@ func runGenManPages(_ *cobra.Command, _ []string) error {
 		return nil
 	}
 
-	header := &doc.GenManHeader{ //nolint:exhaustruct // Date/Source/Manual are optional; cobra fills them
-		Title:   "OCTANE",
-		Section: strconv.Itoa(section),
-	}
+	header := new(doc.GenManHeader)
+	header.Title = "OCTANE"
+	header.Section = strconv.Itoa(section)
 
 	err = doc.GenManTree(rootCmd, header, outDir)
 	if err != nil {

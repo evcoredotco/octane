@@ -14,7 +14,8 @@ import (
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
 	"github.com/evcoreco/octane/pkg/keywords/api/mock"
-	_ "github.com/evcoreco/octane/pkg/keywords/primitive" // registers primitive keywords
+	// Side-effect: registers primitive keywords at init time.
+	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
 )
 
 // ── Named constants ───────────────────────────────────────────────────────────
@@ -47,7 +48,7 @@ func Test_primitive_assertConnectionOpen_Passes(t *testing.T) {
 		"station": handleStatus,
 	})
 
-	// Invariant: the is-open keyword must return nil when the connection is open.
+	// Invariant: is-open must return nil when the connection is open.
 	err := keywordFunc(context.Background(), state, args)
 	if err != nil {
 		t.Errorf(
@@ -80,9 +81,7 @@ func Test_primitive_assertConnectionOpen_Fails(t *testing.T) {
 
 	// Invariant: the is-open keyword must fail when the connection is closed.
 	if err == nil {
-		t.Error(
-			"assertConnectionOpen on closed station: want non-nil error, got nil",
-		)
+		t.Error("assertConnectionOpen on closed station: want non-nil error")
 	}
 }
 
@@ -137,9 +136,7 @@ func Test_primitive_assertConnectionClosed_Fails(t *testing.T) {
 
 	// Invariant: the is-closed keyword must fail when the connection is open.
 	if err == nil {
-		t.Error(
-			"assertConnectionClosed on open station: want non-nil error, got nil",
-		)
+		t.Error("assertConnectionClosed on open station: want non-nil error")
 	}
 
 	_ = station.Close()

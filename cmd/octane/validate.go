@@ -6,10 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/spf13/cobra"
-
 	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
 	"github.com/evcoreco/octane/pkg/story"
+	"github.com/spf13/cobra"
 )
 
 //nolint:exhaustruct // cobra.Command has many optional fields
@@ -91,12 +90,9 @@ func validateStories(_ *cobra.Command, storyPaths []string) error {
 }
 
 // readStoryFile reads the story file at path. The path originates
-// from CLI arguments and is therefore operator-controlled; the gosec
-// G304 warning is intentionally suppressed.
+// from CLI arguments and is therefore operator-controlled.
 func readStoryFile(path string) ([]byte, error) {
-	return os.ReadFile(
-		path,
-	)
+	return os.ReadFile(filepath.Clean(path))
 }
 
 // collectStoryFiles recursively collects all .story file paths under

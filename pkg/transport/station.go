@@ -17,17 +17,16 @@ import (
 // connection is closed or an unrecoverable read error occurs. All decoded
 // frames are queued on inbound for consumption by Expect.
 //
-// readCancel cancels the reader goroutine's context so that Close() gives
-// it a fast-teardown path under test (where the peer may stop sending
-// without closing the TCP connection).
+// The reader goroutine's context is derived from the caller's context;
+// closing the WebSocket connection causes conn.Read to return an error,
+// which terminates the goroutine and triggers the deferred cancel.
 type stationHandle struct {
-	conn       *websocket.Conn
-	inbound    chan []any
-	closed     chan struct{}
-	once       sync.Once
-	readCancel context.CancelFunc
-	readErr    atomic.Pointer[error]
-	maxBytes   int64
+	conn     *websocket.Conn
+	inbound  chan []any
+	closed   chan struct{}
+	once     sync.Once
+	readErr  atomic.Pointer[error]
+	maxBytes int64
 }
 
 // newStationHandle allocates a stationHandle, starts the reader goroutine,
@@ -44,16 +43,19 @@ func newStationHandle(
 	readerCtx, cancel := context.WithCancel(ctx)
 
 	handle := &stationHandle{
-		conn:       conn,
-		inbound:    make(chan []any, inboundBufSize),
-		closed:     make(chan struct{}),
-		once:       sync.Once{},
-		readCancel: cancel,
-		readErr:    atomic.Pointer[error]{},
-		maxBytes:   maxBytes,
+		conn:     conn,
+		inbound:  make(chan []any, inboundBufSize),
+		closed:   make(chan struct{}),
+		once:     sync.Once{},
+		readErr:  atomic.Pointer[error]{},
+		maxBytes: maxBytes,
 	}
 
-	go handle.readLoop(readerCtx)
+	go func() {
+		defer cancel()
+
+		handle.readLoop(readerCtx)
+	}()
 
 	return handle
 }
@@ -126,7 +128,6 @@ func (sta *stationHandle) Expect(ctx context.Context) ([]any, error) {
 func (sta *stationHandle) Close() error {
 	sta.once.Do(func() {
 		close(sta.closed)
-		sta.readCancel()
 		_ = sta.conn.Close(websocket.StatusNormalClosure, "")
 	})
 

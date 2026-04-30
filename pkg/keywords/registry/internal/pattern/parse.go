@@ -52,6 +52,10 @@ const zeroIdx = 0
 // a byte is not found.
 const notFound = -1
 
+// bracketWidth is the character width of a single brace character
+// '{' or '}', used for inclusive/exclusive slice bounds.
+const bracketWidth = 1
+
 // String returns a human-readable label for the Kind value.
 func (k Kind) String() string {
 	switch k {
@@ -212,7 +216,7 @@ func Parse(pattern string) ([]Token, error) {
 			)
 		}
 
-		raw := remaining[:closeIdx+1]
+		raw := remaining[:closeIdx+bracketWidth]
 
 		tok, err := parsePlaceholder(raw, pattern)
 		if err != nil {
@@ -221,7 +225,7 @@ func Parse(pattern string) ([]Token, error) {
 
 		tokens = append(tokens, tok)
 
-		remaining = remaining[closeIdx+1:]
+		remaining = remaining[closeIdx+bracketWidth:]
 	}
 
 	if len(tokens) == zeroIdx {
@@ -249,7 +253,7 @@ func makeLiteral(raw string) Token {
 // used only to produce human-readable error messages.
 func parsePlaceholder(raw, fullPattern string) (Token, error) {
 	// raw is guaranteed to start with '{' and end with '}'.
-	inner := raw[1 : len(raw)-1]
+	inner := raw[bracketWidth : len(raw)-bracketWidth]
 
 	if inner == emptyString {
 		return Token{}, fmt.Errorf(

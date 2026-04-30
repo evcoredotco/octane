@@ -27,11 +27,15 @@ import (
 // ── Named constants ───────────────────────────────────────────────────────────
 
 const (
+	// fixturePrefix is the shared prefix for precedence fixture patterns.
+	// The "fixture:" prefix makes them globally unique.
+	fixturePrefix = "fixture: domain keyword beats primitive for ocpp16 step "
+
 	// patternPrecedenceFixture is the shared step pattern used for both the
 	// fixture domain keyword and the fixture primitive keyword.  The prefix
 	// "fixture:" makes it globally unique so it cannot collide with any
 	// production-registered keyword and avoids needing registry.reset().
-	patternPrecedenceFixture = "fixture: domain keyword beats primitive for ocpp16 step {n:int}"
+	patternPrecedenceFixture = fixturePrefix + "{n:int}"
 
 	// valueFixtureN is the int value bound to the {n:int} placeholder in the
 	// step text exercised by the precedence tests.
@@ -39,7 +43,11 @@ const (
 
 	// stepPrecedenceFixture is the concrete step text that resolves against
 	// patternPrecedenceFixture.
-	stepPrecedenceFixture = "fixture: domain keyword beats primitive for ocpp16 step 42"
+	stepPrecedenceFixture = fixturePrefix + "42"
+
+	// msgResolveUnexpectedErr is the message format for unexpected Resolve
+	// errors in precedence tests.
+	msgResolveUnexpectedErr = "registry.Resolve: unexpected error: %v"
 )
 
 // ── init: register fixture keywords ──────────────────────────────────────────
@@ -85,7 +93,7 @@ func Test_primitive_precedence_domainWinsForOCPP16(t *testing.T) {
 	// domain keyword and a primitive keyword match the same step text (AC7).
 	match, err := registry.Resolve(stepPrecedenceFixture, api.OCPP16)
 	if err != nil {
-		t.Fatalf("registry.Resolve: unexpected error: %v", err)
+		t.Fatalf(msgResolveUnexpectedErr, err)
 	}
 
 	if match.Keyword.Layer != api.LayerDomain {
@@ -113,7 +121,7 @@ func Test_primitive_precedence_argsCorrectlyBound(t *testing.T) {
 	// paths (domain for OCPP16).
 	match, err := registry.Resolve(stepPrecedenceFixture, api.OCPP16)
 	if err != nil {
-		t.Fatalf("registry.Resolve: unexpected error: %v", err)
+		t.Fatalf(msgResolveUnexpectedErr, err)
 	}
 
 	gotN := match.Args.Int("n")
@@ -136,7 +144,7 @@ func Test_primitive_precedence_domainPatternString(t *testing.T) {
 	// Invariant: the returned Match carries the exact registered pattern string.
 	match, err := registry.Resolve(stepPrecedenceFixture, api.OCPP16)
 	if err != nil {
-		t.Fatalf("registry.Resolve: unexpected error: %v", err)
+		t.Fatalf(msgResolveUnexpectedErr, err)
 	}
 
 	if match.Keyword.Pattern != patternPrecedenceFixture {

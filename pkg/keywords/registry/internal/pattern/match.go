@@ -4,6 +4,14 @@ import (
 	"strings"
 )
 
+const (
+	// startPos is the initial position index used when scanning tokens.
+	startPos = 0
+
+	// noMatch is the sentinel returned by consumeLiteral on failure.
+	noMatch = -1
+)
+
 // Match attempts to match a parsed keyword pattern (expressed as a
 // slice of [Token] values produced by [Parse]) against a step text
 // string. It returns the raw captured strings keyed by placeholder
@@ -31,12 +39,12 @@ func Match(
 	step string,
 ) (map[string]string, bool) {
 	stepWords := splitWords(step)
-	if len(stepWords) == 0 {
+	if len(stepWords) == startPos {
 		return nil, false
 	}
 
 	captures := make(map[string]string)
-	pos := 0
+	pos := startPos
 
 	for idx := range tokens {
 		tok := tokens[idx]
@@ -44,7 +52,7 @@ func Match(
 		switch tok.Kind {
 		case KindLiteral:
 			pos = consumeLiteral(tok.Text, stepWords, pos)
-			if pos < 0 {
+			if pos == noMatch {
 				return nil, false
 			}
 
@@ -93,12 +101,12 @@ func consumeLiteral(
 	}
 
 	if pos+len(litWords) > len(stepWords) {
-		return -1
+		return noMatch
 	}
 
 	for offset, word := range litWords {
 		if !strings.EqualFold(word, stepWords[pos+offset]) {
-			return -1
+			return noMatch
 		}
 	}
 

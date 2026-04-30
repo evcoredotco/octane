@@ -19,7 +19,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -40,6 +40,13 @@ const defaultLockTimeout = 60 * time.Second
 
 // ocppVersion16 is the only supported OCPP version string.
 const ocppVersion16 = "1.6"
+
+// emptyCause is the zero value for the Cause field in StoryResult.
+const emptyCause = ""
+
+// placeholderSHA is the eight-zero-digit placeholder used for SHA
+// components of the cache key that are not yet implemented.
+const placeholderSHA = "00000000"
 
 // runnerState implements api.State for use by keyword functions
 // during story execution. It wraps the station registry and the
@@ -491,7 +498,7 @@ func executeWithLock(
 				},
 			},
 			Trace:      nil,
-			Cause:      "",
+			Cause:      emptyCause,
 			CauseChain: nil,
 		}
 	}
@@ -563,7 +570,7 @@ func cacheHitResult(
 		FinishedAt:  clk.Now(),
 		Findings:    nil,
 		Trace:       nil,
-		Cause:       "",
+		Cause:       emptyCause,
 		CauseChain:  nil,
 	}
 }
@@ -651,7 +658,7 @@ func executeAllSections(
 		FinishedAt:  time.Time{},
 		Findings:    nil,
 		Trace:       nil,
-		Cause:       "",
+		Cause:       emptyCause,
 		CauseChain:  nil,
 	}
 }
@@ -783,11 +790,11 @@ func buildCacheKey(
 	return cache.Key{
 		TestID:          storyNodeVal.story.Meta.ID,
 		ScopeKey:        scopeKey,
-		CSMSEndpointSHA: "00000000", // spec 002 placeholder
-		OctaneVersion:   "dev",      // spec 006 will inject the real version
+		CSMSEndpointSHA: placeholderSHA, // spec 002 placeholder
+		OctaneVersion:   "dev",          // spec 006 will inject the real version
 		OCPPVersion:     ocppVer,
-		StoryContentSHA: "00000000", // spec 001 content hash
-		ParameterSHA:    "00000000", // spec 003 parameter hash
+		StoryContentSHA: placeholderSHA, // spec 001 content hash
+		ParameterSHA:    placeholderSHA, // spec 003 parameter hash
 	}
 }
 
@@ -829,7 +836,7 @@ func buildRunResult(
 					{Message: "not executed", Severity: "info"},
 				},
 				Trace:      nil,
-				Cause:      "",
+				Cause:      emptyCause,
 				CauseChain: nil,
 			}
 		}
@@ -852,8 +859,8 @@ func buildRunResult(
 		}
 	}
 
-	sort.Slice(stories, func(leftIdx, rightIdx int) bool {
-		return stories[leftIdx].Order < stories[rightIdx].Order
+	slices.SortFunc(stories, func(a, b StoryResult) int {
+		return a.Order - b.Order
 	})
 
 	return &RunResult{
@@ -923,9 +930,7 @@ func walkStoryFiles(root string) ([]*ast.Story, error) {
 				return nil
 			}
 
-			data, readErr := os.ReadFile(
-				path,
-			)
+			data, readErr := os.ReadFile(path)
 			if readErr != nil {
 				return fmt.Errorf("read %q: %w", path, readErr)
 			}

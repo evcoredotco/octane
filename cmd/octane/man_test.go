@@ -22,7 +22,7 @@ var updateGolden = flag.Bool("update", false, "update golden files")
 func updateManGoldens(t *testing.T, tmpDir, goldenDir string) {
 	t.Helper()
 
-	//nolint:gosec // G301: golden dir is a checked-in test fixture; 0755 is intentional
+	//nolint:gosec // G301: test fixture dir; 0755 intentional
 	mkdirErr := os.MkdirAll(goldenDir, 0o755)
 	if mkdirErr != nil {
 		t.Fatalf("mkdir %q: %v", goldenDir, mkdirErr)
@@ -40,7 +40,7 @@ func updateManGoldens(t *testing.T, tmpDir, goldenDir string) {
 
 		generatedPath := filepath.Join(tmpDir, entry.Name())
 
-		//nolint:gosec // G304: path constructed from t.TempDir() + DirEntry.Name()
+		//nolint:gosec // G304: path from t.TempDir() + DirEntry.Name()
 		data, readErr := os.ReadFile(generatedPath)
 		if readErr != nil {
 			t.Fatalf("read generated file %q: %v", entry.Name(), readErr)
@@ -48,7 +48,7 @@ func updateManGoldens(t *testing.T, tmpDir, goldenDir string) {
 
 		dest := filepath.Join(goldenDir, entry.Name())
 
-		//nolint:gosec // G306: golden files are public test fixtures; 0644 is intentional
+		//nolint:gosec // G306: public test fixtures; 0644 intentional
 		writeErr := os.WriteFile(dest, data, 0o644)
 		if writeErr != nil {
 			t.Fatalf("write golden file %q: %v", dest, writeErr)
@@ -75,7 +75,7 @@ func compareManGoldens(t *testing.T, tmpDir, goldenDir string) {
 
 		name := entry.Name()
 
-		//nolint:gosec // G304: path constructed from t.TempDir() + DirEntry.Name()
+		//nolint:gosec // G304: path from t.TempDir() + DirEntry.Name()
 		generated, readErr := os.ReadFile(filepath.Join(tmpDir, name))
 		if readErr != nil {
 			t.Errorf("read generated %q: %v", name, readErr)
@@ -83,7 +83,7 @@ func compareManGoldens(t *testing.T, tmpDir, goldenDir string) {
 			continue
 		}
 
-		//nolint:gosec // G304: path constructed from "testdata/man" + DirEntry.Name()
+		//nolint:gosec // G304: path from "testdata/man" + DirEntry.Name()
 		golden, readGoldenErr := os.ReadFile(filepath.Join(goldenDir, name))
 		if readGoldenErr != nil {
 			t.Errorf(
@@ -112,16 +112,16 @@ func Test_octane_ManGolden(t *testing.T) {
 	_, statErr := os.Stat("testdata/man")
 	if os.IsNotExist(statErr) && !*updateGolden {
 		t.Fatal(
-			"testdata/man not found; run: go test -run Test_octane_ManGolden -update ./cmd/octane/",
+			"testdata/man not found;" +
+				" run with -update to create",
 		)
 	}
 
 	tmpDir := t.TempDir()
 
-	header := &doc.GenManHeader{ //nolint:exhaustruct // Date/Source/Manual are optional; cobra fills them
-		Title:   "OCTANE",
-		Section: "1",
-	}
+	header := new(doc.GenManHeader)
+	header.Title = "OCTANE"
+	header.Section = "1"
 
 	genErr := doc.GenManTree(rootCmd, header, tmpDir)
 	if genErr != nil {

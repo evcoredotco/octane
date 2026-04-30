@@ -3,9 +3,8 @@ package main
 import (
 	"os"
 
-	"github.com/spf13/cobra"
-
 	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
+	"github.com/spf13/cobra"
 )
 
 //nolint:exhaustruct // cobra.Command has many optional fields

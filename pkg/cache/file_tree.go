@@ -257,7 +257,7 @@ func cacheReadFile(path string) ([]byte, error) {
 func atomicWriteFile(path string, data []byte) error {
 	tmp := path + ".tmp"
 
-	//nolint:gosec // G304: tmp path is derived from a cache path, not user input
+	//nolint:gosec // G304: tmp path is from a cache path, not user input
 	file, err := os.OpenFile(
 		tmp,
 		os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
