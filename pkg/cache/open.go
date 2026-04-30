@@ -47,7 +47,7 @@ type versionStamp struct {
 //
 // Open returns an error if dir cannot be created, if the directory
 // tree is not writable, or if the version stamp cannot be written.
-func Open(dir string) (Cache, error) {
+func Open(dir string) (*FileCache, error) {
 	subDirs := []string{
 		filepath.Join(dir, "results"),
 		filepath.Join(dir, "locks"),
@@ -77,7 +77,7 @@ func Open(dir string) (Cache, error) {
 // Inject a [clock.DeterministicClock] in tests that need precise
 // control over cache expiry without real wall-clock delay
 // (constitution principle IV).
-func OpenWithClock(dir string, clk clock.Clock) (Cache, error) {
+func OpenWithClock(dir string, clk clock.Clock) (*FileCache, error) {
 	subDirs := []string{
 		filepath.Join(dir, "results"),
 		filepath.Join(dir, "locks"),

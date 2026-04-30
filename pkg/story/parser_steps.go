@@ -19,8 +19,16 @@ var (
 	errExpectedScenarioTitle      = errors.New(
 		"expected scenario title text after 'Scenario:'",
 	)
-	errExpectedStepText = errors.New("expected step text after keyword")
+	errExpectedStepText    = errors.New("expected step text after keyword")
+	errExpectedStepKeyword = errors.New(
+		"expected step keyword (Given/When/Then/And/But)",
+	)
 )
+
+// stepKindZero is the zero value returned alongside an error by
+// stepKindFromToken when the token cannot be mapped to any step kind.
+// Required by the add-constant linter rule.
+const stepKindZero ast.StepKind = 0
 
 // indentedColumn is the minimum column value that indicates a token
 // was preceded by at least one space of indentation.
@@ -368,13 +376,13 @@ func stepKindFromToken(tok lex.Token) (ast.StepKind, bool, error) {
 		lex.TokenColon,
 		lex.TokenValue,
 		lex.TokenText:
-		return 0, false, fmt.Errorf(
-			"expected step keyword (Given/When/Then/And/But), got %s", tok.Kind,
+		return stepKindZero, false, fmt.Errorf(
+			"%w, got %s", errExpectedStepKeyword, tok.Kind,
 		)
 	}
 
 	// Unreachable: all TokenKind values handled above.
-	return 0, false, fmt.Errorf(
-		"expected step keyword (Given/When/Then/And/But), got %s", tok.Kind,
+	return stepKindZero, false, fmt.Errorf(
+		"%w, got %s", errExpectedStepKeyword, tok.Kind,
 	)
 }

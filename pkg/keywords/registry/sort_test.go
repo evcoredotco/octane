@@ -35,6 +35,10 @@ const (
 	// random swap partner (idx+shuffleIncrement).
 	shuffleIncrement = 1
 
+	// shuffleLastIdx is the starting index for the Fisher-Yates loop:
+	// the last valid index in the keywords slice.
+	shuffleLastIdx = keywordCount - 1
+
 	// sortStartIdx is the first index checked by isSortedByLayerVersionPattern;
 	// pairs are checked starting at [1] vs [0].
 	sortStartIdx = 1
@@ -71,7 +75,7 @@ func buildShuffledKeywords(rng rand.Rand) []api.Keyword {
 
 	// Fisher-Yates shuffle using the injected RNG so the order is
 	// deterministic for a fixed seed yet differs from the sorted order.
-	for idx := keywordCount - 1; idx > shuffleStop; idx-- {
+	for idx := shuffleLastIdx; idx > shuffleStop; idx-- {
 		jdx := rng.Intn(idx + shuffleIncrement)
 		keywords[idx], keywords[jdx] = keywords[jdx], keywords[idx]
 	}

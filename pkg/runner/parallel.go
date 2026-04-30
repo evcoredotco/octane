@@ -9,6 +9,9 @@ import (
 // with zero or negative count falls back to sequential execution.
 const minWorkerCount = 1
 
+// zeroWorkerCount is the sentinel for disabled/invalid worker counts.
+const zeroWorkerCount = 0
+
 // workItem is a single unit of work dispatched from the scheduler
 // to a worker goroutine. It carries the node identifier and the
 // execution function that the worker calls.
@@ -58,7 +61,7 @@ func newWorkerPool(
 	ctx context.Context,
 	workerCount int,
 ) *workerPool {
-	if workerCount <= 0 {
+	if workerCount <= zeroWorkerCount {
 		workerCount = minWorkerCount
 	}
 

@@ -99,6 +99,10 @@ const (
 	// emptyClosest is the empty string used for NoMatchError.Closest.
 	emptyClosest = ""
 
+	// ocppVersionAny is the zero OCPPVersion value meaning "version-agnostic":
+	// a keyword with this version matches all OCPP versions.
+	ocppVersionAny api.OCPPVersion = 0
+
 	// fmtResolveUnexpectedErr is the format string for unexpected Resolve
 	// errors.
 	fmtResolveUnexpectedErr = "Resolve: unexpected error: %v"
@@ -125,7 +129,7 @@ func registerPrimitive(pattern string) api.Keyword {
 	registered := api.Keyword{
 		Pattern:     pattern,
 		Layer:       api.LayerPrimitive,
-		OCPPVersion: 0,
+		OCPPVersion: ocppVersionAny,
 		Func:        resolveNoopFunc,
 	}
 
@@ -516,7 +520,7 @@ func Test_registry_Resolve_multiPlaceholderStepBindsAllArgs(t *testing.T) {
 	multiKeyword := api.Keyword{
 		Pattern:     patternMultiPlaceholder,
 		Layer:       api.LayerPrimitive,
-		OCPPVersion: 0,
+		OCPPVersion: ocppVersionAny,
 		Func:        resolveNoopFunc,
 	}
 
@@ -668,13 +672,17 @@ func Test_registry_NoMatchError_errorStringWithClosest(t *testing.T) {
 
 	const wantFragment = "did you mean"
 
-	if len(gotMsg) == 0 {
+	const emptyMsgLen = 0
+
+	if len(gotMsg) == emptyMsgLen {
 		t.Fatal("NoMatchError.Error(): got empty string")
 	}
 
 	found := false
 
-	for idx := range len(gotMsg) - len(wantFragment) + 1 {
+	const searchWindowOffset = 1
+
+	for idx := range len(gotMsg) - len(wantFragment) + searchWindowOffset {
 		if gotMsg[idx:idx+len(wantFragment)] == wantFragment {
 			found = true
 

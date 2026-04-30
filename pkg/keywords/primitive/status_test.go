@@ -14,7 +14,6 @@ import (
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
 	"github.com/evcoreco/octane/pkg/keywords/api/mock"
-	_ "github.com/evcoreco/octane/pkg/keywords/primitive" // blank import
 )
 
 // ── Named constants ──────────────────────────────────────────────────────────

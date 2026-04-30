@@ -56,6 +56,38 @@ const ocppVersionEmpty = ""
 // return values where a named domain constant does not apply.
 const emptyString = ""
 
+// emptyLen is the zero-length sentinel used in collection size checks
+// (e.g., len(x) == emptyLen) to satisfy the add-constant linter rule.
+const emptyLen = 0
+
+// noOverride is passed to buildDAG when no station-count override is
+// needed; the function then uses the value declared in the story AST.
+const noOverride = 0
+
+// noLockTimeout is the zero Duration sentinel for the lock-timeout
+// guard in resolveLockTimeout.
+const noLockTimeout = 0
+
+// noCapacity is the capacity sentinel used in dispatcher guards
+// (capacity <= noCapacity) meaning the pool has no remaining slots.
+const noCapacity = 0
+
+// noPendingCount is the lower bound checked in the completion loop;
+// a value of 0 means all nodes have been dispatched or completed.
+const noPendingCount = 0
+
+// noParallel is the sentinel for an unset or non-positive MaxParallel
+// config value, meaning sequential execution.
+const noParallel = 0
+
+// nodeIDParts holds the two components decoded from a DAG node ID by
+// splitNodeID. Using a struct avoids the confusing-results linter
+// violation that arises when a function returns two unnamed strings.
+type nodeIDParts struct {
+	storyID  string
+	scopeKey string
+}
+
 // runnerState implements api.State for use by keyword functions
 // during story execution. It wraps the station registry and the
 // deterministic clock injected by the runner.
@@ -91,20 +123,20 @@ func newRunnerState(clk clock.Clock) *runnerState {
 }
 
 // Station implements api.State.
-func (rs *runnerState) Station(handle string) (api.Station, error) {
+func (rs *runnerState) Station(handle string) (api.StationValue, error) {
 	rs.mu.Lock()
 	defer rs.mu.Unlock()
 
 	station, ok := rs.stations[handle]
 	if !ok {
-		return nil, fmt.Errorf(
+		return api.StationValue{}, fmt.Errorf(
 			"runner: station %q: %w",
 			handle,
 			errStationNotRegistered,
 		)
 	}
 
-	return station, nil
+	return api.StationValue{Station: station}, nil
 }
 
 // RegisterStation implements api.State.
@@ -192,7 +224,7 @@ func Run(ctx context.Context, cfg Config) (*RunResult, error) {
 		return nil, fmt.Errorf("runner: discover stories: %w", err)
 	}
 
-	if len(stories) == 0 {
+	if len(stories) == emptyLen {
 		return emptyRunResult(runID, startedAt, clk.Now()), nil
 	}
 
@@ -221,7 +253,7 @@ func Run(ctx context.Context, cfg Config) (*RunResult, error) {
 
 // openRunCache resolves the cache directory and opens the cache when enabled.
 // It returns the cache dir and the open cache (nil when cfg.NoCache is set).
-func openRunCache(cfg Config) (string, cache.Cache, error) {
+func openRunCache(cfg Config) (string, *cache.FileCache, error) {
 	cacheDir, err := resolveCacheDir(cfg.CacheDir)
 	if err != nil {
 		return emptyString, nil, fmt.Errorf(
@@ -255,11 +287,11 @@ func emptyRunResult(
 		FinishedAt: finishedAt,
 		Stories:    nil,
 		Summary: Summary{
-			Total:     0,
-			Passed:    0,
-			Failed:    0,
-			Skipped:   0,
-			CacheHits: 0,
+			Total:     emptyLen,
+			Passed:    emptyLen,
+			Failed:    emptyLen,
+			Skipped:   emptyLen,
+			CacheHits: emptyLen,
 		},
 	}
 }
@@ -270,7 +302,7 @@ func buildDAGAndSort(
 	stories []*ast.Story,
 	runID string,
 ) (*buildDAGResult, []string, error) {
-	dagResult, err := buildDAG(stories, runID, 0)
+	dagResult, err := buildDAG(stories, runID, noOverride)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -297,7 +329,7 @@ func buildDAGAndSort(
 // resolveLockTimeout returns the effective lock timeout from cfg. When
 // LockTimeout is zero and NoWait is false it defaults to defaultLockTimeout.
 func resolveLockTimeout(cfg Config) time.Duration {
-	if cfg.LockTimeout != 0 || cfg.NoWait {
+	if cfg.LockTimeout != noLockTimeout || cfg.NoWait {
 		return cfg.LockTimeout
 	}
 
@@ -341,7 +373,7 @@ func runScheduler(
 	args runSchedulerArgs,
 ) map[string]StoryResult {
 	maxParallel := args.cfg.MaxParallel
-	if maxParallel <= 0 {
+	if maxParallel <= noParallel {
 		maxParallel = defaultMaxParallel
 	}
 
@@ -377,7 +409,7 @@ func (sr *schedRunner) dispatchBatch(ctx context.Context) {
 	capacity := sr.maxParallel - sr.schedState.running
 
 	for _, nodeID := range eligible {
-		if capacity <= 0 {
+		if capacity <= noCapacity {
 			break
 		}
 
@@ -434,7 +466,7 @@ func (sr *schedRunner) completionLoop(ctx context.Context) {
 
 	sr.dispatchBatch(ctx)
 
-	for sr.schedState.pendingCount() > 0 {
+	for sr.schedState.pendingCount() > noPendingCount {
 		if done := sr.drainOneCompletion(ctx); done {
 			return
 		}
@@ -509,7 +541,8 @@ func execStoryNode(ctx context.Context, params execParams) StoryResult {
 	}
 
 	// Step 1: fast path — check cache without lock.
-	if entry, entryErr := params.storyCache.Get(ctx, cacheKey); entryErr == nil {
+	entry, entryErr := params.storyCache.Get(ctx, cacheKey)
+	if entryErr == nil {
 		return cacheHitResult(params.storyNode, entry, startedAt, params.clk)
 	}
 
@@ -542,7 +575,8 @@ func execWithDedup(
 	}
 
 	// Another goroutine ran the Once — re-read from cache.
-	if entry, entryErr := params.storyCache.Get(ctx, cacheKey); entryErr == nil {
+	entry, entryErr := params.storyCache.Get(ctx, cacheKey)
+	if entryErr == nil {
 		return cacheHitResult(params.storyNode, entry, startedAt, params.clk)
 	}
 
@@ -589,7 +623,7 @@ func lockFailureResult(
 	lockErr error,
 ) StoryResult {
 	return StoryResult{
-		Order:       0,
+		Order:       emptyLen,
 		TestID:      params.storyNode.story.Meta.ID,
 		ScopeKey:    params.storyNode.scopeKey,
 		OCPPVersion: ocppVersionEmpty,
@@ -690,7 +724,7 @@ func cacheHitResult(
 	}
 
 	return StoryResult{
-		Order:       0,
+		Order:       emptyLen,
 		TestID:      storyNodeVal.story.Meta.ID,
 		ScopeKey:    storyNodeVal.scopeKey,
 		OCPPVersion: ocppVersionEmpty,
@@ -720,7 +754,7 @@ func executeStory(
 
 	ocppVer := resolveOCPPVersion(storyNodeVal.story.Meta.Tags, cfg.OCPPVersion)
 
-	findings := make([]Finding, 0, len(state.logLines))
+	findings := make([]Finding, emptyLen, len(state.logLines))
 
 	result := executeAllSections(
 		ctx,
@@ -778,9 +812,9 @@ func executeAllSections(
 	}
 
 	return StoryResult{
-		Order:       0,
-		TestID:      emptyCause,
-		ScopeKey:    emptyCause,
+		Order:       emptyLen,
+		TestID:      emptyTestID,
+		ScopeKey:    emptyString,
 		OCPPVersion: ocppVersionEmpty,
 		Status:      resultStatus,
 		CacheStatus: CacheMiss,
@@ -938,14 +972,14 @@ func buildRunResult(
 	topoOrder []string,
 	results map[string]StoryResult,
 ) *RunResult {
-	stories := make([]StoryResult, 0, len(topoOrder))
+	stories := make([]StoryResult, emptyLen, len(topoOrder))
 
 	summary := Summary{
 		Total:     len(topoOrder),
-		Passed:    0,
-		Failed:    0,
-		Skipped:   0,
-		CacheHits: 0,
+		Passed:    emptyLen,
+		Failed:    emptyLen,
+		Skipped:   emptyLen,
+		CacheHits: emptyLen,
 	}
 
 	for orderIdx, nodeID := range topoOrder {
@@ -976,11 +1010,11 @@ func resolveNodeResult(
 ) StoryResult {
 	result, ok := results[nodeID]
 	if !ok {
-		storyID, scopeKey := splitNodeID(nodeID)
+		parts := splitNodeID(nodeID)
 		result = StoryResult{
 			Order:       orderIdx,
-			TestID:      storyID,
-			ScopeKey:    scopeKey,
+			TestID:      parts.storyID,
+			ScopeKey:    parts.scopeKey,
 			OCPPVersion: ocppVersionEmpty,
 			Status:      StatusSkipped,
 			CacheStatus: CacheMiss,
@@ -1094,9 +1128,11 @@ func visitStoryFile(
 		return nil
 	}
 
-	data, readErr := os.ReadFile(path)
+	cleanPath := filepath.Clean(path)
+
+	data, readErr := os.ReadFile(cleanPath)
 	if readErr != nil {
-		return fmt.Errorf("read %q: %w", path, readErr)
+		return fmt.Errorf("read %q: %w", cleanPath, readErr)
 	}
 
 	storyAST, parseErr := story.Parse(path, data)
@@ -1115,7 +1151,7 @@ func filterByOCPPVersion(
 	stories []*ast.Story,
 	version string,
 ) []*ast.Story {
-	out := make([]*ast.Story, 0, len(stories))
+	out := make([]*ast.Story, emptyLen, len(stories))
 
 	for _, storyAST := range stories {
 		if storyMatchesVersion(storyAST.Meta.Tags, version) {
@@ -1123,7 +1159,7 @@ func filterByOCPPVersion(
 		}
 	}
 
-	if len(out) == 0 {
+	if len(out) == emptyLen {
 		// No story declared the version via tags; return all and
 		// let keyword resolution handle version scoping.
 		return stories
@@ -1205,10 +1241,10 @@ func generateRunID(clk clock.Clock) string {
 // snake_case (no "/"); scope keys are alphanumeric station handles
 // ("CP01") or run IDs (hex strings). The split is safe because
 // story IDs never contain a "/".
-func splitNodeID(nodeID string) (string, string) {
+func splitNodeID(nodeID string) nodeIDParts {
 	if before, after, ok := strings.Cut(nodeID, "/"); ok {
-		return before, after
+		return nodeIDParts{storyID: before, scopeKey: after}
 	}
 
-	return nodeID, emptyCause
+	return nodeIDParts{storyID: nodeID, scopeKey: emptyCause}
 }

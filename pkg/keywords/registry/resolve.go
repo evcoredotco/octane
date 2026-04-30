@@ -20,6 +20,15 @@ const (
 
 	// noSuggestion is returned by closestPattern when no close match is found.
 	noSuggestion = ""
+
+	// emptySliceLen is the zero-capacity sentinel for make([]T, 0, n) calls.
+	emptySliceLen = 0
+
+	// zeroLayer is the zero-value sentinel for api.Layer fields.
+	zeroLayer api.Layer = 0
+
+	// zeroOCPPVersion is the zero-value sentinel for api.OCPPVersion fields.
+	zeroOCPPVersion api.OCPPVersion = 0
 )
 
 // Match is the successful result of a [Resolve] call. It pairs the
@@ -95,7 +104,7 @@ func eligibleCandidates(
 	all []api.Keyword,
 	ocppVersion api.OCPPVersion,
 ) []api.Keyword {
-	out := make([]api.Keyword, 0, len(all))
+	out := make([]api.Keyword, emptySliceLen, len(all))
 
 	for _, keyword := range all {
 		if !isEligible(keyword, ocppVersion) {
@@ -130,9 +139,7 @@ func isEligible(keyword api.Keyword, ocppVersion api.OCPPVersion) bool {
 	}
 
 	// Domain layer: zero OCPPVersion means version-agnostic.
-	const zeroVersion api.OCPPVersion = 0
-
-	return keyword.OCPPVersion == zeroVersion ||
+	return keyword.OCPPVersion == zeroOCPPVersion ||
 		keyword.OCPPVersion == ocppVersion
 }
 
@@ -152,8 +159,8 @@ func tryMatch(step string, keyword api.Keyword) (Match, bool, error) {
 		return Match{ //nolint:nilerr // defensive skip; not caller-visible
 			Keyword: api.Keyword{
 				Pattern:     "",
-				Layer:       0,
-				OCPPVersion: 0,
+				Layer:       zeroLayer,
+				OCPPVersion: zeroOCPPVersion,
 				Func:        nil,
 			},
 			Args: api.Args{},
@@ -165,8 +172,8 @@ func tryMatch(step string, keyword api.Keyword) (Match, bool, error) {
 		return Match{
 			Keyword: api.Keyword{
 				Pattern:     "",
-				Layer:       0,
-				OCPPVersion: 0,
+				Layer:       zeroLayer,
+				OCPPVersion: zeroOCPPVersion,
 				Func:        nil,
 			},
 			Args: api.Args{},

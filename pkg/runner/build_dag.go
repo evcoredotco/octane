@@ -15,6 +15,9 @@ import (
 // are zero or negative.
 const minStationCount = 1
 
+// zeroOverride is the sentinel for a zero/unset station-count override.
+const zeroOverride = 0
+
 // storyNode is the internal representation of a single DAG node
 // before results are collected. It pairs the original AST with the
 // scope-specific execution key used for cache isolation.
@@ -120,7 +123,7 @@ func buildDAG(
 	}
 
 	grph := dag.New()
-	nodes := make([]storyNode, 0, len(stories))
+	nodes := make([]storyNode, emptySliceLen, len(stories))
 	nodeIdx := make(map[string]int, len(stories))
 
 	// Pre-scan: collect story IDs that appear as prerequisites in any
@@ -246,7 +249,7 @@ func addEdgesForScopeKey(
 ) error {
 	dependentNID := makeNodeID(storyAST.Meta.ID, depScopeKey)
 
-	if len(storyAST.Meta.Depends) > 0 {
+	if len(storyAST.Meta.Depends) > emptySliceLen {
 		ensureNodeExists(
 			dependentNID, storyAST, depScopeKey,
 			grph, nodes, nodeIdx,
@@ -304,7 +307,7 @@ func addStoryEdges(
 func effectiveStationCount(stationCount, override int) int {
 	count := stationCount
 
-	if override > 0 {
+	if override > zeroOverride {
 		count = override
 	}
 
@@ -342,8 +345,8 @@ func addDepEdges(
 	var prereqScopeKeys []string
 
 	if dep.Scope == ast.ScopePerStation {
-		_, depScopeKey := splitNodeID(dependentNID)
-		prereqScopeKeys = []string{depScopeKey}
+		depParts := splitNodeID(dependentNID)
+		prereqScopeKeys = []string{depParts.scopeKey}
 	} else {
 		prereqStationCount := effectiveStationCount(
 			prereqStory.Meta.Stations,
@@ -428,7 +431,7 @@ func ensureNodeExists(
 //
 //	binary.BigEndian.Uint64(sha256(test_id)[:8]) % shardTotal == shardIndex
 func inShardFilter(testID string, shardIndex, shardTotal int) bool {
-	if shardTotal <= 0 {
+	if shardTotal <= minShardTotal {
 		return true
 	}
 

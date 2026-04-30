@@ -40,6 +40,9 @@ const fileMode = 0o600
 // emptySource is the empty string used for XML Source attributes.
 const emptySource = ""
 
+// emptyLen is the sentinel zero used in len() == 0 guards and make() calls.
+const emptyLen = 0
+
 // severityMajor is the severity threshold at which a finding is mapped to an
 // ERROR-level message. Findings with severity "error" meet this threshold;
 // "warning" and "info" become WARN-level messages.
@@ -137,7 +140,7 @@ func WriteRobotXML(
 
 	outPath := filepath.Join(dir, outputFileName)
 
-	payload := make([]byte, 0, len(xmlHeader)+len(data)+1)
+	payload := make([]byte, emptyLen, len(xmlHeader)+len(data)+1)
 	payload = append(payload, xmlHeader...)
 	payload = append(payload, data...)
 	payload = append(payload, '\n')
@@ -232,11 +235,11 @@ func testName(story model.StoryReport) string {
 // buildMessages converts story findings to <msg> child elements. Findings
 // with severity "error" become ERROR-level; all others become WARN-level.
 func buildMessages(findings []model.Finding) []xmlMsg {
-	if len(findings) == 0 {
+	if len(findings) == emptyLen {
 		return nil
 	}
 
-	out := make([]xmlMsg, 0, len(findings))
+	out := make([]xmlMsg, emptyLen, len(findings))
 
 	for _, finding := range findings {
 		level := "WARN"
@@ -257,7 +260,7 @@ func buildMessages(findings []model.Finding) []xmlMsg {
 // keyword named "trace.frame" with a log message containing the raw JSON.
 // Returns nil when no trace is present.
 func buildKeywords(story model.StoryReport) []xmlKw {
-	if story.Trace == nil || len(story.Trace.Frames) == 0 {
+	if story.Trace == nil || len(story.Trace.Frames) == emptyLen {
 		return nil
 	}
 

@@ -14,8 +14,11 @@ import (
 )
 
 // fmtPosExpected is the shared positional error format string used across
-// parser_meta and parser_steps: "<file>:<line>:<col>: <expected>, got <actual>".
+// parser_meta and parser_steps.
 const fmtPosExpected = "%s:%d:%d: %w, got %s"
+
+// emptySliceLen is the zero-length sentinel for make([]T, 0, n) calls.
+const emptySliceLen = 0
 
 // Sentinel errors for parser_meta parse failures.
 var (
@@ -54,12 +57,12 @@ func zeroMeta() ast.Meta {
 		ID:         emptyStr,
 		SpecRef:    nil,
 		Tags:       nil,
-		Stations:   0,
-		Timeout:    0,
+		Stations:   tokenZeroPos,
+		Timeout:    tokenZeroPos,
 		Parameters: nil,
 		CacheTTL:   nil,
 		Depends:    nil,
-		Position:   ast.Position{Line: 0, Column: 0},
+		Position:   ast.Position{Line: tokenZeroPos, Column: tokenZeroPos},
 	}
 }
 
@@ -77,8 +80,8 @@ func (p *parser) parseMeta() (ast.Meta, error) {
 		ID:         emptyStr,
 		SpecRef:    nil,
 		Tags:       nil,
-		Stations:   0,
-		Timeout:    0,
+		Stations:   tokenZeroPos,
+		Timeout:    tokenZeroPos,
 		Parameters: nil,
 		CacheTTL:   nil,
 		Depends:    nil,
@@ -90,8 +93,8 @@ func (p *parser) parseMeta() (ast.Meta, error) {
 		hasID:         false,
 		hasStations:   false,
 		hasTags:       false,
-		specRefLine:   0,
-		specRefColumn: 0,
+		specRefLine:   tokenZeroPos,
+		specRefColumn: tokenZeroPos,
 	}
 
 	err := p.collectMetaEntries(&meta, tracker)
@@ -99,7 +102,8 @@ func (p *parser) parseMeta() (ast.Meta, error) {
 		return zeroMeta(), err
 	}
 
-	if err := validateMetaRequired(p.file, meta, tracker); err != nil {
+	err = validateMetaRequired(p.file, meta, tracker)
+	if err != nil {
 		return zeroMeta(), err
 	}
 
@@ -127,7 +131,8 @@ func (p *parser) collectMetaEntries(
 			return err
 		}
 
-		if err = p.applyMetaEntry(meta, entry, tracker); err != nil {
+		err = p.applyMetaEntry(meta, entry, tracker)
+		if err != nil {
 			return err
 		}
 	}
@@ -447,7 +452,7 @@ func (p *parser) parseMetaEntry() (metaEntry, error) {
 func splitTrimmed(s, sep string) []string {
 	parts := strings.Split(s, sep)
 
-	result := make([]string, 0, len(parts))
+	result := make([]string, emptySliceLen, len(parts))
 
 	for _, part := range parts {
 		result = append(result, strings.TrimSpace(part))

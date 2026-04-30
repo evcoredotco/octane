@@ -1,10 +1,11 @@
-// Package runner — T-005-41: scope-aware traversal.
+// T-005-41: scope-aware traversal.
 //
 // This file implements the scheduler's eligibility computation and
 // the scope-aware deduplication logic described in ADR 0019 §
 // "Eligible-set computation". It operates on nodeID strings, not
 // story ASTs, so that the same traversal logic works for all three
 // scope types (per-station, per-run, global).
+
 package runner
 
 import "slices"
@@ -25,6 +26,18 @@ const (
 	// (passed, failed, skipped, or cached).
 	nodeDone
 )
+
+// zeroRunningCount is the initial running-goroutine counter value.
+const zeroRunningCount = 0
+
+// emptySliceLen is the zero-length sentinel for make([]T, 0, n) calls.
+const emptySliceLen = 0
+
+// zeroOrder is the zero-value sentinel for the Order field of StoryResult.
+const zeroOrder = 0
+
+// zeroPendingCount is the initial pending-node counter value.
+const zeroPendingCount = 0
 
 // schedulerState holds the mutable state that the scheduler goroutine
 // updates on every tick. All fields are accessed from the scheduler
@@ -85,7 +98,7 @@ func newSchedulerState(
 		prereqs:    prereqs,
 		dependents: dependents,
 		order:      topoOrder,
-		running:    0,
+		running:    zeroRunningCount,
 	}
 }
 
@@ -94,7 +107,7 @@ func newSchedulerState(
 // The returned slice is sorted by nodeID for deterministic dispatch
 // (ADR 0019 §"Dispatch order and determinism").
 func (ss *schedulerState) eligibleNodes() []string {
-	eligible := make([]string, 0, len(ss.order))
+	eligible := make([]string, emptySliceLen, len(ss.order))
 
 	for _, nodeID := range ss.order {
 		if ss.status[nodeID] != nodePending {
@@ -177,10 +190,12 @@ func (ss *schedulerState) skipDependents(
 
 		causeChain := buildCauseChain(originResult)
 
-		depStoryID, depScopeKey := splitNodeID(depID)
+		depParts := splitNodeID(depID)
+		depStoryID := depParts.storyID
+		depScopeKey := depParts.scopeKey
 
 		skipResult := StoryResult{
-			Order:       0,
+			Order:       zeroOrder,
 			TestID:      depStoryID,
 			ScopeKey:    depScopeKey,
 			OCPPVersion: "",
@@ -214,7 +229,7 @@ func (ss *schedulerState) skipDependents(
 // skipped node. The chain starts with the immediate failing
 // prerequisite and extends with any prior chain from that result.
 func buildCauseChain(originResult StoryResult) []string {
-	chain := make([]string, 0, 1+len(originResult.CauseChain))
+	chain := make([]string, emptySliceLen, 1+len(originResult.CauseChain))
 
 	if originResult.Cause != "" {
 		chain = append(chain, originResult.Cause)
@@ -230,7 +245,7 @@ func buildCauseChain(originResult StoryResult) []string {
 // pendingCount returns the number of nodes still in nodePending or
 // nodeRunning. When this reaches zero the run is complete.
 func (ss *schedulerState) pendingCount() int {
-	count := 0
+	count := zeroPendingCount
 
 	for _, nodeState := range ss.status {
 		if nodeState == nodePending || nodeState == nodeRunning {

@@ -5,8 +5,7 @@ import (
 	"os"
 
 	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
-	// Side-effect import: registers primitive keywords at init time.
-	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
+	"github.com/evcoreco/octane/pkg/keywords/primitive"
 	"github.com/spf13/cobra"
 )
 
@@ -95,6 +94,8 @@ for subcommand-specific documentation.`,
 // exitPanic so that main's recover handler can call os.Exit with the
 // correct exit code. It is the public entry point called from main.
 func Execute() {
+	primitive.Register()
+
 	root := newRootCmd()
 
 	err := root.Execute()

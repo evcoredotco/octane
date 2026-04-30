@@ -15,10 +15,14 @@ import (
 	"github.com/evcoreco/octane/pkg/story/lex"
 )
 
+// noScenarios is the zero-length sentinel used to detect a missing Scenario
+// section. Required by the add-constant linter rule.
+const noScenarios = 0
+
 // parser holds the per-file lexer and the source path used in diagnostics.
 type parser struct {
 	file string
-	lex  lex.Lexer
+	lex  *lex.Tokenizer
 }
 
 // Parse parses a single .story file from its byte content.
@@ -185,7 +189,7 @@ func (p *parser) parseAllScenarios() ([]ast.Scenario, error) {
 		scenarios = append(scenarios, sc)
 	}
 
-	if len(scenarios) == 0 {
+	if len(scenarios) == noScenarios {
 		tok := p.lex.Peek()
 
 		return nil, &diag.MissingSectionError{

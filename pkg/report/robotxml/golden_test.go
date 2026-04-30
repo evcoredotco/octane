@@ -21,6 +21,15 @@ const (
 	// goldenBaseYear is the year used in fixedTime for golden test fixtures.
 	goldenBaseYear = 2024
 
+	// goldenBaseMonth is the month (January) used in fixedTime.
+	goldenBaseMonth = 1
+
+	// goldenBaseDay is the day-of-month used in fixedTime.
+	goldenBaseDay = 15
+
+	// goldenBaseHour is the hour used in fixedTime.
+	goldenBaseHour = 10
+
 	// scopeKeyCP01 is the station scope key used in golden test fixtures.
 	scopeKeyCP01 = "CP01"
 
@@ -39,6 +48,10 @@ const (
 	// finishedAt20 is the finish offset in seconds for the second story.
 	finishedAt20 = 20
 
+	// orderFirst is the Order index for the first non-zero story (second
+	// position, one-based).
+	orderFirst = 1
+
 	// orderSkipped is the Order index for the skipped (third) story.
 	orderSkipped = 2
 
@@ -47,6 +60,20 @@ const (
 
 	// totalStories is the total number of stories in the golden result.
 	totalStories = 3
+
+	// countOne is used for result counts that equal one (1 passed, 1 failed,
+	// 1 skipped, 1 cache hit) in the golden test fixture.
+	countOne = 1
+
+	// zeroOffset is the zero time offset used in fixedTime(zeroOffset) calls.
+	zeroOffset = 0
+
+	// zeroTimeField is the zero value for minute, second, and nanosecond
+	// arguments in time.Date calls.
+	zeroTimeField = 0
+
+	// orderZero is the Order index for the first story (position zero).
+	orderZero = 0
 
 	// dirPerms is the directory permission bits used when creating testdata.
 	dirPerms = 0o750
@@ -70,7 +97,11 @@ const outputFileName = "output.xml"
 
 // fixedTime returns a deterministic time for test fixtures.
 func fixedTime(offsetSeconds int) time.Time {
-	base := time.Date(goldenBaseYear, 1, 15, 10, 0, 0, 0, time.UTC)
+	base := time.Date(
+		goldenBaseYear, goldenBaseMonth, goldenBaseDay,
+		goldenBaseHour, zeroTimeField, zeroTimeField, zeroTimeField,
+		time.UTC,
+	)
 
 	return base.Add(time.Duration(offsetSeconds) * time.Second)
 }
@@ -88,13 +119,13 @@ func xmlPassedStory() runner.StoryResult {
 	}
 
 	return runner.StoryResult{
-		Order:       0,
+		Order:       orderZero,
 		TestID:      "tc_boot_notification",
 		ScopeKey:    scopeKeyCP01,
 		OCPPVersion: ocppVersion16,
 		Status:      runner.StatusPassed,
 		CacheStatus: runner.CacheHitPass,
-		StartedAt:   fixedTime(0),
+		StartedAt:   fixedTime(zeroOffset),
 		FinishedAt:  fixedTime(finishedAt10),
 		Findings:    nil,
 		Trace:       passedTrace,
@@ -106,7 +137,7 @@ func xmlPassedStory() runner.StoryResult {
 // xmlFailedStory returns the failed Heartbeat story fixture.
 func xmlFailedStory() runner.StoryResult {
 	return runner.StoryResult{
-		Order:       1,
+		Order:       orderFirst,
 		TestID:      "tc_heartbeat",
 		ScopeKey:    scopeKeyCP01,
 		OCPPVersion: ocppVersion16,
@@ -154,14 +185,14 @@ func xmlSkippedStory() runner.StoryResult {
 func buildGoldenResult() *runner.RunResult {
 	return &runner.RunResult{
 		RunID:      "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-		StartedAt:  fixedTime(0),
+		StartedAt:  fixedTime(zeroOffset),
 		FinishedAt: fixedTime(finishedAtSec),
 		Summary: runner.Summary{
 			Total:     totalStories,
-			Passed:    1,
-			Failed:    1,
-			Skipped:   1,
-			CacheHits: 1,
+			Passed:    countOne,
+			Failed:    countOne,
+			Skipped:   countOne,
+			CacheHits: countOne,
 		},
 		Stories: []runner.StoryResult{
 			xmlPassedStory(),

@@ -13,6 +13,9 @@ import (
 // noMaxAge indicates that age-based pruning is disabled (maxAge == 0).
 const noMaxAge = 0
 
+// emptyDirLen is the entry count that identifies an empty directory.
+const emptyDirLen = 0
+
 // Prune removes cache entries that have exceeded their maximum age
 // or whose TTL has expired, then removes any empty fanout
 // directories under <dir>/results/.
@@ -210,5 +213,5 @@ func dirIsEmpty(dir string) bool {
 		return false
 	}
 
-	return len(entries) == 0
+	return len(entries) == emptyDirLen
 }

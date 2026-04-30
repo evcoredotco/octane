@@ -31,6 +31,9 @@ const (
 	// filePerm is the permission bits for the JSON report file written by
 	// WriteJSON.
 	filePerm = 0o600
+
+	// emptyLen is the sentinel zero used in len() == 0 guards.
+	emptyLen = 0
 )
 
 // jsonReport is the top-level JSON serialization struct for the report.
@@ -183,7 +186,7 @@ func buildJSONStory(
 // buildJSONFindings converts a slice of model.Finding to a slice of
 // jsonFinding, sorted by (severity desc, message asc).
 func buildJSONFindings(src []model.Finding) []jsonFinding {
-	if len(src) == 0 {
+	if len(src) == emptyLen {
 		return nil
 	}
 

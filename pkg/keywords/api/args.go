@@ -36,32 +36,67 @@ func NewArgs(vals map[string]any) Args {
 // String returns the string value bound to name. It panics if
 // name is absent or if the stored value is not a string.
 func (a Args) String(name string) string {
-	return get[string](a.values, name, "string")
+	raw := lookupArg(a.values, name, "string")
+
+	v, ok := raw.(string)
+	if !ok {
+		panicTypeMismatch(name, raw, "string")
+	}
+
+	return v
 }
 
 // Int returns the int value bound to name. It panics if name
 // is absent or if the stored value is not an int.
 func (a Args) Int(name string) int {
-	return get[int](a.values, name, "int")
+	raw := lookupArg(a.values, name, "int")
+
+	v, ok := raw.(int)
+	if !ok {
+		panicTypeMismatch(name, raw, "int")
+	}
+
+	return v
 }
 
 // Float returns the float64 value bound to name. It panics if
 // name is absent or if the stored value is not a float64.
 func (a Args) Float(name string) float64 {
-	return get[float64](a.values, name, "float64")
+	raw := lookupArg(a.values, name, "float64")
+
+	v, ok := raw.(float64)
+	if !ok {
+		panicTypeMismatch(name, raw, "float64")
+	}
+
+	return v
 }
 
 // Bool returns the bool value bound to name. It panics if name
 // is absent or if the stored value is not a bool.
 func (a Args) Bool(name string) bool {
-	return get[bool](a.values, name, "bool")
+	raw := lookupArg(a.values, name, "bool")
+
+	v, ok := raw.(bool)
+	if !ok {
+		panicTypeMismatch(name, raw, "bool")
+	}
+
+	return v
 }
 
 // Duration returns the time.Duration value bound to name. It
 // panics if name is absent or if the stored value is not a
 // time.Duration.
 func (a Args) Duration(name string) time.Duration {
-	return get[time.Duration](a.values, name, "duration")
+	raw := lookupArg(a.values, name, "duration")
+
+	v, ok := raw.(time.Duration)
+	if !ok {
+		panicTypeMismatch(name, raw, "duration")
+	}
+
+	return v
 }
 
 // Station returns the station handle string bound to name. The
@@ -70,7 +105,14 @@ func (a Args) Duration(name string) time.Duration {
 // retrieved as a Go string. It panics if name is absent or if
 // the stored value is not a string.
 func (a Args) Station(name string) string {
-	return get[string](a.values, name, "station")
+	raw := lookupArg(a.values, name, "station")
+
+	v, ok := raw.(string)
+	if !ok {
+		panicTypeMismatch(name, raw, "station")
+	}
+
+	return v
 }
 
 // Any returns the raw value bound to name without a type
@@ -103,14 +145,10 @@ func (a Args) Len() int {
 	return len(a.values)
 }
 
-// get is the generic typed accessor. It panics with a message
-// that names the key and the expected type when the key is
-// absent or the stored value has an incompatible type.
-func get[T any](
-	m map[string]any,
-	name string,
-	typeName string,
-) T {
+// lookupArg retrieves the raw value for name from m. It panics with
+// a message that names the key and expected type when name is absent.
+// Callers perform their own type assertion after this call.
+func lookupArg(m map[string]any, name, typeName string) any {
 	rawValue, found := m[name]
 	if !found {
 		panic(fmt.Sprintf(
@@ -121,16 +159,17 @@ func get[T any](
 		))
 	}
 
-	typed, typeOK := rawValue.(T)
-	if !typeOK {
-		panic(fmt.Sprintf(
-			"api.Args: key %q has type %T, "+
-				"want %s — the pattern type and the "+
-				"accessor do not agree; fix the keyword "+
-				"registration",
-			name, rawValue, typeName,
-		))
-	}
+	return rawValue
+}
 
-	return typed
+// panicTypeMismatch panics with a message describing a type mismatch
+// for the given argument name and raw value.
+func panicTypeMismatch(name string, rawValue any, typeName string) {
+	panic(fmt.Sprintf(
+		"api.Args: key %q has type %T, "+
+			"want %s — the pattern type and the "+
+			"accessor do not agree; fix the keyword "+
+			"registration",
+		name, rawValue, typeName,
+	))
 }

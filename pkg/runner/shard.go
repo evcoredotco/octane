@@ -2,6 +2,10 @@ package runner
 
 import "github.com/evcoreco/octane/pkg/story/ast"
 
+// minShardTotal is the minimum valid shard total; values at or below this
+// indicate sharding is disabled.
+const minShardTotal = 0
+
 // applyShardFilter returns the subset of stories whose test_id
 // belongs to shardIndex (zero-based) out of shardTotal shards.
 //
@@ -20,11 +24,11 @@ func applyShardFilter(
 	shardIndex,
 	shardTotal int,
 ) []*ast.Story {
-	if shardTotal <= 0 {
+	if shardTotal <= minShardTotal {
 		return stories
 	}
 
-	filtered := make([]*ast.Story, 0, len(stories))
+	filtered := make([]*ast.Story, emptySliceLen, len(stories))
 
 	for _, storyAST := range stories {
 		if inShardFilter(storyAST.Meta.ID, shardIndex, shardTotal) {
@@ -49,7 +53,7 @@ func collectPrerequisites(
 ) []*ast.Story {
 	walker := &prereqWalker{
 		seen:       make(map[string]bool, len(roots)),
-		out:        make([]*ast.Story, 0, len(roots)),
+		out:        make([]*ast.Story, emptySliceLen, len(roots)),
 		allStories: allStories,
 	}
 

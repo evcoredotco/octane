@@ -19,6 +19,8 @@ const (
 	fourSpaces = "    "
 	// twoTokens is the numeric constant 2 used to avoid magic numbers.
 	twoTokens = 2
+	// zeroLineCol is the zero value for both Line and Column in Token literals.
+	zeroLineCol = 0
 )
 
 // runLexerTable is the shared table-runner used by all TestLexer_* functions.
@@ -167,9 +169,9 @@ func TestLexer_SectionKeywordsTeardownToEndParallel(t *testing.T) {
 	runLexerTable(t, tests)
 }
 
-// TestLexer_StepKeywordsGivenWhenThen covers Given, When, and Then step
-// keywords after a 4-space indent.
-func TestLexer_StepKeywordsGivenWhenThen(t *testing.T) {
+// TestLexer_StepKeywordGiven covers the Given step keyword after a 4-space
+// indent.
+func TestLexer_StepKeywordGiven(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -179,25 +181,40 @@ func TestLexer_StepKeywordsGivenWhenThen(t *testing.T) {
 	}{
 		{
 			// Invariant: "Given" after 4-space indent produces TokenIndent
-			// then TokenGiven.
+			// then TokenGiven then TokenText.
 			name:  "step_keyword_Given",
 			input: "    Given the station is ready\n",
 			want: []lex.Token{
 				{
 					Kind:    lex.TokenIndent,
 					Literal: fourSpaces,
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
-				{Kind: lex.TokenGiven, Literal: "Given", Line: 0, Column: 0},
+				{Kind: lex.TokenGiven, Literal: "Given", Line: zeroLineCol, Column: zeroLineCol},
 				{
 					Kind:    lex.TokenText,
 					Literal: "the station is ready",
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
 			},
 		},
+	}
+
+	runLexerTable(t, tests)
+}
+
+// TestLexer_StepKeywordWhen covers the When step keyword after a 4-space
+// indent.
+func TestLexer_StepKeywordWhen(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		input string
+		want  []lex.Token
+	}{
 		{
 			// Invariant: "When" after 4-space indent produces TokenWhen.
 			name:  "step_keyword_When",
@@ -206,18 +223,33 @@ func TestLexer_StepKeywordsGivenWhenThen(t *testing.T) {
 				{
 					Kind:    lex.TokenIndent,
 					Literal: fourSpaces,
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
-				{Kind: lex.TokenWhen, Literal: "When", Line: 0, Column: 0},
+				{Kind: lex.TokenWhen, Literal: "When", Line: zeroLineCol, Column: zeroLineCol},
 				{
 					Kind:    lex.TokenText,
 					Literal: "the cable is plugged in",
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
 			},
 		},
+	}
+
+	runLexerTable(t, tests)
+}
+
+// TestLexer_StepKeywordThen covers the Then step keyword after a 4-space
+// indent.
+func TestLexer_StepKeywordThen(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		input string
+		want  []lex.Token
+	}{
 		{
 			// Invariant: "Then" after 4-space indent produces TokenThen.
 			name:  "step_keyword_Then",
@@ -226,15 +258,15 @@ func TestLexer_StepKeywordsGivenWhenThen(t *testing.T) {
 				{
 					Kind:    lex.TokenIndent,
 					Literal: fourSpaces,
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
-				{Kind: lex.TokenThen, Literal: "Then", Line: 0, Column: 0},
+				{Kind: lex.TokenThen, Literal: "Then", Line: zeroLineCol, Column: zeroLineCol},
 				{
 					Kind:    lex.TokenText,
 					Literal: "charging begins",
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
 			},
 		},
@@ -261,15 +293,15 @@ func TestLexer_StepKeywordsAndBut(t *testing.T) {
 				{
 					Kind:    lex.TokenIndent,
 					Literal: fourSpaces,
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
-				{Kind: lex.TokenAnd, Literal: "And", Line: 0, Column: 0},
+				{Kind: lex.TokenAnd, Literal: "And", Line: zeroLineCol, Column: zeroLineCol},
 				{
 					Kind:    lex.TokenText,
 					Literal: "the LED is green",
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
 			},
 		},
@@ -281,15 +313,15 @@ func TestLexer_StepKeywordsAndBut(t *testing.T) {
 				{
 					Kind:    lex.TokenIndent,
 					Literal: fourSpaces,
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
-				{Kind: lex.TokenBut, Literal: "But", Line: 0, Column: 0},
+				{Kind: lex.TokenBut, Literal: "But", Line: zeroLineCol, Column: zeroLineCol},
 				{
 					Kind:    lex.TokenText,
 					Literal: "the session does not end",
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
 			},
 		},
@@ -316,16 +348,16 @@ func TestLexer_MetaAndScenario(t *testing.T) {
 				{
 					Kind:    lex.TokenIndent,
 					Literal: fourSpaces,
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
-				{Kind: lex.TokenMetaKey, Literal: "Name", Line: 0, Column: 0},
-				{Kind: lex.TokenColon, Literal: ":", Line: 0, Column: 0},
+				{Kind: lex.TokenMetaKey, Literal: "Name", Line: zeroLineCol, Column: zeroLineCol},
+				{Kind: lex.TokenColon, Literal: ":", Line: zeroLineCol, Column: zeroLineCol},
 				{
 					Kind:    lex.TokenValue,
 					Literal: "Boot test",
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
 			},
 		},
@@ -337,11 +369,11 @@ func TestLexer_MetaAndScenario(t *testing.T) {
 				{
 					Kind:    lex.TokenScenario,
 					Literal: "Scenario",
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
-				{Kind: lex.TokenColon, Literal: ":", Line: 0, Column: 0},
-				{Kind: lex.TokenText, Literal: "My Title", Line: 0, Column: 0},
+				{Kind: lex.TokenColon, Literal: ":", Line: zeroLineCol, Column: zeroLineCol},
+				{Kind: lex.TokenText, Literal: "My Title", Line: zeroLineCol, Column: zeroLineCol},
 			},
 		},
 	}
@@ -377,7 +409,7 @@ func TestLexer_CommentAndEOF(t *testing.T) {
 			name:  "eof_empty_input",
 			input: emptyLiteral,
 			want: []lex.Token{
-				{Kind: lex.TokenEOF, Literal: emptyLiteral, Line: 0, Column: 0},
+				{Kind: lex.TokenEOF, Literal: emptyLiteral, Line: zeroLineCol, Column: zeroLineCol},
 			},
 		},
 		{
@@ -408,7 +440,7 @@ func TestLexer_ErrorPathsIndent(t *testing.T) {
 			name:  "tab_character_illegal",
 			input: "\tGiven something\n",
 			want: []lex.Token{
-				{Kind: lex.TokenIllegal, Literal: "\t", Line: 0, Column: 0},
+				{Kind: lex.TokenIllegal, Literal: "\t", Line: zeroLineCol, Column: zeroLineCol},
 			},
 		},
 		{
@@ -419,8 +451,8 @@ func TestLexer_ErrorPathsIndent(t *testing.T) {
 				{
 					Kind:    lex.TokenIllegal,
 					Literal: emptyLiteral,
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
 			},
 		},
@@ -433,8 +465,8 @@ func TestLexer_ErrorPathsIndent(t *testing.T) {
 				{
 					Kind:    lex.TokenIllegal,
 					Literal: fourSpaces,
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
 			},
 		},
@@ -463,8 +495,8 @@ func TestLexer_ErrorPathsContent(t *testing.T) {
 				{
 					Kind:    lex.TokenIllegal,
 					Literal: "Andromeda galaxy",
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
 			},
 		},
@@ -477,8 +509,8 @@ func TestLexer_ErrorPathsContent(t *testing.T) {
 				{
 					Kind:    lex.TokenIllegal,
 					Literal: "NoColonHere",
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
 			},
 		},
@@ -490,8 +522,8 @@ func TestLexer_ErrorPathsContent(t *testing.T) {
 				{
 					Kind:    lex.TokenIllegal,
 					Literal: "NotAKeyword",
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
 			},
 		},
@@ -519,23 +551,23 @@ func TestLexer_QueueOrdering(t *testing.T) {
 				{
 					Kind:    lex.TokenIndent,
 					Literal: emptyLiteral,
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
 				{
 					Kind:    lex.TokenMetaKey,
 					Literal: "Spec-Ref",
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
 				{
 					Kind:    lex.TokenColon,
 					Literal: emptyLiteral,
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
-				{Kind: lex.TokenValue, Literal: "TC-001", Line: 0, Column: 0},
-				{Kind: lex.TokenEOF, Literal: emptyLiteral, Line: 0, Column: 0},
+				{Kind: lex.TokenValue, Literal: "TC-001", Line: zeroLineCol, Column: zeroLineCol},
+				{Kind: lex.TokenEOF, Literal: emptyLiteral, Line: zeroLineCol, Column: zeroLineCol},
 			},
 		},
 	}
@@ -577,9 +609,9 @@ func TestLexer_LineTracking(t *testing.T) {
 	runLexerTable(t, tests)
 }
 
-// TestLexer_BlankLinesAndEdgeCases covers blank-line skipping, step keyword
-// with no trailing text, value whitespace trimming, and repeated EOF.
-func TestLexer_BlankLinesAndEdgeCases(t *testing.T) {
+// TestLexer_BlankLinesAndStepNoText covers blank-line skipping and a step
+// keyword at EOL without trailing text.
+func TestLexer_BlankLinesAndStepNoText(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -596,14 +628,14 @@ func TestLexer_BlankLinesAndEdgeCases(t *testing.T) {
 				{
 					Kind:    lex.TokenMeta,
 					Literal: emptyLiteral,
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
 				{
 					Kind:    lex.TokenBackground,
 					Literal: emptyLiteral,
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
 			},
 		},
@@ -616,23 +648,38 @@ func TestLexer_BlankLinesAndEdgeCases(t *testing.T) {
 				{
 					Kind:    lex.TokenIndent,
 					Literal: emptyLiteral,
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
 				{
 					Kind:    lex.TokenGiven,
 					Literal: emptyLiteral,
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
 				{
 					Kind:    lex.TokenText,
 					Literal: emptyLiteral,
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
 			},
 		},
+	}
+
+	runLexerTable(t, tests)
+}
+
+// TestLexer_MetaValueTrimmingAndEOF covers meta-value whitespace trimming and
+// repeated-EOF behaviour.
+func TestLexer_MetaValueTrimmingAndEOF(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		input string
+		want  []lex.Token
+	}{
 		{
 			// Invariant: leading whitespace after the colon in a meta entry
 			// is trimmed.
@@ -642,17 +689,17 @@ func TestLexer_BlankLinesAndEdgeCases(t *testing.T) {
 				{
 					Kind:    lex.TokenIndent,
 					Literal: emptyLiteral,
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
-				{Kind: lex.TokenMetaKey, Literal: "Tags", Line: 0, Column: 0},
+				{Kind: lex.TokenMetaKey, Literal: "Tags", Line: zeroLineCol, Column: zeroLineCol},
 				{
 					Kind:    lex.TokenColon,
 					Literal: emptyLiteral,
-					Line:    0,
-					Column:  0,
+					Line:    zeroLineCol,
+					Column:  zeroLineCol,
 				},
-				{Kind: lex.TokenValue, Literal: "boot", Line: 0, Column: 0},
+				{Kind: lex.TokenValue, Literal: "boot", Line: zeroLineCol, Column: zeroLineCol},
 			},
 		},
 		{
@@ -661,9 +708,9 @@ func TestLexer_BlankLinesAndEdgeCases(t *testing.T) {
 			name:  "eof_repeated",
 			input: emptyLiteral,
 			want: []lex.Token{
-				{Kind: lex.TokenEOF, Literal: emptyLiteral, Line: 0, Column: 0},
-				{Kind: lex.TokenEOF, Literal: emptyLiteral, Line: 0, Column: 0},
-				{Kind: lex.TokenEOF, Literal: emptyLiteral, Line: 0, Column: 0},
+				{Kind: lex.TokenEOF, Literal: emptyLiteral, Line: zeroLineCol, Column: zeroLineCol},
+				{Kind: lex.TokenEOF, Literal: emptyLiteral, Line: zeroLineCol, Column: zeroLineCol},
+				{Kind: lex.TokenEOF, Literal: emptyLiteral, Line: zeroLineCol, Column: zeroLineCol},
 			},
 		},
 	}

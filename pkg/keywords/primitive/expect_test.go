@@ -51,13 +51,23 @@ const (
 
 	// messageTypeCALLRESULT is the OCPP-J message-type code for a CALLRESULT.
 	messageTypeCALLRESULT = 3
+
+	// frozenDayFirst is the first day of the month used in frozenNow.
+	frozenDayFirst = 1
+
+	// zeroTimeField is the zero value for hour/min/sec/nsec in time.Date.
+	zeroTimeField = 0
 )
 
 // frozenNow returns a fixed deterministic clock value to inject into MockState
 // so that deadline calculations are reproducible across runs
 // (constitution principle IV).
 func frozenNow() time.Time {
-	return time.Date(frozenYear, 1, 1, 0, 0, 0, 0, time.UTC)
+	return time.Date(
+		frozenYear, time.January, frozenDayFirst,
+		zeroTimeField, zeroTimeField, zeroTimeField, zeroTimeField,
+		time.UTC,
+	)
 }
 
 // ── expectAnyFrame tests ─────────────────────────────────────────────────────

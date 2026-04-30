@@ -79,12 +79,12 @@ func NewMockState() *State {
 	}
 }
 
-// Station returns the [api.Station] registered under the given handle.
+// Station returns the [api.StationValue] registered under the given handle.
 // It panics if no station has been registered for that name, because
 // an unresolved station handle is a test-setup bug, not a runtime error.
 //
 // Call [State.RegisterStation] before running the keyword under test.
-func (s *State) Station(handle string) (api.Station, error) {
+func (s *State) Station(handle string) (api.StationValue, error) {
 	station, found := s.stations[handle]
 	if !found {
 		panic(fmt.Sprintf(
@@ -94,7 +94,7 @@ func (s *State) Station(handle string) (api.Station, error) {
 		))
 	}
 
-	return station, nil
+	return api.StationValue{Station: station}, nil
 }
 
 // Now returns the frozen time configured via [State.SetNow]. The default

@@ -70,7 +70,8 @@ func assertParsesClean(t *testing.T, path string) {
 		t.Fatalf("read %s: %v", path, err)
 	}
 
-	if _, parseErr := story.Parse(path, src); parseErr != nil {
+	_, parseErr := story.Parse(path, src)
+	if parseErr != nil {
 		t.Errorf("parse %s: %v", path, parseErr)
 	}
 }

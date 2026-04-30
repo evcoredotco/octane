@@ -26,10 +26,12 @@
 // # Runtime interfaces
 //
 // [State] and [Station] are the runtime's surface as seen by keyword
-// functions. Both are interfaces (not concrete types) so that keyword
-// libraries can be unit-tested against mocks without importing the
-// runtime or transport packages. For unit testing, use the test doubles
-// in the sibling package pkg/keywords/api/mock.
+// functions. [State] is an interface; [Station] is the wire I/O
+// interface. [State.Station] returns a [StationValue] that embeds
+// [Station] and promotes all its methods. Keyword libraries can be
+// unit-tested against mocks without importing the runtime or transport
+// packages. For unit testing, use the test doubles in
+// pkg/keywords/api/mock.
 package api
 
 import (
@@ -129,7 +131,7 @@ type State interface {
 	// An error is returned if the station handle is not known
 	// to the current scenario — typically because it was not
 	// declared or has already been torn down.
-	Station(handle string) (Station, error)
+	Station(handle string) (StationValue, error)
 
 	// RegisterStation binds station to handle so that subsequent
 	// [State.Station] calls can retrieve it. Registering the same
@@ -236,46 +238,4 @@ type Keyword struct {
 	// arguments extracted from the step text by the pattern
 	// matcher. A non-nil return marks the step as failed.
 	Func Func
-}
-
-// Station is the wire-I/O surface for a single charging station
-// connection. Keywords use it to send OCPP-J frames to a CSMS,
-// receive frames from the wire, close the connection, and check
-// whether the connection is still open.
-//
-// Station is an interface so that keyword unit tests can supply
-// a mock without importing pkg/transport/ or any network library
-// (spec 003 AC8). The runtime's concrete implementation wraps
-// the WebSocket transport and is obtained via [State.Station].
-//
-// Frames are represented as []any — the decoded Go form of an
-// OCPP-J JSON array (per ADR 0006: arrays decode to []any,
-// numbers to float64). For example, a CALL frame is:
-//
-//	[]any{2, "messageId", "BootNotification", map[string]any{...}}
-type Station interface {
-	// Send transmits an OCPP-J frame to the CSMS over the
-	// station's WebSocket connection. The frame must be a valid
-	// OCPP-J JSON array in its decoded Go form ([]any).
-	//
-	// The context carries the per-step timeout. Send returns an
-	// error if the write fails or the context expires.
-	Send(ctx context.Context, frame []any) error
-
-	// Expect blocks until an OCPP-J frame arrives on the
-	// station's WebSocket connection or the context expires.
-	//
-	// The returned frame is the decoded Go form of the JSON
-	// array received from the wire. An error is returned if the
-	// read fails, the connection is closed, or the context
-	// expires before a frame arrives.
-	Expect(ctx context.Context) ([]any, error)
-
-	// Close gracefully shuts down the WebSocket connection.
-	// Subsequent calls are no-ops and return nil.
-	Close() error
-
-	// IsOpen reports whether the connection is currently open.
-	// It returns false once [Close] has been called.
-	IsOpen() bool
 }

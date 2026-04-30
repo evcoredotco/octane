@@ -16,9 +16,25 @@ const chanBufOne = 1
 // clockTestYear is the year used in the fixed seed time for clock tests.
 const clockTestYear = 2026
 
+// clockTestMonthJan is the January month index used in the fixed seed time.
+const clockTestMonthJan = 1
+
+// clockTestDayFirst is the day-of-month used in the fixed seed time.
+const clockTestDayFirst = 1
+
+// zeroTimeField is the zero value used for hour/min/sec/nsec parameters
+// in time.Date calls throughout the clock tests.
+const zeroTimeField = 0
+
+// zeroSleepDuration is the zero duration used in the Sleep(0) edge-case test.
+const zeroSleepDuration = 0
+
 // clockSeed returns the fixed test seed time used across clock tests.
 func clockSeed() time.Time {
-	return time.Date(clockTestYear, 1, 1, 0, 0, 0, 0, time.UTC)
+	return time.Date(
+		clockTestYear, clockTestMonthJan, clockTestDayFirst,
+		zeroTimeField, zeroTimeField, zeroTimeField, zeroTimeField, time.UTC,
+	)
 }
 
 // TestDeterministicNow verifies that Now returns the seed time before any
@@ -121,7 +137,7 @@ func TestDeterministicSleepZero(t *testing.T) {
 
 	clk := clock.Deterministic(clockSeed())
 
-	err := clk.Sleep(context.Background(), 0)
+	err := clk.Sleep(context.Background(), zeroSleepDuration)
 	if err != nil {
 		t.Errorf("Sleep(0): got error %v, want nil", err)
 	}

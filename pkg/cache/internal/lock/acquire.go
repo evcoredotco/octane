@@ -48,6 +48,10 @@ func (lc *lockCloser) Close() error {
 // maxBackoffDelay is the upper bound for exponential backoff in [Acquire].
 const maxBackoffDelay = 100 * time.Millisecond
 
+// noTimeout represents a zero (or negative) timeout duration, meaning
+// no deadline is applied beyond the parent context's own deadline.
+const noTimeout = 0
+
 // backoffMultiplier is the doubling factor applied to the retry delay.
 const backoffMultiplier = 2
 
@@ -122,7 +126,8 @@ func TryAcquire(
 	ctx context.Context,
 	lockPath string,
 ) (io.Closer, error) {
-	if err := ctx.Err(); err != nil {
+	err := ctx.Err()
+	if err != nil {
 		return nil, fmt.Errorf(
 			"lock: TryAcquire: context done: %w", err,
 		)
@@ -174,7 +179,7 @@ func buildDeadlineContext(
 	ctx context.Context,
 	timeout time.Duration,
 ) (context.Context, context.CancelFunc) {
-	if timeout <= 0 {
+	if timeout <= noTimeout {
 		return context.WithCancel(ctx)
 	}
 

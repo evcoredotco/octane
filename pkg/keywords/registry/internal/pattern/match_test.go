@@ -83,8 +83,9 @@ const (
 	fmtCoerceUnexpectedErr = "Coerce: unexpected error: %v"
 	fmtCoercedValue        = "coerced value: want %q, got %v"
 	fmtCoerceExpNilErr     = "Coerce: expected CoercionError, got nil"
-	fmtCoerceErrType       = "error type: want *pattern.CoercionError, got %T: %v"
-	fmtCoerceErrExpected   = "CoercionError.Expected: want %q, got %q"
+	fmtCoerceErrType       = "error type: want *pattern.CoercionError, " +
+		"got %T: %v"
+	fmtCoerceErrExpected = "CoercionError.Expected: want %q, got %q"
 
 	// Empty string used as a step argument.
 	emptyStepStr = ""
@@ -92,6 +93,7 @@ const (
 	// Magic-number sentinels.
 	wantOneToken = 1
 	wantZeroLen  = 0
+	tokenIdx0    = 0
 	tokenIdx1    = 1
 	tokenIdx3    = 3
 	tokenIdx5    = 5
@@ -116,7 +118,7 @@ func Test_pattern_Parse_literalOnly(t *testing.T) {
 		t.Fatalf(fmtExpectedOneToken, len(tokens))
 	}
 
-	tok := tokens[0]
+	tok := tokens[tokenIdx0]
 	if tok.Kind != pattern.KindLiteral {
 		t.Errorf("token Kind: want KindLiteral, got %v", tok.Kind)
 	}
@@ -145,7 +147,7 @@ func Test_pattern_Parse_placeholderOnly(t *testing.T) {
 		t.Fatalf(fmtExpectedOneToken, len(tokens))
 	}
 
-	tok := tokens[0]
+	tok := tokens[tokenIdx0]
 	if tok.Kind != pattern.KindPlaceholder {
 		t.Errorf("token Kind: want KindPlaceholder, got %v", tok.Kind)
 	}
@@ -262,8 +264,8 @@ func assertSinglePlaceholderType(
 		t.Fatalf(fmtExpectedOneToken, len(tokens))
 	}
 
-	if tokens[0].Type != wantType {
-		t.Errorf("Type: want %q, got %q", wantType, tokens[0].Type)
+	if tokens[tokenIdx0].Type != wantType {
+		t.Errorf("Type: want %q, got %q", wantType, tokens[tokenIdx0].Type)
 	}
 }
 
@@ -1131,7 +1133,7 @@ func containsSubstring(str, sub string) bool {
 		return true
 	}
 
-	for idx := 0; idx <= len(str)-len(sub); idx++ {
+	for idx := tokenIdx0; idx <= len(str)-len(sub); idx++ {
 		if str[idx:idx+len(sub)] == sub {
 			return true
 		}

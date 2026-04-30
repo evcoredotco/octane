@@ -5,7 +5,11 @@ import (
 	"github.com/evcoreco/octane/pkg/keywords/registry"
 )
 
-func init() {
+// Register adds every primitive keyword to the global registry.
+// Call this once from main (or from Execute in the CLI entry point) before
+// running any stories. It replaces the former init() hook so that keyword
+// registration is explicit and auditable, satisfying the gochecknoinits rule.
+func Register() {
 	registerConnectionKeywords()
 	registerExpectKeywords()
 	registerSendKeywords()

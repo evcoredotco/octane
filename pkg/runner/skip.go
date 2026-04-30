@@ -22,11 +22,13 @@ func cancelPendingNodes(
 			continue
 		}
 
-		storyID, scopeKey := splitNodeID(nodeID)
+		nodeParts := splitNodeID(nodeID)
+		storyID := nodeParts.storyID
+		scopeKey := nodeParts.scopeKey
 
 		state.status[nodeID] = nodeDone
 		state.result[nodeID] = StoryResult{
-			Order:       0,
+			Order:       zeroOrder,
 			TestID:      storyID,
 			ScopeKey:    scopeKey,
 			OCPPVersion: "",

@@ -18,6 +18,18 @@ const cacheDirMode = 0o750
 // cacheFileMode is the permission bits for cache data files (rw-------).
 const cacheFileMode = 0o600
 
+// zeroTTLSeconds is the TTL value written into result.json when no
+// TTL is set (meaning the entry never expires on its own).
+const zeroTTLSeconds = int64(0)
+
+// emptyTraceLen is the zero-length sentinel used to test whether a trace
+// byte slice is non-empty before writing trace.json.
+const emptyTraceLen = 0
+
+// zeroTTLDuration is the zero time.Duration sentinel used to check whether
+// a cache entry has a TTL configured.
+const zeroTTLDuration = 0
+
 // resultEnvelope is the JSON structure persisted as result.json.
 // It wraps [Entry] fields with metadata required by ADR 0016
 // §"Result file schema".
@@ -82,7 +94,8 @@ func (fc *FileCache) Get(
 	ctx context.Context,
 	key Key,
 ) (*Entry, error) {
-	if err := ctx.Err(); err != nil {
+	err := ctx.Err()
+	if err != nil {
 		return nil, fmt.Errorf("cache: Get: %w", err)
 	}
 
@@ -131,7 +144,8 @@ func readResultEnvelope(resultPath string) (*resultEnvelope, error) {
 
 	var env resultEnvelope
 
-	if err = json.Unmarshal(data, &env); err != nil {
+	err = json.Unmarshal(data, &env)
+	if err != nil {
 		// Treat corrupt entry as a cache miss so the runner
 		// re-executes and overwrites the bad file.
 		return nil, ErrCacheMiss
@@ -189,7 +203,7 @@ func (fc *FileCache) Put(
 		return fmt.Errorf("cache: create entry dir: %w", err)
 	}
 
-	tracePresent := len(entry.Trace) > 0
+	tracePresent := len(entry.Trace) > emptyTraceLen
 
 	if tracePresent {
 		err := atomicWriteFile(
@@ -225,8 +239,8 @@ func buildEnvelope(
 	writtenAt time.Time,
 	tracePresent bool,
 ) resultEnvelope {
-	ttlSecs := int64(0)
-	if entry.TTL > 0 {
+	ttlSecs := zeroTTLSeconds
+	if entry.TTL > zeroTTLDuration {
 		ttlSecs = int64(entry.TTL.Seconds())
 	}
 
@@ -249,11 +263,13 @@ func writeEnvelope(dir string, env resultEnvelope) error {
 
 	resultPath := filepath.Join(dir, "result.json")
 
-	if err = atomicWriteFile(resultPath, data); err != nil {
+	err = atomicWriteFile(resultPath, data)
+	if err != nil {
 		return fmt.Errorf("cache: write result.json: %w", err)
 	}
 
-	if err = fsyncDir(dir); err != nil {
+	err = fsyncDir(dir)
+	if err != nil {
 		return fmt.Errorf("cache: fsync entry dir: %w", err)
 	}
 

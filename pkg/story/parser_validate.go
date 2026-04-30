@@ -34,7 +34,7 @@ func validateParameters(
 	for _, group := range allGroups {
 		for _, step := range group {
 			unbound := findUnbound(step.Text, paramSet)
-			if len(unbound) == 0 {
+			if len(unbound) == noUnbound {
 				continue
 			}
 
@@ -66,7 +66,8 @@ func buildStepGroups(
 	setup []ast.Step,
 	teardown []ast.Step,
 ) [][]ast.Step {
-	groups := make([][]ast.Step, 0, fixedStepGroupCount+len(scenarios))
+	groupCap := fixedStepGroupCount + len(scenarios)
+	groups := make([][]ast.Step, emptyGroupCapacity, groupCap)
 	groups = append(groups, background, setup)
 
 	for _, sc := range scenarios {
@@ -85,7 +86,7 @@ func findUnbound(text string, declared map[string]struct{}) []string {
 
 	var unbound []string
 
-	pos := 0
+	pos := textScanStart
 
 	for pos < len(text) {
 		name, advance := extractPlaceholderAt(text, pos)
@@ -108,9 +109,29 @@ func findUnbound(text string, declared map[string]struct{}) []string {
 // emptyPlaceholder is the empty string sentinel for placeholder names.
 const emptyPlaceholder = ""
 
+// noUnbound is the zero-length sentinel used to detect an empty unbound list.
+// Required by the add-constant linter rule.
+const noUnbound = 0
+
 // noPlaceholderAdvance is the advance returned when no placeholder starts at
 // the current position.
 const noPlaceholderAdvance = 1
+
+// placeholderOffset is the offset past the opening '{' when extracting the
+// inner text of a placeholder. Also used for the closed-brace end-advance.
+const placeholderOffset = 1
+
+// emptyGroupCapacity is the zero capacity used when pre-allocating the
+// initial step groups slice.
+const emptyGroupCapacity = 0
+
+// textScanStart is the initial byte position for the placeholder scanner
+// in findUnbound. Required by add-constant.
+const textScanStart = 0
+
+// sortLowerBound is the inclusive lower bound for the inner loop index in
+// insertionSortStrings. Required by add-constant.
+const sortLowerBound = 0
 
 // extractPlaceholderAt attempts to read a '{...}' placeholder starting at
 // pos in text. It returns (name, advance) where advance is the number of
@@ -121,7 +142,7 @@ func extractPlaceholderAt(text string, pos int) (string, int) {
 		return emptyPlaceholder, noPlaceholderAdvance
 	}
 
-	end := pos + 1
+	end := pos + placeholderOffset
 
 	for end < len(text) && text[end] != '}' && text[end] != '\n' {
 		end++
@@ -131,10 +152,10 @@ func extractPlaceholderAt(text string, pos int) (string, int) {
 		return emptyPlaceholder, noPlaceholderAdvance
 	}
 
-	inner := text[pos+1 : end]
+	inner := text[pos+placeholderOffset : end]
 	n := stripTypeSuffix(inner)
 
-	return n, end - pos + 1
+	return n, end - pos + placeholderOffset
 }
 
 // recordUnbound adds name to unbound when it is neither declared nor already
@@ -174,18 +195,26 @@ func stripTypeSuffix(inner string) string {
 	return inner
 }
 
+// sortStartIdx is the starting index for insertionSortStrings: the second
+// element (index 1), since the first element is trivially sorted.
+const sortStartIdx = 1
+
+// sortPredecessorOffset is the offset from the current insertion-sort index
+// to its immediate predecessor. Required by add-constant.
+const sortPredecessorOffset = 1
+
 // insertionSortStrings sorts slice in place using insertion sort. This is
 // used instead of importing "sort" for the typically short unbound slice.
 func insertionSortStrings(slice []string) {
-	for idx := 1; idx < len(slice); idx++ {
+	for idx := sortStartIdx; idx < len(slice); idx++ {
 		key := slice[idx]
-		jdx := idx - 1
+		jdx := idx - sortPredecessorOffset
 
-		for jdx >= 0 && slice[jdx] > key {
-			slice[jdx+1] = slice[jdx]
+		for jdx >= sortLowerBound && slice[jdx] > key {
+			slice[jdx+sortPredecessorOffset] = slice[jdx]
 			jdx--
 		}
 
-		slice[jdx+1] = key
+		slice[jdx+sortPredecessorOffset] = key
 	}
 }

@@ -1,6 +1,7 @@
 package story
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -9,12 +10,24 @@ import (
 	"github.com/evcoreco/octane/pkg/story/lex"
 )
 
+// errUnknownScope is the sentinel error returned by parseScope when the
+// raw scope string is not one of the three recognised literals.
+var errUnknownScope = errors.New("unknown scope value")
+
 // subIndentMinLen is the length threshold distinguishing a Depends
 // sub-indent from a top-level indent (4 spaces or one tab).
 const subIndentMinLen = 4
 
 // emptyStr is a named empty string required by the add-constant rule.
 const emptyStr = ""
+
+// tokenZeroPos is the zero position value for sentinel tokens. Required by
+// the add-constant linter rule.
+const tokenZeroPos = 0
+
+// entryIndexMin is the minimum valid entry index passed to max() when
+// clamping a possibly-negative index to zero. Required by add-constant.
+const entryIndexMin = 0
 
 // noEntryIdx is the sentinel value meaning no Depends entry has been started.
 const noEntryIdx = -1
@@ -110,12 +123,12 @@ func (p *parser) parseDepends() ([]ast.Dependency, error) {
 		deps = res.deps
 	}
 
-	flushed, ok, err := flushEntry(p.file, cur, entryIndex)
+	flushed, hasEntry, err := flushEntry(p.file, cur, entryIndex)
 	if err != nil {
 		return nil, err
 	}
 
-	if ok {
+	if hasEntry {
 		deps = append(deps, flushed)
 	}
 
@@ -142,7 +155,7 @@ func (p *parser) parseDependsLine(
 
 	_ = p.lex.Next() // consume key
 
-	cv, colonErr := p.consumeColonValue(keyTok, entryIndex)
+	colonResult, colonErr := p.consumeColonValue(keyTok, entryIndex)
 	if colonErr != nil {
 		return dependsLineResult{
 			cur: cur, entryIndex: entryIndex, deps: deps, done: false,
@@ -150,11 +163,11 @@ func (p *parser) parseDependsLine(
 	}
 
 	keyLit := strings.TrimSpace(keyTok.Literal)
-	valLit := strings.TrimSpace(cv.valTok.Literal)
+	valLit := strings.TrimSpace(colonResult.valTok.Literal)
 
 	if !strings.HasPrefix(keyLit, "-") {
 		applyErr := applyNonBulletKey(
-			cur, keyLit, valLit, cv.valTok, p.file, entryIndex,
+			cur, keyLit, valLit, colonResult.valTok, p.file, entryIndex,
 		)
 
 		return dependsLineResult{
@@ -162,17 +175,20 @@ func (p *parser) parseDependsLine(
 		}, applyErr
 	}
 
-	br, err := p.startNewBullet(
+	bulletResult, err := p.startNewBullet(
 		cur,
 		entryIndex,
 		deps,
 		keyTok,
 		valLit,
-		cv.valTok,
+		colonResult.valTok,
 	)
 
 	return dependsLineResult{
-		cur: br.cur, entryIndex: br.entryIndex, deps: br.deps, done: false,
+		cur:        bulletResult.cur,
+		entryIndex: bulletResult.entryIndex,
+		deps:       bulletResult.deps,
+		done:       false,
 	}, err
 }
 
@@ -203,14 +219,14 @@ func (p *parser) startNewBullet(
 	valLit string,
 	valTok lex.Token,
 ) (startBulletResult, error) {
-	flushed, ok, flushErr := flushEntry(p.file, cur, entryIndex)
+	flushed, hasEntry, flushErr := flushEntry(p.file, cur, entryIndex)
 	if flushErr != nil {
 		return startBulletResult{
 			cur: cur, entryIndex: entryIndex, deps: deps,
 		}, flushErr
 	}
 
-	if ok {
+	if hasEntry {
 		deps = append(deps, flushed)
 	}
 
@@ -254,8 +270,8 @@ func (p *parser) consumeColonValue(
 	illegalZero := lex.Token{
 		Kind:    lex.TokenIllegal,
 		Literal: emptyStr,
-		Line:    0,
-		Column:  0,
+		Line:    tokenZeroPos,
+		Column:  tokenZeroPos,
 	}
 
 	colonTok := p.lex.Peek()
@@ -272,7 +288,7 @@ func (p *parser) consumeColonValue(
 				File:       p.file,
 				Line:       keyTok.Line,
 				Column:     keyTok.Column,
-				EntryIndex: max(entryIndex, 0),
+				EntryIndex: max(entryIndex, entryIndexMin),
 				Reason:     "expected colon after key",
 				Suggestion: "use the form '  - id: <story-id>'",
 			}
@@ -294,7 +310,7 @@ func (p *parser) consumeColonValue(
 				File:       p.file,
 				Line:       colonTok.Line,
 				Column:     colonTok.Column,
-				EntryIndex: max(entryIndex, 0),
+				EntryIndex: max(entryIndex, entryIndexMin),
 				Reason:     "expected value after colon",
 				Suggestion: "use the form '  - id: <story-id>'",
 			}
@@ -349,9 +365,12 @@ func flushEntry(
 ) (ast.Dependency, bool, error) {
 	if cur == nil {
 		return ast.Dependency{
-			ID:       emptyStr,
-			Scope:    0,
-			Position: ast.Position{Line: 0, Column: 0},
+			ID:    emptyStr,
+			Scope: tokenZeroPos,
+			Position: ast.Position{
+				Line:   tokenZeroPos,
+				Column: tokenZeroPos,
+			},
 		}, false, nil
 	}
 
@@ -382,6 +401,6 @@ func parseScope(raw string) (ast.Scope, error) {
 	case "global":
 		return ast.ScopeGlobal, nil
 	default:
-		return 0, fmt.Errorf("unknown scope value %q", raw)
+		return tokenZeroPos, fmt.Errorf("%w: %q", errUnknownScope, raw)
 	}
 }

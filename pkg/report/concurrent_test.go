@@ -25,6 +25,19 @@ const (
 	// concurrentTestYear is the year component of the fixed timestamp used
 	// in concurrent write test fixtures.
 	concurrentTestYear = 2024
+
+	// concurrentTestMonth is the month (January) used in the fixed timestamp.
+	concurrentTestMonth = 1
+
+	// concurrentTestDay is the day-of-month used in the fixed timestamp.
+	concurrentTestDay = 15
+
+	// concurrentTestHour is the hour used in the fixed timestamp.
+	concurrentTestHour = 10
+
+	// zeroTimeField is the zero value for minute, second, and nanosecond
+	// arguments in time.Date calls.
+	zeroTimeField = 0
 )
 
 // validateRunIDEntry checks that a single directory entry in the shared output
@@ -87,7 +100,12 @@ func validateRunIDEntry(
 // writeTestReport builds a minimal RunResult and calls reportjson.WriteJSON
 // for a single goroutine in the concurrent test. Errors are sent to errs.
 func writeTestReport(goroutineIdx int, sharedDir string, errs chan<- error) {
-	fixedTime := time.Date(concurrentTestYear, 1, 15, 10, 0, 0, 0, time.UTC)
+	fixedTime := time.Date(
+		concurrentTestYear, concurrentTestMonth,
+		concurrentTestDay, concurrentTestHour,
+		zeroTimeField, zeroTimeField, zeroTimeField,
+		time.UTC,
+	)
 	result := &runner.RunResult{
 		RunID:      fmt.Sprintf("run-%02d", goroutineIdx),
 		StartedAt:  fixedTime,
@@ -152,7 +170,8 @@ func Test_report_WriteJSON_ConcurrentDistinctRunIDs(t *testing.T) {
 		)
 	}
 
-	// Invariant: each file encodes a distinct RunID matching its directory name.
+	// Invariant: each file encodes a distinct RunID matching its
+	// directory name.
 	seenRunIDs := make(map[string]struct{}, goroutineCount)
 
 	for _, entry := range entries {

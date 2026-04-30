@@ -70,6 +70,9 @@ var global = struct { //nolint:exhaustruct,gochecknoglobals
 // and Register, landing on the actual registrant.
 const callerSkip = 2
 
+// emptyLen is the zero-length sentinel used in slice reset and length checks.
+const emptyLen = 0
+
 // Register adds keyword to the global keyword registry. It panics if a
 // keyword with the same (Layer, OCPPVersion, Pattern) triple has
 // already been registered. The panic message includes the formatted
@@ -154,7 +157,7 @@ func reset() {
 	global.mu.Lock()
 	defer global.mu.Unlock()
 
-	global.entries = global.entries[:0]
+	global.entries = global.entries[:emptyLen]
 	global.index = make(map[registryKey]string)
 }
 
@@ -166,7 +169,7 @@ func callerLocation(skip int) string {
 	var pcs [1]uintptr
 
 	count := runtime.Callers(skip+1, pcs[:])
-	if count == 0 {
+	if count == emptyLen {
 		return "<unknown>"
 	}
 

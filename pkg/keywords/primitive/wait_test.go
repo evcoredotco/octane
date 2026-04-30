@@ -17,7 +17,6 @@ import (
 	"github.com/evcoreco/octane/pkg/engine/clock"
 	"github.com/evcoreco/octane/pkg/keywords/api"
 	"github.com/evcoreco/octane/pkg/keywords/api/mock"
-	_ "github.com/evcoreco/octane/pkg/keywords/primitive" // blank import
 )
 
 // ── Named constants ──────────────────────────────────────────────────────────
@@ -52,6 +51,10 @@ const (
 	// clockDayFirst is the day component (1st) for deterministic clock
 	// seed values in wait tests.
 	clockDayFirst = 1
+
+	// zeroHMSN is the zero value for hour/minute/second/nanosecond in
+	// deterministic clock seeds.
+	zeroHMSN = 0
 )
 
 // ── tests ────────────────────────────────────────────────────────────────────
@@ -63,7 +66,7 @@ func Test_primitive_wait_ReturnsNil(t *testing.T) {
 
 	clk := clock.Deterministic(time.Date(
 		testYear, clockMonthJanuary, clockDayFirst,
-		0, 0, 0, 0, time.UTC,
+		zeroHMSN, zeroHMSN, zeroHMSN, zeroHMSN, time.UTC,
 	))
 
 	state := mock.NewMockState()
@@ -109,7 +112,7 @@ func Test_primitive_wait_NoDeterministicClockRealTimeElapsed(t *testing.T) {
 
 	clk := clock.Deterministic(time.Date(
 		testYear, clockMonthJanuary, clockDayFirst,
-		0, 0, 0, 0, time.UTC,
+		zeroHMSN, zeroHMSN, zeroHMSN, zeroHMSN, time.UTC,
 	))
 
 	state := mock.NewMockState()
@@ -165,7 +168,7 @@ func Test_primitive_wait_ContextCancelled(t *testing.T) {
 	// The keyword should unblock via context cancellation instead.
 	clk := clock.Deterministic(time.Date(
 		testYear, clockMonthJanuary, clockDayFirst,
-		0, 0, 0, 0, time.UTC,
+		zeroHMSN, zeroHMSN, zeroHMSN, zeroHMSN, time.UTC,
 	))
 
 	state := mock.NewMockState()

@@ -38,6 +38,10 @@ const (
 
 	// noSubprotocols indicates that the subprotocols list is empty.
 	noSubprotocols = 0
+
+	// zeroMaxBytes is the zero int64 returned for maxBytes on error paths.
+	// Required by the add-constant linter rule.
+	zeroMaxBytes = int64(0)
 )
 
 // errUnsupportedScheme is returned when the URL scheme is not ws or wss.
@@ -71,7 +75,7 @@ func Dial(
 	ctx context.Context,
 	rawURL string,
 	opts DialOptions,
-) (Station, error) {
+) (*Handle, error) {
 	parsed, err := url.Parse(rawURL)
 	if err != nil {
 		return nil, fmt.Errorf("transport: invalid URL: %w", err)
@@ -134,15 +138,16 @@ func dialWebSocket(
 	}
 
 	if err != nil {
-		return nil, 0, wrapDialError(safeURL, err)
+		return nil, zeroMaxBytes, wrapDialError(safeURL, err)
 	}
 
 	conn.SetReadLimit(maxBytes)
 
-	if err = validateSubprotocol(conn, opts.Subprotocols); err != nil {
+	err = validateSubprotocol(conn, opts.Subprotocols)
+	if err != nil {
 		_ = conn.Close(websocket.StatusNormalClosure, "subprotocol mismatch")
 
-		return nil, 0, err
+		return nil, zeroMaxBytes, err
 	}
 
 	return conn, maxBytes, nil

@@ -1,64 +1,62 @@
 {
-  "Path": "../../scenarios/v16/station_connection_established.story",
-  "Meta": {
-    "Name": "Station connection established",
-    "ID": "station_connection_established",
-    "SpecRef": null,
-    "Tags": [
+  "path": "../../scenarios/v16/station_connection_established.story",
+  "meta": {
+    "name": "Station connection established",
+    "id": "station_connection_established",
+    "tags": [
       "helper",
       "lifecycle",
       "wire-only"
     ],
-    "Stations": 1,
-    "Timeout": 10000000000,
-    "Parameters": null,
-    "CacheTTL": null,
-    "Depends": null,
-    "Position": {
-      "Line": 13,
-      "Column": 1
+    "stations": 1,
+    "timeout": 10000000000,
+    "parameters": null,
+    "depends": null,
+    "position": {
+      "line": 13,
+      "column": 1
     }
   },
-  "Background": null,
-  "Setup": null,
-  "Scenarios": [
+  "background": null,
+  "setup": null,
+  "scenarios": [
     {
-      "Name": "Station opens an OCPP-J WebSocket to the CSMS",
-      "Steps": [
+      "name": "Station opens an OCPP-J WebSocket to the CSMS",
+      "steps": [
         {
-          "Kind": 2,
-          "Text": "station \"CP01\" connects to the CSMS",
-          "Position": {
-            "Line": 21,
-            "Column": 5
+          "kind": 2,
+          "text": "station \"CP01\" connects to the CSMS",
+          "position": {
+            "line": 21,
+            "column": 5
           }
         },
         {
-          "Kind": 3,
-          "Text": "the OCPP-J handshake completes within 5 seconds",
-          "Position": {
-            "Line": 22,
-            "Column": 5
+          "kind": 3,
+          "text": "the OCPP-J handshake completes within 5 seconds",
+          "position": {
+            "line": 22,
+            "column": 5
           }
         },
         {
-          "Kind": 4,
-          "Text": "station \"CP01\" is in the connected state",
-          "Position": {
-            "Line": 23,
-            "Column": 5
+          "kind": 4,
+          "text": "station \"CP01\" is in the connected state",
+          "position": {
+            "line": 23,
+            "column": 5
           }
         }
       ],
-      "Position": {
-        "Line": 20,
-        "Column": 1
+      "position": {
+        "line": 20,
+        "column": 1
       }
     }
   ],
-  "Teardown": null,
-  "Position": {
-    "Line": 13,
-    "Column": 1
+  "teardown": null,
+  "position": {
+    "line": 13,
+    "column": 1
   }
 }

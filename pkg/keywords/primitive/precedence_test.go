@@ -18,9 +18,7 @@ import (
 	"testing"
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
-	// Blank import ensures all production primitives are registered at
-	// init() time before the test-local keywords are registered.
-	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
+	"github.com/evcoreco/octane/pkg/keywords/primitive"
 	"github.com/evcoreco/octane/pkg/keywords/registry"
 )
 
@@ -59,9 +57,15 @@ func fixtureNoopFunc(_ context.Context, _ api.State, _ api.Args) error {
 	return nil
 }
 
-// TestMain registers fixture keywords once before any test in this package
-// runs, replacing the former init() to satisfy gochecknoinits.
+// TestMain registers all production primitive keywords and the fixture
+// keywords once before any test in this package runs.  Explicit registration
+// via primitive.Register() replaces the former init() hook and satisfies the
+// gochecknoinits linter rule.
 func TestMain(m *testing.M) {
+	// Register all production primitive keywords so that resolveFunc() and
+	// registry.Resolve() work correctly in every test in this package.
+	primitive.Register()
+
 	// Register the fixture primitive keyword.
 	registry.Register(api.Keyword{
 		Pattern:     patternPrecedenceFixture,

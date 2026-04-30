@@ -27,6 +27,10 @@ const nextByte = 1
 // noColon flags that no ':' separator has been found yet.
 const noColon = -1
 
+// zeroCount is the initial value for leading-space counters, required by
+// the add-constant linter rule.
+const zeroCount = 0
+
 // TokenKind identifies the type of a lexical token produced by the lexer.
 type TokenKind int
 
@@ -185,19 +189,6 @@ type Lexer interface {
 	Peek() Token
 }
 
-// NewLexer returns a Lexer that tokenises src. The file parameter is used
-// only for error messages. CRLF sequences in src are normalised to LF
-// before any tokenisation occurs (T-001-11).
-func NewLexer(_ string, src []byte) Lexer {
-	return &lexer{
-		src:   normaliseCRLF(src),
-		pos:   initialPos,
-		line:  initialLine,
-		col:   initialCol,
-		queue: nil,
-	}
-}
-
 // normaliseCRLF replaces every \r\n pair with a single \n (T-001-11). Lone
 // \r bytes that are not followed by \n are left as-is so that illegal-byte
 // detection downstream can handle them.
@@ -220,13 +211,14 @@ func normaliseCRLF(src []byte) []byte {
 	return out
 }
 
-// lexer is the concrete byte-stream implementation of the Lexer interface.
+// Tokenizer is the concrete byte-stream implementation of the Lexer
+// interface.
 //
 // A single source line may produce multiple tokens (e.g. an indented meta
 // entry emits TokenIndent, TokenMetaKey, TokenColon, TokenValue). The
 // queue field holds pre-computed tokens that will be returned by
 // subsequent calls to Next before scan() is invoked again.
-type lexer struct {
+type Tokenizer struct {
 	src   []byte
 	pos   int
 	line  int
@@ -234,9 +226,25 @@ type lexer struct {
 	queue []Token // FIFO of pre-scanned tokens not yet consumed
 }
 
+// NewLexer returns a *Tokenizer that tokenises src. The file parameter is
+// used only for error messages. CRLF sequences in src are normalised to LF
+// before any tokenisation occurs (T-001-11).
+func NewLexer(_ string, src []byte) *Tokenizer {
+	return &Tokenizer{
+		src:   normaliseCRLF(src),
+		pos:   initialPos,
+		line:  initialLine,
+		col:   initialCol,
+		queue: nil,
+	}
+}
+
+// Ensure *Tokenizer satisfies the Lexer interface at compile time.
+var _ Lexer = (*Tokenizer)(nil)
+
 // Peek returns the next token without consuming it. Repeated calls without
 // an intervening Next return the same token.
-func (l *lexer) Peek() Token {
+func (l *Tokenizer) Peek() Token {
 	tok := l.Next()
 	l.queue = append([]Token{tok}, l.queue...)
 
@@ -246,7 +254,7 @@ func (l *lexer) Peek() Token {
 // Next returns the next token and advances the lexer position. After
 // TokenEOF is first returned, every subsequent call also returns
 // TokenEOF.
-func (l *lexer) Next() Token {
+func (l *Tokenizer) Next() Token {
 	if len(l.queue) > initialPos {
 		tok := l.queue[initialPos]
 		l.queue = l.queue[nextByte:]
@@ -260,7 +268,7 @@ func (l *lexer) Next() Token {
 // scan reads from the current byte position and returns the next logical
 // token. It may enqueue additional tokens into l.queue for multi-token
 // lines before returning.
-func (l *lexer) scan() Token {
+func (l *Tokenizer) scan() Token {
 	for {
 		if l.pos >= len(l.src) {
 			return l.eofToken()
@@ -291,7 +299,7 @@ func (l *lexer) scan() Token {
 // scanComment emits TokenComment for a line beginning with '#'. The
 // literal includes the '#' and all bytes through the end of the line.
 // The terminating newline is consumed but not emitted.
-func (l *lexer) scanComment() Token {
+func (l *Tokenizer) scanComment() Token {
 	startLine, startCol := l.line, l.col
 	start := l.pos
 
@@ -322,7 +330,7 @@ const indentWidth = 4
 //
 // The TokenIndent literal carries all leading spaces so callers can
 // determine the indentation depth (len(tok.Literal) / indentWidth).
-func (l *lexer) scanIndentedLine() Token {
+func (l *Tokenizer) scanIndentedLine() Token {
 	startLine, startCol := l.line, l.col
 
 	count := l.countLeadingSpaces()
@@ -337,7 +345,7 @@ func (l *lexer) scanIndentedLine() Token {
 // scanUnderIndented handles a line with fewer than four leading spaces, which
 // is not a valid indent level. It consumes the malformed line and returns
 // TokenIllegal.
-func (l *lexer) scanUnderIndented(
+func (l *Tokenizer) scanUnderIndented(
 	startLine, startCol, count int,
 ) Token {
 	raw := l.src[l.pos : l.pos+count]
@@ -366,7 +374,7 @@ func (l *lexer) scanUnderIndented(
 // scanProperlyIndented handles a line with at least four leading spaces.
 // It dispatches to blank-line, comment, step-keyword, or meta-entry
 // handling.
-func (l *lexer) scanProperlyIndented(
+func (l *Tokenizer) scanProperlyIndented(
 	startLine, startCol, count int,
 ) Token {
 	indentLiteral := strings.Repeat(" ", count)
@@ -414,7 +422,7 @@ func (l *lexer) scanProperlyIndented(
 // withIndentQueued prepends kwTok to the front of the queue so that the
 // sequence emitted is: indentTok (returned now), kwTok (next), and
 // whatever was already in the queue after that (e.g. textTok).
-func (l *lexer) withIndentQueued(indentTok, kwTok Token) Token {
+func (l *Tokenizer) withIndentQueued(indentTok, kwTok Token) Token {
 	l.queue = append([]Token{kwTok}, l.queue...)
 
 	return indentTok
@@ -430,7 +438,7 @@ type stepMatchResult struct {
 // tryStepKeyword checks whether the current position starts with one of
 // the five step keywords. If so, it consumes the keyword and the
 // following step text up to EOL and returns the populated stepMatchResult.
-func (l *lexer) tryStepKeyword() stepMatchResult {
+func (l *Tokenizer) tryStepKeyword() stepMatchResult {
 	type stepEntry struct {
 		text string
 		kind TokenKind
@@ -466,7 +474,7 @@ func (l *lexer) tryStepKeyword() stepMatchResult {
 
 // matchStepKeyword attempts to match a single step keyword at the current
 // position. It returns a stepMatchResult with matched=true on success.
-func (l *lexer) matchStepKeyword(
+func (l *Tokenizer) matchStepKeyword(
 	text string,
 	kind TokenKind,
 ) stepMatchResult {
@@ -521,13 +529,13 @@ func (l *lexer) matchStepKeyword(
 // TokenMetaKey, TokenColon, and TokenValue and returns TokenIndent.
 //
 // If no colon is found on the line, a TokenIllegal is returned instead.
-func (l *lexer) scanMetaEntry(indentTok Token) Token {
+func (l *Tokenizer) scanMetaEntry(indentTok Token) Token {
 	keyLine, keyCol := l.line, l.col
 	start := l.pos
 
 	colonPos := l.findColonOnLine()
 
-	if colonPos < 0 {
+	if colonPos == noColon {
 		return l.scanIllegalLineFrom(start, keyLine, keyCol)
 	}
 
@@ -579,7 +587,7 @@ func (l *lexer) scanMetaEntry(indentTok Token) Token {
 // findColonOnLine scans forward from the current position to find the first
 // ':' character before the end of the current line. It returns the byte
 // index of the colon, or noColon (-1) when none is found.
-func (l *lexer) findColonOnLine() int {
+func (l *Tokenizer) findColonOnLine() int {
 	srcLen := len(l.src)
 
 	for scanIdx := l.pos; scanIdx < srcLen; scanIdx++ {
@@ -597,7 +605,7 @@ func (l *lexer) findColonOnLine() int {
 
 // scanIllegalLineFrom consumes the rest of the current line starting from
 // start and returns a TokenIllegal.
-func (l *lexer) scanIllegalLineFrom(start, line, col int) Token {
+func (l *Tokenizer) scanIllegalLineFrom(start, line, col int) Token {
 	for l.pos < len(l.src) && l.src[l.pos] != '\n' {
 		l.advance()
 	}
@@ -616,7 +624,7 @@ func (l *lexer) scanIllegalLineFrom(start, line, col int) Token {
 // scanSectionLine handles an unindented line. It tries to match one of
 // the section-level keywords. After the keyword it may find a colon and
 // trailing text (Scenario lines). Unknown content produces TokenIllegal.
-func (l *lexer) scanSectionLine() Token {
+func (l *Tokenizer) scanSectionLine() Token {
 	type sectionEntry struct {
 		text string
 		kind TokenKind
@@ -661,7 +669,7 @@ func (l *lexer) scanSectionLine() Token {
 // consumeSectionLineRemainder handles the rest of an unindented section-
 // keyword line. If the next byte is ':' it emits TokenColon and TokenText;
 // otherwise it silently consumes up to the newline.
-func (l *lexer) consumeSectionLineRemainder() {
+func (l *Tokenizer) consumeSectionLineRemainder() {
 	if l.pos >= len(l.src) || l.src[l.pos] != ':' {
 		// No colon — consume the rest of the line silently.
 		for l.pos < len(l.src) && l.src[l.pos] != '\n' {
@@ -695,7 +703,7 @@ func (l *lexer) consumeSectionLineRemainder() {
 // scanToEOLasText reads from the current position to the end of the line,
 // trims surrounding whitespace, and returns a TokenText. The newline is
 // consumed.
-func (l *lexer) scanToEOLasText() Token {
+func (l *Tokenizer) scanToEOLasText() Token {
 	startLine, startCol := l.line, l.col
 	start := l.pos
 
@@ -717,7 +725,7 @@ func (l *lexer) scanToEOLasText() Token {
 // scanIllegalToEOL reads from the current position to end of line and
 // returns TokenIllegal positioned at startLine/startCol. The newline is
 // consumed.
-func (l *lexer) scanIllegalToEOL(startLine, startCol int) Token {
+func (l *Tokenizer) scanIllegalToEOL(startLine, startCol int) Token {
 	start := l.pos
 
 	for l.pos < len(l.src) && l.src[l.pos] != '\n' {
@@ -736,7 +744,7 @@ func (l *lexer) scanIllegalToEOL(startLine, startCol int) Token {
 }
 
 // scanIllegalByte emits TokenIllegal for a single forbidden byte (e.g. tab).
-func (l *lexer) scanIllegalByte() Token {
+func (l *Tokenizer) scanIllegalByte() Token {
 	startLine, startCol := l.line, l.col
 	b := l.src[l.pos]
 	l.advance()
@@ -751,7 +759,7 @@ func (l *lexer) scanIllegalByte() Token {
 
 // eofToken returns a TokenEOF positioned at the current (past-the-end)
 // location.
-func (l *lexer) eofToken() Token {
+func (l *Tokenizer) eofToken() Token {
 	return Token{
 		Kind:    TokenEOF,
 		Literal: "",
@@ -763,7 +771,7 @@ func (l *lexer) eofToken() Token {
 // advance moves the cursor forward by one byte and updates the line and
 // column counters. A '\n' byte increments the line counter and resets the
 // column to 1 for the next byte.
-func (l *lexer) advance() {
+func (l *Tokenizer) advance() {
 	if l.pos >= len(l.src) {
 		return
 	}
@@ -779,7 +787,7 @@ func (l *lexer) advance() {
 }
 
 // consumeNewline advances past a '\n' if the current byte is a newline.
-func (l *lexer) consumeNewline() {
+func (l *Tokenizer) consumeNewline() {
 	if l.pos < len(l.src) && l.src[l.pos] == '\n' {
 		l.advance()
 	}
@@ -787,7 +795,7 @@ func (l *lexer) consumeNewline() {
 
 // hasPrefix reports whether the source starting at the current position
 // begins with the given prefix string.
-func (l *lexer) hasPrefix(prefix string) bool {
+func (l *Tokenizer) hasPrefix(prefix string) bool {
 	end := l.pos + len(prefix)
 	if end > len(l.src) {
 		return false
@@ -797,7 +805,7 @@ func (l *lexer) hasPrefix(prefix string) bool {
 }
 
 // consumeBytes advances the cursor by exactly n bytes.
-func (l *lexer) consumeBytes(n int) {
+func (l *Tokenizer) consumeBytes(n int) {
 	for range n {
 		l.advance()
 	}
@@ -805,8 +813,8 @@ func (l *lexer) consumeBytes(n int) {
 
 // countLeadingSpaces returns the number of consecutive space bytes at the
 // current position without advancing the cursor.
-func (l *lexer) countLeadingSpaces() int {
-	count := 0
+func (l *Tokenizer) countLeadingSpaces() int {
+	count := zeroCount
 
 	for l.pos+count < len(l.src) && l.src[l.pos+count] == ' ' {
 		count++
@@ -816,6 +824,6 @@ func (l *lexer) countLeadingSpaces() int {
 }
 
 // enqueue appends tokens to the back of the lookahead queue.
-func (l *lexer) enqueue(toks ...Token) {
+func (l *Tokenizer) enqueue(toks ...Token) {
 	l.queue = append(l.queue, toks...)
 }

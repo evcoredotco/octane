@@ -106,17 +106,26 @@ func expectAnyFrame(
 	return nil
 }
 
+// emptyFrameLen is the sentinel for an empty OCPP-J frame slice.
+const emptyFrameLen = 0
+
+// frameTypeIndex is the index of the message-type field in an OCPP-J frame.
+const frameTypeIndex = 0
+
+// zeroMessageType is the zero-value returned when type extraction fails.
+const zeroMessageType = 0
+
 // frameMessageType returns the OCPP-J message-type code from the first
 // element of frame, and reports whether the extraction succeeded. A
 // frame with zero elements or a non-float64 first element yields ok=false.
 func frameMessageType(frame []any) (int, bool) {
-	if len(frame) == 0 {
-		return 0, false
+	if len(frame) == emptyFrameLen {
+		return zeroMessageType, false
 	}
 
-	msgTypeVal, ok := frame[0].(float64)
+	msgTypeVal, ok := frame[frameTypeIndex].(float64)
 	if !ok {
-		return 0, false
+		return zeroMessageType, false
 	}
 
 	return int(msgTypeVal), true

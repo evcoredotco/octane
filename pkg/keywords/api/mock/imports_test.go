@@ -53,6 +53,15 @@ const (
 
 	// logIdx1 is the index of the second log entry.
 	logIdx1 = 1
+
+	// dayFirst is the first day of the month, used in time.Date literals.
+	dayFirst = 1
+
+	// hourNoon is noon (12:00) used as the hour in time.Date literals.
+	hourNoon = 12
+
+	// zeroTimeField is the zero value for min/sec/nsec in time.Date literals.
+	zeroTimeField = 0
 )
 
 // ── package-level sentinel errors ────────────────────────────────────────────
@@ -96,7 +105,11 @@ func Test_MockState_SetNow(t *testing.T) {
 	t.Parallel()
 
 	state := mock.NewMockState()
-	want := time.Date(yearSetNow, monthSetNow, 1, 12, 0, 0, 0, time.UTC)
+	want := time.Date(
+		yearSetNow, monthSetNow, dayFirst,
+		hourNoon, zeroTimeField, zeroTimeField, zeroTimeField,
+		time.UTC,
+	)
 
 	state.SetNow(want)
 
@@ -195,7 +208,7 @@ func Test_MockState_RegisterStation(t *testing.T) {
 		t.Fatalf("Station(%q) unexpected error: %v", stationHandle, err)
 	}
 
-	if got != station {
+	if got.Station != station {
 		t.Errorf(
 			"Station(%q): returned unexpected station instance",
 			stationHandle,

@@ -75,6 +75,13 @@ const (
 	// countOne is used for result counts that equal one (1 passed, 1 failed,
 	// 1 skipped, 1 cache hit) in the golden test fixture.
 	countOne = 1
+
+	// zeroTimeField is the zero value for minute, second, and nanosecond
+	// arguments in time.Date calls.
+	zeroTimeField = 0
+
+	// zeroOffset is the zero second offset used in fixedTime(zeroOffset) calls.
+	zeroOffset = 0
 )
 
 // fixedTime returns a deterministic time for test fixtures.
@@ -84,7 +91,7 @@ func fixedTime(offsetSeconds int) time.Time {
 		goldenBaseMonth,
 		goldenBaseDay,
 		goldenBaseHour,
-		0, 0, 0,
+		zeroTimeField, zeroTimeField, zeroTimeField,
 		time.UTC,
 	)
 
@@ -102,13 +109,13 @@ func goldenPassedStory() runner.StoryResult {
 	}
 
 	return runner.StoryResult{
-		Order:       0,
+		Order:       orderZero,
 		TestID:      "tc_boot_notification",
 		ScopeKey:    scopeKeyCP01,
 		OCPPVersion: ocppVersion16,
 		Status:      runner.StatusPassed,
 		CacheStatus: runner.CacheHitPass,
-		StartedAt:   fixedTime(0),
+		StartedAt:   fixedTime(zeroOffset),
 		FinishedAt:  fixedTime(startAt10),
 		Findings:    nil,
 		Trace:       passedTrace,
@@ -168,7 +175,7 @@ func goldenSkippedStory() runner.StoryResult {
 func buildGoldenResult() *runner.RunResult {
 	return &runner.RunResult{
 		RunID:      "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-		StartedAt:  fixedTime(0),
+		StartedAt:  fixedTime(zeroOffset),
 		FinishedAt: fixedTime(finishedAtSec),
 		Summary: runner.Summary{
 			Total:     totalStories,

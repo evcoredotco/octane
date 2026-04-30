@@ -18,7 +18,6 @@ import (
 	"github.com/coder/websocket"
 	"github.com/evcoreco/octane/pkg/keywords/api"
 	"github.com/evcoreco/octane/pkg/keywords/api/mock"
-	_ "github.com/evcoreco/octane/pkg/keywords/primitive" // blank import
 	"github.com/evcoreco/octane/pkg/keywords/registry"
 )
 
@@ -145,13 +144,6 @@ func Test_primitive_openWebSocket(t *testing.T) {
 		)
 	}
 
-	if sta == nil {
-		t.Errorf(
-			"state.Station(%q) after open: want non-nil Station, got nil",
-			handleStation,
-		)
-	}
-
 	_ = sta.Close()
 }
 
@@ -249,13 +241,6 @@ func Test_primitive_openWebSocketWithSubprotocol(t *testing.T) {
 			"state.Station(%q): unexpected error: %v",
 			handleStation,
 			lookupErr,
-		)
-	}
-
-	if sta == nil {
-		t.Errorf(
-			"state.Station(%q): want non-nil Station, got nil",
-			handleStation,
 		)
 	}
 

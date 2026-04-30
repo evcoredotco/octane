@@ -41,6 +41,9 @@ const noCacheHits = 0
 // orderZero is the Order index for the first story in the minimal result.
 const orderZero = 0
 
+// zeroSchemaVersion is the lower bound used in schemaVersion validation.
+const zeroSchemaVersion = 0
+
 // requiredTopLevelKeys returns the JSON keys that must appear at the top
 // level of every octane.json report.
 func requiredTopLevelKeys() []string {
@@ -63,7 +66,7 @@ func buildMinimalResult() *runner.RunResult {
 		schemaTestMonth,
 		schemaTestDay,
 		schemaTestHour,
-		0, 0, 0,
+		zeroTimeField, zeroTimeField, zeroTimeField,
 		time.UTC,
 	)
 
@@ -165,7 +168,7 @@ func assertSchemaVersion(t *testing.T, top map[string]any) {
 	}
 
 	num, isFloat := val.(float64)
-	if !isFloat || num <= 0 {
+	if !isFloat || num <= zeroSchemaVersion {
 		t.Errorf("schemaVersion: got %v, want positive integer", val)
 	}
 }

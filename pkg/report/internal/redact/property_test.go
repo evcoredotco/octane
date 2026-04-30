@@ -20,6 +20,9 @@ const propertySeed uint64 = 0xABCD_1234_5678_EF01
 // propertyBinaryChoice is the modulus for a coin-flip in property tests.
 const propertyBinaryChoice = 2
 
+// coinFlipZero is the zero result of a coin-flip used to decide key inclusion.
+const coinFlipZero = 0
+
 // propertyMaxVariance is the upper bound for random value variance in
 // property tests.
 const propertyMaxVariance = 10000
@@ -77,7 +80,7 @@ func buildRandomAuthMap(rng *mrand.Rand, iter int) map[string]any {
 	out := make(map[string]any, len(keys))
 
 	for _, key := range keys {
-		if rng.IntN(propertyBinaryChoice) == 0 {
+		if rng.IntN(propertyBinaryChoice) == coinFlipZero {
 			out[key] = fmt.Sprintf(
 				"secret-%s-%d-%d",
 				key,
