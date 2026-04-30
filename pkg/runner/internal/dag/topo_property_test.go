@@ -71,6 +71,14 @@ const independentLastIdx = independentNodeCount - 1
 // loops inside buildRandomDAG.
 const loopStep = 1
 
+// zeroIdx is the zero lower-bound used in the reverse-iteration loop
+// of the lexicographic tie-breaking test.
+const zeroIdx = 0
+
+// exactlyOnce is the expected count for each node in a valid topological
+// order: every node must appear exactly once.
+const exactlyOnce = 1
+
 // Test_dag_TopologicalOrder_validDAG is a property test that generates
 // random acyclic graphs (edges always run from lower to higher index,
 // guaranteeing acyclicity) and asserts the four invariants required by
@@ -158,7 +166,7 @@ func Test_dag_TopologicalOrder_lexicographicIndependentNodes(t *testing.T) {
 
 	// Add nodes in reverse lexicographic order to confirm the sort is
 	// performed by TopologicalOrder, not by insertion order.
-	for idx := independentLastIdx; idx >= 0; idx-- {
+	for idx := independentLastIdx; idx >= zeroIdx; idx-- {
 		grph.AddNode(dag.Node{ID: ids[idx]})
 	}
 
@@ -298,7 +306,7 @@ func assertNodesExactlyOnce(
 	}
 
 	for _, node := range wantNodes {
-		if seen[node.ID] != 1 {
+		if seen[node.ID] != exactlyOnce {
 			t.Errorf(
 				"iter %d: node %q appears %d times, want exactly 1",
 				iter, node.ID, seen[node.ID],

@@ -62,6 +62,10 @@ const (
 
 	// zeroTimeField is the zero value for min/sec/nsec in time.Date literals.
 	zeroTimeField = 0
+
+	// zeroSentFrameCount is the zero count compared against len(SentFrames())
+	// to assert that no frame was sent.
+	zeroSentFrameCount = 0
 )
 
 // ── package-level sentinel errors ────────────────────────────────────────────
@@ -260,7 +264,7 @@ func Test_MockStation_SendReturnsConfiguredError(t *testing.T) {
 		t.Errorf("Send(): want error %v, got %v", wantErr, err)
 	}
 
-	if len(station.SentFrames()) != 0 {
+	if len(station.SentFrames()) != zeroSentFrameCount {
 		t.Error(
 			"Send(): frame must not be recorded when sendErr is set",
 		)
