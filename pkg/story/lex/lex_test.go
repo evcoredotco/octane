@@ -183,7 +183,12 @@ func TestLexer_StepKeywordsGivenWhenThen(t *testing.T) {
 			name:  "step_keyword_Given",
 			input: "    Given the station is ready\n",
 			want: []lex.Token{
-				{Kind: lex.TokenIndent, Literal: fourSpaces, Line: 0, Column: 0},
+				{
+					Kind:    lex.TokenIndent,
+					Literal: fourSpaces,
+					Line:    0,
+					Column:  0,
+				},
 				{Kind: lex.TokenGiven, Literal: "Given", Line: 0, Column: 0},
 				{
 					Kind:    lex.TokenText,
@@ -198,7 +203,12 @@ func TestLexer_StepKeywordsGivenWhenThen(t *testing.T) {
 			name:  "step_keyword_When",
 			input: "    When the cable is plugged in\n",
 			want: []lex.Token{
-				{Kind: lex.TokenIndent, Literal: fourSpaces, Line: 0, Column: 0},
+				{
+					Kind:    lex.TokenIndent,
+					Literal: fourSpaces,
+					Line:    0,
+					Column:  0,
+				},
 				{Kind: lex.TokenWhen, Literal: "When", Line: 0, Column: 0},
 				{
 					Kind:    lex.TokenText,
@@ -213,7 +223,12 @@ func TestLexer_StepKeywordsGivenWhenThen(t *testing.T) {
 			name:  "step_keyword_Then",
 			input: "    Then charging begins\n",
 			want: []lex.Token{
-				{Kind: lex.TokenIndent, Literal: fourSpaces, Line: 0, Column: 0},
+				{
+					Kind:    lex.TokenIndent,
+					Literal: fourSpaces,
+					Line:    0,
+					Column:  0,
+				},
 				{Kind: lex.TokenThen, Literal: "Then", Line: 0, Column: 0},
 				{
 					Kind:    lex.TokenText,
@@ -243,7 +258,12 @@ func TestLexer_StepKeywordsAndBut(t *testing.T) {
 			name:  "step_keyword_And",
 			input: "    And the LED is green\n",
 			want: []lex.Token{
-				{Kind: lex.TokenIndent, Literal: fourSpaces, Line: 0, Column: 0},
+				{
+					Kind:    lex.TokenIndent,
+					Literal: fourSpaces,
+					Line:    0,
+					Column:  0,
+				},
 				{Kind: lex.TokenAnd, Literal: "And", Line: 0, Column: 0},
 				{
 					Kind:    lex.TokenText,
@@ -258,7 +278,12 @@ func TestLexer_StepKeywordsAndBut(t *testing.T) {
 			name:  "step_keyword_But",
 			input: "    But the session does not end\n",
 			want: []lex.Token{
-				{Kind: lex.TokenIndent, Literal: fourSpaces, Line: 0, Column: 0},
+				{
+					Kind:    lex.TokenIndent,
+					Literal: fourSpaces,
+					Line:    0,
+					Column:  0,
+				},
 				{Kind: lex.TokenBut, Literal: "But", Line: 0, Column: 0},
 				{
 					Kind:    lex.TokenText,
@@ -288,7 +313,12 @@ func TestLexer_MetaAndScenario(t *testing.T) {
 			name:  "meta_entry_correct",
 			input: "    Name: Boot test\n",
 			want: []lex.Token{
-				{Kind: lex.TokenIndent, Literal: fourSpaces, Line: 0, Column: 0},
+				{
+					Kind:    lex.TokenIndent,
+					Literal: fourSpaces,
+					Line:    0,
+					Column:  0,
+				},
 				{Kind: lex.TokenMetaKey, Literal: "Name", Line: 0, Column: 0},
 				{Kind: lex.TokenColon, Literal: ":", Line: 0, Column: 0},
 				{
@@ -386,7 +416,12 @@ func TestLexer_ErrorPathsIndent(t *testing.T) {
 			name:  "wrong_indent_width_two_spaces",
 			input: "  Given something\n",
 			want: []lex.Token{
-				{Kind: lex.TokenIllegal, Literal: emptyLiteral, Line: 0, Column: 0},
+				{
+					Kind:    lex.TokenIllegal,
+					Literal: emptyLiteral,
+					Line:    0,
+					Column:  0,
+				},
 			},
 		},
 		{
@@ -395,7 +430,12 @@ func TestLexer_ErrorPathsIndent(t *testing.T) {
 			name:  "blank_indented_line",
 			input: "    \n",
 			want: []lex.Token{
-				{Kind: lex.TokenIllegal, Literal: fourSpaces, Line: 0, Column: 0},
+				{
+					Kind:    lex.TokenIllegal,
+					Literal: fourSpaces,
+					Line:    0,
+					Column:  0,
+				},
 			},
 		},
 	}
@@ -476,14 +516,24 @@ func TestLexer_QueueOrdering(t *testing.T) {
 			name:  "meta_entry_queue_order",
 			input: "    Spec-Ref: TC-001\n",
 			want: []lex.Token{
-				{Kind: lex.TokenIndent, Literal: emptyLiteral, Line: 0, Column: 0},
+				{
+					Kind:    lex.TokenIndent,
+					Literal: emptyLiteral,
+					Line:    0,
+					Column:  0,
+				},
 				{
 					Kind:    lex.TokenMetaKey,
 					Literal: "Spec-Ref",
 					Line:    0,
 					Column:  0,
 				},
-				{Kind: lex.TokenColon, Literal: emptyLiteral, Line: 0, Column: 0},
+				{
+					Kind:    lex.TokenColon,
+					Literal: emptyLiteral,
+					Line:    0,
+					Column:  0,
+				},
 				{Kind: lex.TokenValue, Literal: "TC-001", Line: 0, Column: 0},
 				{Kind: lex.TokenEOF, Literal: emptyLiteral, Line: 0, Column: 0},
 			},
@@ -508,7 +558,12 @@ func TestLexer_LineTracking(t *testing.T) {
 			name:  "line_tracking_second_line",
 			input: "Meta\nBackground\n",
 			want: []lex.Token{
-				{Kind: lex.TokenMeta, Literal: emptyLiteral, Line: 1, Column: 1},
+				{
+					Kind:    lex.TokenMeta,
+					Literal: emptyLiteral,
+					Line:    1,
+					Column:  1,
+				},
 				{
 					Kind:    lex.TokenBackground,
 					Literal: emptyLiteral,
@@ -538,7 +593,12 @@ func TestLexer_BlankLinesAndEdgeCases(t *testing.T) {
 			name:  "blank_lines_skipped",
 			input: "Meta\n\nBackground\n",
 			want: []lex.Token{
-				{Kind: lex.TokenMeta, Literal: emptyLiteral, Line: 0, Column: 0},
+				{
+					Kind:    lex.TokenMeta,
+					Literal: emptyLiteral,
+					Line:    0,
+					Column:  0,
+				},
 				{
 					Kind:    lex.TokenBackground,
 					Literal: emptyLiteral,
@@ -553,9 +613,24 @@ func TestLexer_BlankLinesAndEdgeCases(t *testing.T) {
 			name:  "step_keyword_no_text",
 			input: "    Given\n",
 			want: []lex.Token{
-				{Kind: lex.TokenIndent, Literal: emptyLiteral, Line: 0, Column: 0},
-				{Kind: lex.TokenGiven, Literal: emptyLiteral, Line: 0, Column: 0},
-				{Kind: lex.TokenText, Literal: emptyLiteral, Line: 0, Column: 0},
+				{
+					Kind:    lex.TokenIndent,
+					Literal: emptyLiteral,
+					Line:    0,
+					Column:  0,
+				},
+				{
+					Kind:    lex.TokenGiven,
+					Literal: emptyLiteral,
+					Line:    0,
+					Column:  0,
+				},
+				{
+					Kind:    lex.TokenText,
+					Literal: emptyLiteral,
+					Line:    0,
+					Column:  0,
+				},
 			},
 		},
 		{
@@ -564,9 +639,19 @@ func TestLexer_BlankLinesAndEdgeCases(t *testing.T) {
 			name:  "meta_value_leading_space_trimmed",
 			input: "    Tags:   boot  \n",
 			want: []lex.Token{
-				{Kind: lex.TokenIndent, Literal: emptyLiteral, Line: 0, Column: 0},
+				{
+					Kind:    lex.TokenIndent,
+					Literal: emptyLiteral,
+					Line:    0,
+					Column:  0,
+				},
 				{Kind: lex.TokenMetaKey, Literal: "Tags", Line: 0, Column: 0},
-				{Kind: lex.TokenColon, Literal: emptyLiteral, Line: 0, Column: 0},
+				{
+					Kind:    lex.TokenColon,
+					Literal: emptyLiteral,
+					Line:    0,
+					Column:  0,
+				},
 				{Kind: lex.TokenValue, Literal: "boot", Line: 0, Column: 0},
 			},
 		},

@@ -3,8 +3,9 @@ package main
 import (
 	"os"
 
-	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
 	"github.com/spf13/cobra"
+
+	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
 )
 
 // newCompletionCmd constructs and returns the "octane completion" subcommand.

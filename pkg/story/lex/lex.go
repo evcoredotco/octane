@@ -457,7 +457,11 @@ func (l *lexer) tryStepKeyword() stepMatchResult {
 		Column:  initialPos,
 	}
 
-	return stepMatchResult{keywordTok: illegal, textTok: illegal, matched: false}
+	return stepMatchResult{
+		keywordTok: illegal,
+		textTok:    illegal,
+		matched:    false,
+	}
 }
 
 // matchStepKeyword attempts to match a single step keyword at the current

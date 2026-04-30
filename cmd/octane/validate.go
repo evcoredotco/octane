@@ -6,9 +6,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/spf13/cobra"
+
 	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
 	"github.com/evcoreco/octane/pkg/story"
-	"github.com/spf13/cobra"
 )
 
 // noStoryPaths is the default search root when no paths are given.

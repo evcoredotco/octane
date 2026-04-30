@@ -162,7 +162,14 @@ func (p *parser) parseDependsLine(
 		}, applyErr
 	}
 
-	br, err := p.startNewBullet(cur, entryIndex, deps, keyTok, valLit, cv.valTok)
+	br, err := p.startNewBullet(
+		cur,
+		entryIndex,
+		deps,
+		keyTok,
+		valLit,
+		cv.valTok,
+	)
 
 	return dependsLineResult{
 		cur: br.cur, entryIndex: br.entryIndex, deps: br.deps, done: false,
@@ -230,7 +237,11 @@ func (p *parser) startNewBullet(
 		}, applyErr
 	}
 
-	return startBulletResult{cur: newCur, entryIndex: entryIndex, deps: deps}, nil
+	return startBulletResult{
+		cur:        newCur,
+		entryIndex: entryIndex,
+		deps:       deps,
+	}, nil
 }
 
 // consumeColonValue consumes a TokenColon and then a TokenValue from the

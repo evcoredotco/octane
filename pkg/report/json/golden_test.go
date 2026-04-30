@@ -17,8 +17,9 @@ import (
 
 // updateFlag controls whether the golden file is regenerated.
 //
-//nolint:gochecknoglobals // flag must be package-level for flag.Bool
 // registration
+//
+//nolint:gochecknoglobals // flag must be package-level for flag.Bool
 var updateFlag = flag.Bool("update", false, "update golden files")
 
 // goldenFilePath is the path to the golden JSON file, relative to this
