@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 	mrand "math/rand/v2"
-	"sort"
+	"slices"
 	"testing"
 
 	"github.com/evcoreco/octane/pkg/runner/internal/dag"
@@ -115,7 +115,7 @@ func Test_dag_TopologicalOrder_cycleReturnsErrCycle(t *testing.T) {
 	// C→A closes the cycle; AddEdge should detect and return *ErrCycle.
 	cycleErr := grph.AddEdge(dag.Edge{From: cycleNodeC, To: cycleNodeA})
 
-	var errCycle *dag.ErrCycle
+	var errCycle *dag.CycleError
 	if !errors.As(cycleErr, &errCycle) {
 		t.Fatalf("AddEdge C→A: expected *ErrCycle, got %v", cycleErr)
 	}
@@ -230,7 +230,7 @@ func buildSortedIDs(n int) []string {
 		ids[idx] = fmt.Sprintf("%s%02d", nodePrefix, idx)
 	}
 
-	sort.Strings(ids)
+	slices.Sort(ids)
 
 	return ids
 }

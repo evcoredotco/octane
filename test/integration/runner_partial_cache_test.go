@@ -57,9 +57,17 @@ func Test_runner_RunPartialCache(t *testing.T) {
 	}
 
 	cfg := runner.Config{
-		StoryPaths: []string{storyDir},
-		NoCache:    false,
-		CacheDir:   cacheDir,
+		StoryPaths:         []string{storyDir},
+		MaxParallel:        0,
+		LockTimeout:        0,
+		NoWait:             false,
+		ShardIndex:         0,
+		ShardTotal:         0,
+		CacheDir:           cacheDir,
+		NoCache:            false,
+		NoTraceOnPass:      false,
+		OCPPVersion:        "",
+		InsecureSkipVerify: false,
 	}
 
 	// First run: all 10 are cache misses; cache is populated.

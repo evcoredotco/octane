@@ -23,8 +23,7 @@ import (
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
 	"github.com/evcoreco/octane/pkg/keywords/api/mock"
-	// Blank import registers all primitive keywords at init() time.
-	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
+	_ "github.com/evcoreco/octane/pkg/keywords/primitive" // registers primitive keywords
 )
 
 // ── Named constants ───────────────────────────────────────────────────────────

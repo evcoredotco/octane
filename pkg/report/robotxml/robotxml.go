@@ -31,6 +31,15 @@ const defaultSuiteName = "OCTANE Conformance"
 // suiteID is the fixed ID for the outer <suite> element.
 const suiteID = "s1"
 
+// dirMode is the permission bits for the report output directory.
+const dirMode = 0o700
+
+// fileMode is the permission bits for the report output file.
+const fileMode = 0o600
+
+// emptySource is the empty string used for XML Source attributes.
+const emptySource = ""
+
 // severityMajor is the severity threshold at which a finding is mapped to an
 // ERROR-level message. Findings with severity "error" meet this threshold;
 // "warning" and "info" become WARN-level messages.
@@ -112,16 +121,16 @@ func WriteRobotXML(
 	dir string,
 	opts report.RobotXMLOptions,
 ) error {
-	rep := model.FromRunner(result, "")
+	rep := model.FromRunner(result, emptySource)
 
 	root := buildRobotXML(rep, opts)
 
-	data, err := xml.MarshalIndent(root, "", "  ")
+	data, err := xml.MarshalIndent(root, emptySource, "  ")
 	if err != nil {
 		return err
 	}
 
-	err = os.MkdirAll(dir, 0o700)
+	err = os.MkdirAll(dir, dirMode)
 	if err != nil {
 		return err
 	}
@@ -133,7 +142,7 @@ func WriteRobotXML(
 	payload = append(payload, data...)
 	payload = append(payload, '\n')
 
-	return os.WriteFile(outPath, payload, 0o600)
+	return os.WriteFile(outPath, payload, fileMode)
 }
 
 // ---------------------------------------------------------------------------
@@ -143,7 +152,7 @@ func WriteRobotXML(
 // buildRobotXML constructs the xmlRobot document from a model.Report.
 func buildRobotXML(rep *model.Report, opts report.RobotXMLOptions) xmlRobot {
 	suiteName := opts.SuiteName
-	if suiteName == "" {
+	if suiteName == emptySource {
 		suiteName = defaultSuiteName
 	}
 
@@ -153,7 +162,7 @@ func buildRobotXML(rep *model.Report, opts report.RobotXMLOptions) xmlRobot {
 	suite := xmlSuite{
 		ID:     suiteID,
 		Name:   suiteName,
-		Source: "",
+		Source: emptySource,
 		Tests:  tests,
 		Status: xmlStatus{
 			Status:    suiteStatusStr,
@@ -164,7 +173,7 @@ func buildRobotXML(rep *model.Report, opts report.RobotXMLOptions) xmlRobot {
 	}
 
 	return xmlRobot{
-		XMLName:   xml.Name{Space: "", Local: ""},
+		XMLName:   xml.Name{Space: emptySource, Local: emptySource},
 		Generated: robotTime(rep.StartedAt),
 		Generator: octaneGenerator,
 		Suite:     suite,
@@ -208,7 +217,7 @@ func buildTest(idx int, story model.StoryReport) xmlTest {
 // testName formats the test display name. When ScopeKey is non-empty the
 // format is "<test_id> (<scope_key>)", otherwise just "<test_id>".
 func testName(story model.StoryReport) string {
-	if story.ScopeKey == "" {
+	if story.ScopeKey == emptySource {
 		return story.TestID
 	}
 

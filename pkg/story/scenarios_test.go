@@ -178,7 +178,11 @@ func writeGolden(t *testing.T, path string, data []byte) {
 		t.Fatalf("mkdir %s: %v", filepath.Dir(path), err)
 	}
 
-	err = os.WriteFile(path, data, 0o600) //nolint:gosec // test golden file path
+	err = os.WriteFile(
+		path,
+		data,
+		0o600,
+	)
 	if err != nil {
 		t.Fatalf("write golden %s: %v", path, err)
 	}

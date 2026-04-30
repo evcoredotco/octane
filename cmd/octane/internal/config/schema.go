@@ -2,6 +2,9 @@ package config
 
 import "time"
 
+// defaultLockTimeoutSeconds is the default lock timeout in seconds.
+const defaultLockTimeoutSeconds = 60
+
 // Config is the authoritative runtime configuration for the octane
 // CLI. It is populated by combining defaults, YAML file values,
 // environment variable overrides, and command-line flag overrides
@@ -62,7 +65,7 @@ func Default() Config {
 		CacheDir:           "",
 		MaxParallel:        1,
 		OCPPVersion:        "",
-		LockTimeout:        60 * time.Second,
+		LockTimeout:        defaultLockTimeoutSeconds * time.Second,
 		InsecureSkipVerify: false,
 		FailOn:             "any",
 	}

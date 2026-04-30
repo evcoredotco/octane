@@ -11,6 +11,19 @@ import (
 	"github.com/evcoreco/octane/pkg/story/lex"
 )
 
+// subIndentMinLen is the length threshold distinguishing a Depends
+// sub-indent from a top-level indent (4 spaces or one tab).
+const subIndentMinLen = 4
+
+// emptyStr is a named empty string required by the add-constant rule.
+const emptyStr = ""
+
+// isSubIndent returns true when tok is an indent token whose literal
+// is longer than the standard four-space top-level indent.
+func isSubIndent(tok lex.Token) bool {
+	return tok.Kind == lex.TokenIndent && len(tok.Literal) > subIndentMinLen
+}
+
 // dependsEntry accumulates the fields for a single Depends bullet while it
 // is being parsed. It is converted to ast.Dependency once the bullet is
 // complete.
@@ -47,7 +60,8 @@ func (de *dependsEntry) toDependency() ast.Dependency {
 //
 // Each bullet (lines whose MetaKey literal starts with "-") begins a new
 // Dependency entry. The scope field defaults to ScopePerStation when absent.
-// On the first malformed entry this function returns *diag.ErrMalformedDepends.
+// On the first malformed entry this function returns
+// *diag.MalformedDependsError.
 func (p *parser) parseDepends() ([]ast.Dependency, error) {
 	var (
 		deps       []ast.Dependency
@@ -57,7 +71,7 @@ func (p *parser) parseDepends() ([]ast.Dependency, error) {
 
 	entryIndex = -1
 
-	for p.lex.Peek().Kind == lex.TokenIndent && len(p.lex.Peek().Literal) > len("    ") {
+	for isSubIndent(p.lex.Peek()) {
 		_ = p.lex.Next() // consume the sub-indent token
 
 		keyTok := p.lex.Peek()
@@ -90,7 +104,7 @@ func (p *parser) parseDepends() ([]ast.Dependency, error) {
 			entryIndex++
 
 			cur = &dependsEntry{
-				id:    "",
+				id:    emptyStr,
 				scope: ast.ScopePerStation,
 				pos: ast.Position{
 					Line:   keyTok.Line,
@@ -149,15 +163,15 @@ func (p *parser) consumeColonValue(
 	if colonTok.Kind != lex.TokenColon {
 		return lex.Token{
 				Kind:    lex.TokenIllegal,
-				Literal: "",
+				Literal: emptyStr,
 				Line:    colonTok.Line,
 				Column:  colonTok.Column,
 			}, lex.Token{
 				Kind:    lex.TokenIllegal,
-				Literal: "",
+				Literal: emptyStr,
 				Line:    0,
 				Column:  0,
-			}, &diag.ErrMalformedDepends{
+			}, &diag.MalformedDependsError{
 				File:       p.file,
 				Line:       keyTok.Line,
 				Column:     keyTok.Column,
@@ -173,10 +187,10 @@ func (p *parser) consumeColonValue(
 	if valTok.Kind != lex.TokenValue {
 		return colonTok, lex.Token{
 				Kind:    lex.TokenIllegal,
-				Literal: "",
+				Literal: emptyStr,
 				Line:    valTok.Line,
 				Column:  valTok.Column,
-			}, &diag.ErrMalformedDepends{
+			}, &diag.MalformedDependsError{
 				File:       p.file,
 				Line:       colonTok.Line,
 				Column:     colonTok.Column,
@@ -207,7 +221,7 @@ func applySubKey(
 	case "scope":
 		scopeVal, err := parseScope(val)
 		if err != nil {
-			return &diag.ErrMalformedDepends{
+			return &diag.MalformedDependsError{
 				File:       file,
 				Line:       valTok.Line,
 				Column:     valTok.Column,
@@ -234,11 +248,15 @@ func flushEntry(
 	entryIndex int,
 ) (ast.Dependency, bool, error) {
 	if cur == nil {
-		return ast.Dependency{}, false, nil
+		return ast.Dependency{
+			ID:       emptyStr,
+			Scope:    0,
+			Position: ast.Position{Line: 0, Column: 0},
+		}, false, nil
 	}
 
 	if !cur.idSet {
-		return ast.Dependency{}, false, &diag.ErrMalformedDepends{
+		return ast.Dependency{}, false, &diag.MalformedDependsError{
 			File:       file,
 			Line:       cur.pos.Line,
 			Column:     cur.pos.Column,

@@ -2,13 +2,13 @@ package transport
 
 import "fmt"
 
-// ErrSubprotocolMismatch is returned by Dial when the CSMS's WebSocket
+// SubprotocolMismatchError is returned by Dial when the CSMS's WebSocket
 // upgrade response selects a subprotocol not in the requested list, or
 // omits the header entirely.
 //
 // The error carries both sides of the negotiation so that diagnostics can
 // produce an actionable message without additional context.
-type ErrSubprotocolMismatch struct {
+type SubprotocolMismatchError struct {
 	// Requested contains the subprotocols sent in the Sec-WebSocket-Protocol
 	// request header, in preference order.
 	Requested []string
@@ -18,7 +18,7 @@ type ErrSubprotocolMismatch struct {
 }
 
 // Error implements the error interface.
-func (e *ErrSubprotocolMismatch) Error() string {
+func (e *SubprotocolMismatchError) Error() string {
 	if e.Got == "" {
 		return fmt.Sprintf(
 			"transport: subprotocol mismatch: requested %v, CSMS returned none",
@@ -33,12 +33,12 @@ func (e *ErrSubprotocolMismatch) Error() string {
 	)
 }
 
-// ErrTLSValidation is returned by Dial when the TLS handshake fails due
+// TLSValidationError is returned by Dial when the TLS handshake fails due
 // to certificate validation (expired cert, untrusted CA, hostname mismatch).
 //
 // The [Cause] field wraps the underlying x509 or tls error so that callers
 // can use errors.As to inspect the certificate details.
-type ErrTLSValidation struct {
+type TLSValidationError struct {
 	// URL is the endpoint that was dialled.
 	URL string
 	// Cause is the underlying x509 or tls error that triggered the failure.
@@ -46,7 +46,7 @@ type ErrTLSValidation struct {
 }
 
 // Error implements the error interface.
-func (e *ErrTLSValidation) Error() string {
+func (e *TLSValidationError) Error() string {
 	return fmt.Sprintf(
 		"transport: TLS validation failed for %q: %v",
 		e.URL,
@@ -56,16 +56,16 @@ func (e *ErrTLSValidation) Error() string {
 
 // Unwrap returns the underlying cause, enabling errors.As and errors.Is
 // inspection of the x509 certificate error.
-func (e *ErrTLSValidation) Unwrap() error {
+func (e *TLSValidationError) Unwrap() error {
 	return e.Cause
 }
 
-// ErrFrameTooLarge is returned by Expect when an inbound frame exceeds
+// FrameTooLargeError is returned by Expect when an inbound frame exceeds
 // the configured [DialOptions.MaxFrameBytes] limit.
 //
 // The frame is discarded and the connection remains open; subsequent calls
 // to Expect continue to deliver frames.
-type ErrFrameTooLarge struct {
+type FrameTooLargeError struct {
 	// Limit is the configured maximum frame size in bytes.
 	Limit int64
 	// Actual is the actual frame size in bytes. -1 means the size was
@@ -75,10 +75,11 @@ type ErrFrameTooLarge struct {
 }
 
 // Error implements the error interface.
-func (e *ErrFrameTooLarge) Error() string {
+func (e *FrameTooLargeError) Error() string {
 	if e.Actual < 0 {
 		return fmt.Sprintf(
-			"transport: inbound frame exceeds limit of %d bytes (actual size unknown)",
+			"transport: inbound frame exceeds limit of %d bytes"+
+				" (actual size unknown)",
 			e.Limit,
 		)
 	}
@@ -90,25 +91,26 @@ func (e *ErrFrameTooLarge) Error() string {
 	)
 }
 
-// ErrStationClosed is returned by Send or Expect when the Station has
+// StationClosedError is returned by Send or Expect when the Station has
 // already been closed.
 //
 // Use errors.As or errors.Is to detect this condition:
 //
-//	var closed *transport.ErrStationClosed
+//	var closed *transport.StationClosedError
 //	if errors.As(err, &closed) { ... }
 //	// or
-//	if errors.Is(err, &transport.ErrStationClosed{}) { ... }
-type ErrStationClosed struct{}
+//	if errors.Is(err, &transport.StationClosedError{}) { ... }
+type StationClosedError struct{}
 
 // Error implements the error interface.
-func (e *ErrStationClosed) Error() string {
+func (*StationClosedError) Error() string {
 	return "transport: station is closed"
 }
 
-// Is reports whether target is an *ErrStationClosed, enabling errors.Is matching.
-func (e *ErrStationClosed) Is(target error) bool {
-	_, ok := target.(*ErrStationClosed)
+// Is reports whether target is an *StationClosedError, enabling
+// errors.Is matching.
+func (*StationClosedError) Is(target error) bool {
+	_, ok := target.(*StationClosedError)
 
 	return ok
 }

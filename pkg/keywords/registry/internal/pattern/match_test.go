@@ -3,7 +3,7 @@
 //
 // Task: T-003-13
 // AC3: resolver returns correct Func and bound Args for a matching step.
-// AC5: resolver returns ErrTypeMismatch when a placeholder type is violated.
+// AC5: resolver returns TypeMismatchError when a placeholder type is violated.
 package pattern_test
 
 import (
@@ -14,13 +14,14 @@ import (
 	"github.com/evcoreco/octane/pkg/keywords/registry/internal/pattern"
 )
 
-// ── Named test-value constants ────────────────────────────────────────────────
+// ── Named test-value constants ───────────────────────────────────────────
 
 const (
 	// Parse happy-path inputs.
 	patternLiteralOnly     = "the CSMS connects"
 	patternPlaceholderOnly = "{n:int}"
-	patternMixed           = "send {count:int} frames to {target:station} within {timeout:duration}"
+	patternMixed           = "send {count:int} frames to {target:station}" +
+		" within {timeout:duration}"
 
 	// Parse error inputs.
 	patternMissingColon = "{name}"
@@ -36,7 +37,7 @@ const (
 	stepExtraWords       = "the CSMS connects now unexpectedly"
 	stepTooFewWords      = "the CSMS"
 	stepMultiPlaceholder = "send 3 frames to CP01 within 30s"
-	stepWrongWordOrder   = "CSMS the connects" //nolint:gosec // not a credential
+	stepWrongWordOrder   = "CSMS the connects" //nolint:gosec // not cred
 
 	// Coerce raw values.
 	valueValidString     = "hello"
@@ -52,9 +53,51 @@ const (
 	valueInvalidDuration = "thirtyseconds"
 	valueValidStation    = "CP01"
 	valueValidAny        = "anything_goes"
+
+	// Pattern templates used across multiple Coerce tests.
+	patVInt      = "{v:int}"
+	patVFloat    = "{v:float}"
+	patVBool     = "{v:bool}"
+	patVDuration = "{v:duration}"
+	patVStation  = "{v:station}"
+	patVString   = "{v:string}"
+	patVAny      = "{v:any}"
+	patNInt      = "{n:int}"
+
+	// Argument-name constants used as map keys.
+	argNameV         = "v"
+	argNameN         = "n"
+	captureKeyCount  = "count"
+	captureKeyTarget = "target"
+	captureKeyTimeo  = "timeout"
+
+	// Type-name strings compared to CoercionError.Expected.
+	typeNameInt      = "int"
+	typeNameFloat    = "float"
+	typeNameBool     = "bool"
+	typeNameDuration = "duration"
+
+	// Repeated format strings.
+	fmtParseUnexpectedErr  = "Parse(%q) unexpected error: %v"
+	fmtParseErr            = "Parse: %v"
+	fmtCoerceUnexpectedErr = "Coerce: unexpected error: %v"
+	fmtCoercedValue        = "coerced value: want %q, got %v"
+	fmtCoerceExpNilErr     = "Coerce: expected CoercionError, got nil"
+	fmtCoerceErrType       = "error type: want *pattern.CoercionError, got %T: %v"
+	fmtCoerceErrExpected   = "CoercionError.Expected: want %q, got %q"
+
+	// Empty string used as a step argument.
+	emptyStepStr = ""
+
+	// Magic-number sentinels.
+	wantOneToken = 1
+	wantZeroLen  = 0
+	tokenIdx1    = 1
+	tokenIdx3    = 3
+	tokenIdx5    = 5
 )
 
-// ── Parse tests ───────────────────────────────────────────────────────────────
+// ── Parse tests ────────────────────────────────────────────────────────
 
 // Test_pattern_Parse_literalOnly verifies that a pattern with no
 // placeholders parses into a single KindLiteral token.
@@ -63,10 +106,10 @@ func Test_pattern_Parse_literalOnly(t *testing.T) {
 
 	tokens, err := pattern.Parse(patternLiteralOnly)
 	if err != nil {
-		t.Fatalf("Parse(%q) unexpected error: %v", patternLiteralOnly, err)
+		t.Fatalf(fmtParseUnexpectedErr, patternLiteralOnly, err)
 	}
 
-	if len(tokens) != 1 {
+	if len(tokens) != wantOneToken {
 		t.Fatalf("expected 1 token, got %d", len(tokens))
 	}
 
@@ -79,7 +122,7 @@ func Test_pattern_Parse_literalOnly(t *testing.T) {
 		t.Errorf("token Text: want %q, got %q", patternLiteralOnly, tok.Text)
 	}
 
-	if tok.Name != "" {
+	if tok.Name != emptyStepStr {
 		t.Errorf("token Name: want empty, got %q", tok.Name)
 	}
 }
@@ -92,10 +135,10 @@ func Test_pattern_Parse_placeholderOnly(t *testing.T) {
 
 	tokens, err := pattern.Parse(patternPlaceholderOnly)
 	if err != nil {
-		t.Fatalf("Parse(%q) unexpected error: %v", patternPlaceholderOnly, err)
+		t.Fatalf(fmtParseUnexpectedErr, patternPlaceholderOnly, err)
 	}
 
-	if len(tokens) != 1 {
+	if len(tokens) != wantOneToken {
 		t.Fatalf("expected 1 token, got %d", len(tokens))
 	}
 
@@ -104,8 +147,8 @@ func Test_pattern_Parse_placeholderOnly(t *testing.T) {
 		t.Errorf("token Kind: want KindPlaceholder, got %v", tok.Kind)
 	}
 
-	if tok.Name != "n" {
-		t.Errorf("token Name: want %q, got %q", "n", tok.Name)
+	if tok.Name != argNameN {
+		t.Errorf("token Name: want %q, got %q", argNameN, tok.Name)
 	}
 
 	if tok.Type != pattern.TypeInt {
@@ -121,11 +164,12 @@ func Test_pattern_Parse_mixed(t *testing.T) {
 
 	tokens, err := pattern.Parse(patternMixed)
 	if err != nil {
-		t.Fatalf("Parse(%q) unexpected error: %v", patternMixed, err)
+		t.Fatalf(fmtParseUnexpectedErr, patternMixed, err)
 	}
 
 	// Expect: literal, placeholder(count:int), literal,
-	// placeholder(target:station), literal, placeholder(timeout:duration).
+	// placeholder(target:station), literal,
+	// placeholder(timeout:duration).
 	const wantTokenCount = 6
 	if len(tokens) != wantTokenCount {
 		t.Fatalf(
@@ -156,39 +200,51 @@ func Test_pattern_Parse_mixed(t *testing.T) {
 		}
 	}
 
-	if tokens[1].Name != "count" {
-		t.Errorf("token[1].Name: want %q, got %q", "count", tokens[1].Name)
+	if tokens[tokenIdx1].Name != captureKeyCount {
+		t.Errorf(
+			"token[1].Name: want %q, got %q",
+			captureKeyCount,
+			tokens[tokenIdx1].Name,
+		)
 	}
 
-	if tokens[1].Type != pattern.TypeInt {
+	if tokens[tokenIdx1].Type != pattern.TypeInt {
 		t.Errorf(
 			"token[1].Type: want %q, got %q",
 			pattern.TypeInt,
-			tokens[1].Type,
+			tokens[tokenIdx1].Type,
 		)
 	}
 
-	if tokens[3].Name != "target" {
-		t.Errorf("token[3].Name: want %q, got %q", "target", tokens[3].Name)
+	if tokens[tokenIdx3].Name != captureKeyTarget {
+		t.Errorf(
+			"token[3].Name: want %q, got %q",
+			captureKeyTarget,
+			tokens[tokenIdx3].Name,
+		)
 	}
 
-	if tokens[3].Type != pattern.TypeStation {
+	if tokens[tokenIdx3].Type != pattern.TypeStation {
 		t.Errorf(
 			"token[3].Type: want %q, got %q",
 			pattern.TypeStation,
-			tokens[3].Type,
+			tokens[tokenIdx3].Type,
 		)
 	}
 
-	if tokens[5].Name != "timeout" {
-		t.Errorf("token[5].Name: want %q, got %q", "timeout", tokens[5].Name)
+	if tokens[tokenIdx5].Name != captureKeyTimeo {
+		t.Errorf(
+			"token[5].Name: want %q, got %q",
+			captureKeyTimeo,
+			tokens[tokenIdx5].Name,
+		)
 	}
 
-	if tokens[5].Type != pattern.TypeDuration {
+	if tokens[tokenIdx5].Type != pattern.TypeDuration {
 		t.Errorf(
 			"token[5].Type: want %q, got %q",
 			pattern.TypeDuration,
-			tokens[5].Type,
+			tokens[tokenIdx5].Type,
 		)
 	}
 }
@@ -208,20 +264,24 @@ func Test_pattern_Parse_allSupportedTypes(t *testing.T) {
 			placeholder: "{v:string}",
 			wantType:    pattern.TypeString,
 		},
-		{name: "int", placeholder: "{v:int}", wantType: pattern.TypeInt},
-		{name: "float", placeholder: "{v:float}", wantType: pattern.TypeFloat},
-		{name: "bool", placeholder: "{v:bool}", wantType: pattern.TypeBool},
+		{name: typeNameInt, placeholder: patVInt, wantType: pattern.TypeInt},
 		{
-			name:        "duration",
-			placeholder: "{v:duration}",
+			name:        typeNameFloat,
+			placeholder: patVFloat,
+			wantType:    pattern.TypeFloat,
+		},
+		{name: typeNameBool, placeholder: patVBool, wantType: pattern.TypeBool},
+		{
+			name:        typeNameDuration,
+			placeholder: patVDuration,
 			wantType:    pattern.TypeDuration,
 		},
 		{
 			name:        "station",
-			placeholder: "{v:station}",
+			placeholder: patVStation,
 			wantType:    pattern.TypeStation,
 		},
-		{name: "any", placeholder: "{v:any}", wantType: pattern.TypeAny},
+		{name: "any", placeholder: patVAny, wantType: pattern.TypeAny},
 	}
 
 	for _, testCase := range cases {
@@ -231,13 +291,13 @@ func Test_pattern_Parse_allSupportedTypes(t *testing.T) {
 			tokens, err := pattern.Parse(testCase.placeholder)
 			if err != nil {
 				t.Fatalf(
-					"Parse(%q) unexpected error: %v",
+					fmtParseUnexpectedErr,
 					testCase.placeholder,
 					err,
 				)
 			}
 
-			if len(tokens) != 1 {
+			if len(tokens) != wantOneToken {
 				t.Fatalf("expected 1 token, got %d", len(tokens))
 			}
 
@@ -290,13 +350,13 @@ func Test_pattern_Parse_malformedPlaceholders(t *testing.T) {
 func Test_pattern_Parse_emptyString(t *testing.T) {
 	t.Parallel()
 
-	_, err := pattern.Parse("")
+	_, err := pattern.Parse(emptyStepStr)
 	if err == nil {
 		t.Fatal("Parse(\"\"): expected error, got nil")
 	}
 }
 
-// ── Match tests ───────────────────────────────────────────────────────────────
+// ── Match tests ────────────────────────────────────────────────────────
 
 // Test_pattern_Match_exactLiteral verifies that a literal-only pattern
 // matches a step string word-for-word.
@@ -305,15 +365,15 @@ func Test_pattern_Match_exactLiteral(t *testing.T) {
 
 	tokens, err := pattern.Parse(patternLiteralOnly)
 	if err != nil {
-		t.Fatalf("Parse: %v", err)
+		t.Fatalf(fmtParseErr, err)
 	}
 
 	captures, matched := pattern.Match(tokens, stepExactMatch)
 	if !matched {
-		t.Fatalf("Match: expected true, got false")
+		t.Fatal("Match: expected true, got false")
 	}
 
-	if len(captures) != 0 {
+	if len(captures) != wantZeroLen {
 		t.Errorf("captures: want empty map, got %v", captures)
 	}
 }
@@ -325,7 +385,7 @@ func Test_pattern_Match_caseInsensitive(t *testing.T) {
 
 	tokens, err := pattern.Parse(patternLiteralOnly)
 	if err != nil {
-		t.Fatalf("Parse: %v", err)
+		t.Fatalf(fmtParseErr, err)
 	}
 
 	_, matched := pattern.Match(tokens, stepCaseDifferent)
@@ -344,7 +404,7 @@ func Test_pattern_Match_extraStepWordsNoMatch(t *testing.T) {
 
 	tokens, err := pattern.Parse(patternLiteralOnly)
 	if err != nil {
-		t.Fatalf("Parse: %v", err)
+		t.Fatalf(fmtParseErr, err)
 	}
 
 	_, matched := pattern.Match(tokens, stepExtraWords)
@@ -363,7 +423,7 @@ func Test_pattern_Match_tooFewStepWordsNoMatch(t *testing.T) {
 
 	tokens, err := pattern.Parse(patternLiteralOnly)
 	if err != nil {
-		t.Fatalf("Parse: %v", err)
+		t.Fatalf(fmtParseErr, err)
 	}
 
 	_, matched := pattern.Match(tokens, stepTooFewWords)
@@ -382,12 +442,12 @@ func Test_pattern_Match_emptyStepNoMatch(t *testing.T) {
 
 	tokens, err := pattern.Parse(patternLiteralOnly)
 	if err != nil {
-		t.Fatalf("Parse: %v", err)
+		t.Fatalf(fmtParseErr, err)
 	}
 
-	captures, matched := pattern.Match(tokens, "")
+	captures, matched := pattern.Match(tokens, emptyStepStr)
 	if matched {
-		t.Fatalf("Match(\"\"): expected false for empty step, got true")
+		t.Fatal("Match(\"\"): expected false for empty step, got true")
 	}
 
 	if captures != nil {
@@ -402,7 +462,7 @@ func Test_pattern_Match_multiPlaceholderCapture(t *testing.T) {
 
 	tokens, err := pattern.Parse(patternMixed)
 	if err != nil {
-		t.Fatalf("Parse: %v", err)
+		t.Fatalf(fmtParseErr, err)
 	}
 
 	captures, matched := pattern.Match(tokens, stepMultiPlaceholder)
@@ -410,23 +470,27 @@ func Test_pattern_Match_multiPlaceholderCapture(t *testing.T) {
 		t.Fatalf("Match(%q): expected true, got false", stepMultiPlaceholder)
 	}
 
-	if captures["count"] != "3" {
-		t.Errorf("captures[count]: want %q, got %q", "3", captures["count"])
-	}
-
-	if captures["target"] != "CP01" {
+	if captures[captureKeyCount] != "3" {
 		t.Errorf(
-			"captures[target]: want %q, got %q",
-			"CP01",
-			captures["target"],
+			"captures[count]: want %q, got %q",
+			"3",
+			captures[captureKeyCount],
 		)
 	}
 
-	if captures["timeout"] != "30s" {
+	if captures[captureKeyTarget] != valueValidStation {
+		t.Errorf(
+			"captures[target]: want %q, got %q",
+			valueValidStation,
+			captures[captureKeyTarget],
+		)
+	}
+
+	if captures[captureKeyTimeo] != "30s" {
 		t.Errorf(
 			"captures[timeout]: want %q, got %q",
 			"30s",
-			captures["timeout"],
+			captures[captureKeyTimeo],
 		)
 	}
 }
@@ -438,7 +502,7 @@ func Test_pattern_Match_wordOrderMismatch(t *testing.T) {
 
 	tokens, err := pattern.Parse(patternLiteralOnly)
 	if err != nil {
-		t.Fatalf("Parse: %v", err)
+		t.Fatalf(fmtParseErr, err)
 	}
 
 	_, matched := pattern.Match(tokens, stepWrongWordOrder)
@@ -457,18 +521,19 @@ func Test_pattern_Match_successfulMatchReturnsNonNilMap(t *testing.T) {
 
 	tokens, err := pattern.Parse(patternLiteralOnly)
 	if err != nil {
-		t.Fatalf("Parse: %v", err)
+		t.Fatalf(fmtParseErr, err)
 	}
 
 	captures, matched := pattern.Match(tokens, stepExactMatch)
 	if !matched {
-		t.Fatalf("Match: expected true, got false")
+		t.Fatal("Match: expected true, got false")
 	}
 
 	// Contract: non-nil even when empty.
 	if captures == nil {
 		t.Error(
-			"captures: want non-nil map on successful match with no placeholders",
+			"captures: want non-nil map on successful match with no " +
+				"placeholders",
 		)
 	}
 }
@@ -480,42 +545,43 @@ func Test_pattern_Match_extraInternalWhitespaceNormalized(t *testing.T) {
 
 	tokens, err := pattern.Parse(patternLiteralOnly)
 	if err != nil {
-		t.Fatalf("Parse: %v", err)
+		t.Fatalf(fmtParseErr, err)
 	}
 
 	// Multiple spaces between words must still match.
 	_, matched := pattern.Match(tokens, "the  CSMS   connects")
 	if !matched {
 		t.Fatal(
-			"Match: expected true for step with extra internal whitespace, got false",
+			"Match: expected true for step with extra internal " +
+				"whitespace, got false",
 		)
 	}
 }
 
-// ── Coerce tests ──────────────────────────────────────────────────────────────
+// ── Coerce tests ───────────────────────────────────────────────────────
 
 // Test_pattern_Coerce_stringType verifies that TypeString captures are
 // stored as Go strings without modification.
 func Test_pattern_Coerce_stringType(t *testing.T) {
 	t.Parallel()
 
-	tokens, err := pattern.Parse("{v:string}")
+	tokens, err := pattern.Parse(patVString)
 	if err != nil {
-		t.Fatalf("Parse: %v", err)
+		t.Fatalf(fmtParseErr, err)
 	}
 
-	captures := map[string]string{"v": valueValidString}
+	captures := map[string]string{argNameV: valueValidString}
 
 	result, err := pattern.Coerce(captures, tokens)
 	if err != nil {
-		t.Fatalf("Coerce: unexpected error: %v", err)
+		t.Fatalf(fmtCoerceUnexpectedErr, err)
 	}
 
-	if result["v"] != valueValidString {
+	if result[argNameV] != valueValidString {
 		t.Errorf(
-			"coerced value: want %q, got %v",
+			fmtCoercedValue,
 			valueValidString,
-			result["v"],
+			result[argNameV],
 		)
 	}
 }
@@ -525,20 +591,20 @@ func Test_pattern_Coerce_stringType(t *testing.T) {
 func Test_pattern_Coerce_anyType(t *testing.T) {
 	t.Parallel()
 
-	tokens, err := pattern.Parse("{v:any}")
+	tokens, err := pattern.Parse(patVAny)
 	if err != nil {
-		t.Fatalf("Parse: %v", err)
+		t.Fatalf(fmtParseErr, err)
 	}
 
-	captures := map[string]string{"v": valueValidAny}
+	captures := map[string]string{argNameV: valueValidAny}
 
 	result, err := pattern.Coerce(captures, tokens)
 	if err != nil {
-		t.Fatalf("Coerce: unexpected error: %v", err)
+		t.Fatalf(fmtCoerceUnexpectedErr, err)
 	}
 
-	if result["v"] != valueValidAny {
-		t.Errorf("coerced value: want %q, got %v", valueValidAny, result["v"])
+	if result[argNameV] != valueValidAny {
+		t.Errorf(fmtCoercedValue, valueValidAny, result[argNameV])
 	}
 }
 
@@ -547,23 +613,23 @@ func Test_pattern_Coerce_anyType(t *testing.T) {
 func Test_pattern_Coerce_stationType(t *testing.T) {
 	t.Parallel()
 
-	tokens, err := pattern.Parse("{v:station}")
+	tokens, err := pattern.Parse(patVStation)
 	if err != nil {
-		t.Fatalf("Parse: %v", err)
+		t.Fatalf(fmtParseErr, err)
 	}
 
-	captures := map[string]string{"v": valueValidStation}
+	captures := map[string]string{argNameV: valueValidStation}
 
 	result, err := pattern.Coerce(captures, tokens)
 	if err != nil {
-		t.Fatalf("Coerce: unexpected error: %v", err)
+		t.Fatalf(fmtCoerceUnexpectedErr, err)
 	}
 
-	if result["v"] != valueValidStation {
+	if result[argNameV] != valueValidStation {
 		t.Errorf(
-			"coerced value: want %q, got %v",
+			fmtCoercedValue,
 			valueValidStation,
-			result["v"],
+			result[argNameV],
 		)
 	}
 }
@@ -573,21 +639,21 @@ func Test_pattern_Coerce_stationType(t *testing.T) {
 func Test_pattern_Coerce_intTypeSuccess(t *testing.T) {
 	t.Parallel()
 
-	tokens, err := pattern.Parse("{v:int}")
+	tokens, err := pattern.Parse(patVInt)
 	if err != nil {
-		t.Fatalf("Parse: %v", err)
+		t.Fatalf(fmtParseErr, err)
 	}
 
-	captures := map[string]string{"v": valueValidInt}
+	captures := map[string]string{argNameV: valueValidInt}
 
 	result, err := pattern.Coerce(captures, tokens)
 	if err != nil {
-		t.Fatalf("Coerce: unexpected error: %v", err)
+		t.Fatalf(fmtCoerceUnexpectedErr, err)
 	}
 
-	got, typeOk := result["v"].(int)
+	got, typeOk := result[argNameV].(int)
 	if !typeOk {
-		t.Fatalf("coerced value type: want int, got %T", result["v"])
+		t.Fatalf("coerced value type: want int, got %T", result[argNameV])
 	}
 
 	const wantInt = 42
@@ -602,41 +668,33 @@ func Test_pattern_Coerce_intTypeSuccess(t *testing.T) {
 func Test_pattern_Coerce_intTypeFailure(t *testing.T) {
 	t.Parallel()
 
-	tokens, err := pattern.Parse("{v:int}")
+	tokens, err := pattern.Parse(patVInt)
 	if err != nil {
-		t.Fatalf("Parse: %v", err)
+		t.Fatalf(fmtParseErr, err)
 	}
 
-	captures := map[string]string{"v": valueInvalidInt}
+	captures := map[string]string{argNameV: valueInvalidInt}
 
 	_, err = pattern.Coerce(captures, tokens)
 	if err == nil {
-		t.Fatal("Coerce: expected CoercionError, got nil")
+		t.Fatal(fmtCoerceExpNilErr)
 	}
 
 	var coercErr *pattern.CoercionError
 	if !errors.As(err, &coercErr) {
-		t.Fatalf(
-			"error type: want *pattern.CoercionError, got %T: %v",
-			err,
-			err,
-		)
+		t.Fatalf(fmtCoerceErrType, err, err)
 	}
 
-	if coercErr.ArgName != "v" {
+	if coercErr.ArgName != argNameV {
 		t.Errorf(
 			"CoercionError.ArgName: want %q, got %q",
-			"v",
+			argNameV,
 			coercErr.ArgName,
 		)
 	}
 
-	if coercErr.Expected != "int" {
-		t.Errorf(
-			"CoercionError.Expected: want %q, got %q",
-			"int",
-			coercErr.Expected,
-		)
+	if coercErr.Expected != typeNameInt {
+		t.Errorf(fmtCoerceErrExpected, typeNameInt, coercErr.Expected)
 	}
 
 	if coercErr.Got != valueInvalidInt {
@@ -653,21 +711,21 @@ func Test_pattern_Coerce_intTypeFailure(t *testing.T) {
 func Test_pattern_Coerce_floatTypeSuccess(t *testing.T) {
 	t.Parallel()
 
-	tokens, err := pattern.Parse("{v:float}")
+	tokens, err := pattern.Parse(patVFloat)
 	if err != nil {
-		t.Fatalf("Parse: %v", err)
+		t.Fatalf(fmtParseErr, err)
 	}
 
-	captures := map[string]string{"v": valueValidFloat}
+	captures := map[string]string{argNameV: valueValidFloat}
 
 	result, err := pattern.Coerce(captures, tokens)
 	if err != nil {
-		t.Fatalf("Coerce: unexpected error: %v", err)
+		t.Fatalf(fmtCoerceUnexpectedErr, err)
 	}
 
-	got, typeOk := result["v"].(float64)
+	got, typeOk := result[argNameV].(float64)
 	if !typeOk {
-		t.Fatalf("coerced value type: want float64, got %T", result["v"])
+		t.Fatalf("coerced value type: want float64, got %T", result[argNameV])
 	}
 
 	const wantFloat = 3.14
@@ -684,33 +742,25 @@ func Test_pattern_Coerce_floatTypeSuccess(t *testing.T) {
 func Test_pattern_Coerce_floatTypeFailure(t *testing.T) {
 	t.Parallel()
 
-	tokens, err := pattern.Parse("{v:float}")
+	tokens, err := pattern.Parse(patVFloat)
 	if err != nil {
-		t.Fatalf("Parse: %v", err)
+		t.Fatalf(fmtParseErr, err)
 	}
 
-	captures := map[string]string{"v": valueInvalidFloat}
+	captures := map[string]string{argNameV: valueInvalidFloat}
 
 	_, err = pattern.Coerce(captures, tokens)
 	if err == nil {
-		t.Fatal("Coerce: expected CoercionError, got nil")
+		t.Fatal(fmtCoerceExpNilErr)
 	}
 
 	var coercErr *pattern.CoercionError
 	if !errors.As(err, &coercErr) {
-		t.Fatalf(
-			"error type: want *pattern.CoercionError, got %T: %v",
-			err,
-			err,
-		)
+		t.Fatalf(fmtCoerceErrType, err, err)
 	}
 
-	if coercErr.Expected != "float" {
-		t.Errorf(
-			"CoercionError.Expected: want %q, got %q",
-			"float",
-			coercErr.Expected,
-		)
+	if coercErr.Expected != typeNameFloat {
+		t.Errorf(fmtCoerceErrExpected, typeNameFloat, coercErr.Expected)
 	}
 }
 
@@ -733,12 +783,12 @@ func Test_pattern_Coerce_boolTypeSuccess(t *testing.T) {
 		t.Run(testCase.input, func(t *testing.T) {
 			t.Parallel()
 
-			tokens, err := pattern.Parse("{v:bool}")
+			tokens, err := pattern.Parse(patVBool)
 			if err != nil {
-				t.Fatalf("Parse: %v", err)
+				t.Fatalf(fmtParseErr, err)
 			}
 
-			captures := map[string]string{"v": testCase.input}
+			captures := map[string]string{argNameV: testCase.input}
 
 			result, err := pattern.Coerce(captures, tokens)
 			if err != nil {
@@ -749,9 +799,12 @@ func Test_pattern_Coerce_boolTypeSuccess(t *testing.T) {
 				)
 			}
 
-			got, typeOk := result["v"].(bool)
+			got, typeOk := result[argNameV].(bool)
 			if !typeOk {
-				t.Fatalf("coerced value type: want bool, got %T", result["v"])
+				t.Fatalf(
+					"coerced value type: want bool, got %T",
+					result[argNameV],
+				)
 			}
 
 			if got != testCase.want {
@@ -766,33 +819,25 @@ func Test_pattern_Coerce_boolTypeSuccess(t *testing.T) {
 func Test_pattern_Coerce_boolTypeFailure(t *testing.T) {
 	t.Parallel()
 
-	tokens, err := pattern.Parse("{v:bool}")
+	tokens, err := pattern.Parse(patVBool)
 	if err != nil {
-		t.Fatalf("Parse: %v", err)
+		t.Fatalf(fmtParseErr, err)
 	}
 
-	captures := map[string]string{"v": valueInvalidBool}
+	captures := map[string]string{argNameV: valueInvalidBool}
 
 	_, err = pattern.Coerce(captures, tokens)
 	if err == nil {
-		t.Fatal("Coerce: expected CoercionError, got nil")
+		t.Fatal(fmtCoerceExpNilErr)
 	}
 
 	var coercErr *pattern.CoercionError
 	if !errors.As(err, &coercErr) {
-		t.Fatalf(
-			"error type: want *pattern.CoercionError, got %T: %v",
-			err,
-			err,
-		)
+		t.Fatalf(fmtCoerceErrType, err, err)
 	}
 
-	if coercErr.Expected != "bool" {
-		t.Errorf(
-			"CoercionError.Expected: want %q, got %q",
-			"bool",
-			coercErr.Expected,
-		)
+	if coercErr.Expected != typeNameBool {
+		t.Errorf(fmtCoerceErrExpected, typeNameBool, coercErr.Expected)
 	}
 
 	if coercErr.Got != valueInvalidBool {
@@ -809,21 +854,24 @@ func Test_pattern_Coerce_boolTypeFailure(t *testing.T) {
 func Test_pattern_Coerce_durationTypeSuccess(t *testing.T) {
 	t.Parallel()
 
-	tokens, err := pattern.Parse("{v:duration}")
+	tokens, err := pattern.Parse(patVDuration)
 	if err != nil {
-		t.Fatalf("Parse: %v", err)
+		t.Fatalf(fmtParseErr, err)
 	}
 
-	captures := map[string]string{"v": valueValidDuration}
+	captures := map[string]string{argNameV: valueValidDuration}
 
 	result, err := pattern.Coerce(captures, tokens)
 	if err != nil {
-		t.Fatalf("Coerce: unexpected error: %v", err)
+		t.Fatalf(fmtCoerceUnexpectedErr, err)
 	}
 
-	got, typeOk := result["v"].(time.Duration)
+	got, typeOk := result[argNameV].(time.Duration)
 	if !typeOk {
-		t.Fatalf("coerced value type: want time.Duration, got %T", result["v"])
+		t.Fatalf(
+			"coerced value type: want time.Duration, got %T",
+			result[argNameV],
+		)
 	}
 
 	const wantDuration = 30 * time.Second
@@ -838,33 +886,25 @@ func Test_pattern_Coerce_durationTypeSuccess(t *testing.T) {
 func Test_pattern_Coerce_durationTypeFailure(t *testing.T) {
 	t.Parallel()
 
-	tokens, err := pattern.Parse("{v:duration}")
+	tokens, err := pattern.Parse(patVDuration)
 	if err != nil {
-		t.Fatalf("Parse: %v", err)
+		t.Fatalf(fmtParseErr, err)
 	}
 
-	captures := map[string]string{"v": valueInvalidDuration}
+	captures := map[string]string{argNameV: valueInvalidDuration}
 
 	_, err = pattern.Coerce(captures, tokens)
 	if err == nil {
-		t.Fatal("Coerce: expected CoercionError, got nil")
+		t.Fatal(fmtCoerceExpNilErr)
 	}
 
 	var coercErr *pattern.CoercionError
 	if !errors.As(err, &coercErr) {
-		t.Fatalf(
-			"error type: want *pattern.CoercionError, got %T: %v",
-			err,
-			err,
-		)
+		t.Fatalf(fmtCoerceErrType, err, err)
 	}
 
-	if coercErr.Expected != "duration" {
-		t.Errorf(
-			"CoercionError.Expected: want %q, got %q",
-			"duration",
-			coercErr.Expected,
-		)
+	if coercErr.Expected != typeNameDuration {
+		t.Errorf(fmtCoerceErrExpected, typeNameDuration, coercErr.Expected)
 	}
 }
 
@@ -876,19 +916,19 @@ func Test_pattern_Coerce_durationTypeFailure(t *testing.T) {
 func Test_pattern_Coerce_missingCaptureKeyIgnored(t *testing.T) {
 	t.Parallel()
 
-	tokens, err := pattern.Parse("{v:int}")
+	tokens, err := pattern.Parse(patVInt)
 	if err != nil {
-		t.Fatalf("Parse: %v", err)
+		t.Fatalf(fmtParseErr, err)
 	}
 
-	// Pass an empty captures map — the key "v" is absent.
+	// Pass an empty captures map — the key argNameV is absent.
 	result, err := pattern.Coerce(map[string]string{}, tokens)
 	if err != nil {
 		t.Fatalf("Coerce with missing key: unexpected error: %v", err)
 	}
 
 	// The result map exists but the placeholder key must be absent.
-	if _, present := result["v"]; present {
+	if _, present := result[argNameV]; present {
 		t.Error("result[v]: key should be absent when capture was missing")
 	}
 }
@@ -899,12 +939,15 @@ func Test_pattern_Coerce_missingCaptureKeyIgnored(t *testing.T) {
 func Test_pattern_Coerce_CoercionErrorMessage(t *testing.T) {
 	t.Parallel()
 
-	tokens, err := pattern.Parse("{n:int}")
+	tokens, err := pattern.Parse(patNInt)
 	if err != nil {
-		t.Fatalf("Parse: %v", err)
+		t.Fatalf(fmtParseErr, err)
 	}
 
-	_, err = pattern.Coerce(map[string]string{"n": valueInvalidInt}, tokens)
+	_, err = pattern.Coerce(
+		map[string]string{argNameN: valueInvalidInt},
+		tokens,
+	)
 	if err == nil {
 		t.Fatal("Coerce: expected error, got nil")
 	}
@@ -912,16 +955,20 @@ func Test_pattern_Coerce_CoercionErrorMessage(t *testing.T) {
 	msg := err.Error()
 
 	// The error message must reference the arg name.
-	if !containsSubstring(msg, "n") {
-		t.Errorf("error message %q does not contain arg name %q", msg, "n")
+	if !containsSubstring(msg, argNameN) {
+		t.Errorf(
+			"error message %q does not contain arg name %q",
+			msg,
+			argNameN,
+		)
 	}
 
 	// The error message must reference the expected type.
-	if !containsSubstring(msg, "int") {
+	if !containsSubstring(msg, typeNameInt) {
 		t.Errorf(
 			"error message %q does not contain expected type %q",
 			msg,
-			"int",
+			typeNameInt,
 		)
 	}
 
@@ -950,29 +997,36 @@ func Test_pattern_Coerce_multipleTokensRoundTrip(t *testing.T) {
 
 	tokens, err := pattern.Parse(ac3Pattern)
 	if err != nil {
-		t.Fatalf("Parse: %v", err)
+		t.Fatalf(fmtParseErr, err)
 	}
 
 	captures, matched := pattern.Match(tokens, ac3Step)
 	if !matched {
-		t.Fatalf("Match: expected true for AC3 step, got false")
+		t.Fatal("Match: expected true for AC3 step, got false")
 	}
 
 	result, err := pattern.Coerce(captures, tokens)
 	if err != nil {
-		t.Fatalf("Coerce: unexpected error: %v", err)
+		t.Fatalf(fmtCoerceUnexpectedErr, err)
 	}
 
 	// connectorId=1 (int)
 	connectorID, typeOk := result["connectorId"].(int)
 	if !typeOk {
-		t.Fatalf("connectorId type: want int, got %T", result["connectorId"])
+		t.Fatalf(
+			"connectorId type: want int, got %T",
+			result["connectorId"],
+		)
 	}
 
 	const wantConnectorID = 1
 
 	if connectorID != wantConnectorID {
-		t.Errorf("connectorId: want %d, got %d", wantConnectorID, connectorID)
+		t.Errorf(
+			"connectorId: want %d, got %d",
+			wantConnectorID,
+			connectorID,
+		)
 	}
 
 	// idTag="X" (string)
@@ -991,14 +1045,17 @@ func Test_pattern_Coerce_multipleTokensRoundTrip(t *testing.T) {
 		t.Fatalf("station type: want string, got %T", result["station"])
 	}
 
-	if station != "CP01" {
-		t.Errorf("station: want %q, got %q", "CP01", station)
+	if station != valueValidStation {
+		t.Errorf("station: want %q, got %q", valueValidStation, station)
 	}
 
 	// timeout=30s (duration)
-	timeout, typeOk := result["timeout"].(time.Duration)
+	timeout, typeOk := result[captureKeyTimeo].(time.Duration)
 	if !typeOk {
-		t.Fatalf("timeout type: want time.Duration, got %T", result["timeout"])
+		t.Fatalf(
+			"timeout type: want time.Duration, got %T",
+			result[captureKeyTimeo],
+		)
 	}
 
 	const wantTimeout = 30 * time.Second
@@ -1008,7 +1065,7 @@ func Test_pattern_Coerce_multipleTokensRoundTrip(t *testing.T) {
 	}
 }
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// ── helpers ────────────────────────────────────────────────────────────
 
 // containsSubstring reports whether s contains sub. Kept as an
 // inline helper to avoid importing "strings" solely for test assertions.
@@ -1017,7 +1074,7 @@ func containsSubstring(str, sub string) bool {
 		return false
 	}
 
-	if len(sub) == 0 {
+	if len(sub) == wantZeroLen {
 		return true
 	}
 

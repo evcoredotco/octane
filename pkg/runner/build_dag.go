@@ -3,7 +3,7 @@
 // buildDAG converts a slice of parsed story ASTs into a dependency
 // graph. Each (story, scope-key) pair becomes one DAG node; edges
 // encode the Depends: prerequisites declared in each story's Meta
-// section. The function returns ErrCycle (wrapping *dag.ErrCycle)
+// section. The function returns ErrCycle (wrapping *dag.CycleError)
 // when a cycle is detected.
 
 package runner
@@ -48,10 +48,10 @@ func makeNodeID(storyID, scopeKey string) string {
 }
 
 // ErrCycle is returned by [Run] when the dependency graph contains
-// a cycle. The underlying *dag.ErrCycle carries the offending edges.
+// a cycle. The underlying *dag.CycleError carries the offending edges.
 // Callers may use errors.As to extract edge details:
 //
-//	var cycle *dag.ErrCycle
+//	var cycle *dag.CycleError
 //	if errors.As(err, &cycle) { ... }
 var ErrCycle = errors.New("runner: dependency cycle detected")
 
@@ -108,7 +108,7 @@ func scopeKeysFor(scope ast.Scope, stationCount int, runID string) []string {
 // declared in each of its Depends entries. The resulting graph is
 // suitable for topological ordering by dag.TopologicalOrder.
 //
-// buildDAG returns ErrCycle (wrapping *dag.ErrCycle) when a cycle
+// buildDAG returns ErrCycle (wrapping *dag.CycleError) when a cycle
 // is detected during edge insertion.
 func buildDAG(
 	stories []*ast.Story,
@@ -302,7 +302,7 @@ func addDepEdges(
 
 		err := grph.AddEdge(edge)
 		if err != nil {
-			var errCycle *dag.ErrCycle
+			var errCycle *dag.CycleError
 			if errors.As(err, &errCycle) {
 				return fmt.Errorf("%w: %w", ErrCycle, errCycle)
 			}

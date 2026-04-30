@@ -64,7 +64,10 @@ func runGenManPages(_ *cobra.Command, _ []string) error {
 	section := genManPagesFlags.section
 
 	//nolint:gosec // G301: outDir is operator-supplied; 0755 is intentional for public man directories
-	err := os.MkdirAll(outDir, 0o755) //nolint:mnd // 0755 is conventional dir perms
+	err := os.MkdirAll(
+		outDir,
+		0o755,
+	)
 	if err != nil {
 		dieErrf(
 			exitcode.ToolError,

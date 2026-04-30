@@ -7,15 +7,18 @@ import (
 	"time"
 )
 
+// float64BitSize is the bit-width passed to strconv.ParseFloat.
+const float64BitSize = 64
+
 // CoercionError is returned by [Coerce] when a captured string
 // token cannot be converted to the Go type declared by its
 // placeholder. It carries the three fields that the registry layer
-// needs to construct a [registry.ErrTypeMismatch] value for the
+// needs to construct a [registry.TypeMismatchError] value for the
 // caller.
 //
 // Callers outside the internal package (i.e., the registry itself)
 // should inspect this error with [errors.As] and then wrap the
-// fields in a registry.ErrTypeMismatch before returning to
+// fields in a registry.TypeMismatchError before returning to
 // consumers. The split avoids a circular import: the registry
 // package imports internal/pattern, so internal/pattern must not
 // import the registry package.
@@ -34,7 +37,7 @@ type CoercionError struct {
 }
 
 // Error returns a human-readable description of the failed
-// coercion in the same format used by registry.ErrTypeMismatch so
+// coercion in the same format used by registry.TypeMismatchError so
 // that test assertions can compare message strings without
 // importing the registry package.
 func (e *CoercionError) Error() string {
@@ -71,7 +74,7 @@ func (e *CoercionError) Error() string {
 // If any conversion fails, Coerce returns nil and a *[CoercionError]
 // identifying the argument name, declared type, and raw value that
 // triggered the failure. The registry layer is expected to wrap the
-// *CoercionError fields into a registry.ErrTypeMismatch before
+// *CoercionError fields into a registry.TypeMismatchError before
 // surfacing it to callers.
 func Coerce(
 	captures map[string]string,
@@ -126,7 +129,7 @@ func coerceOne(
 		return intVal, nil
 
 	case TypeFloat:
-		floatVal, err := strconv.ParseFloat(raw, 64)
+		floatVal, err := strconv.ParseFloat(raw, float64BitSize)
 		if err != nil {
 			return nil, &CoercionError{
 				ArgName:  name,

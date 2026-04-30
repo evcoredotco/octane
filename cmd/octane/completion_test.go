@@ -56,7 +56,8 @@ func runCompletionSyntaxCheck(t *testing.T, tcase completionCase) {
 	}
 
 	//nolint:gosec // G204: temp-file path is controlled by os.CreateTemp
-	out, runErr := exec.CommandContext(t.Context(), tcase.shell, "-n", tmpFile.Name()).CombinedOutput()
+	out, runErr := exec.CommandContext(t.Context(), tcase.shell, "-n", tmpFile.Name()).
+		CombinedOutput()
 	if runErr != nil {
 		t.Errorf("%s -n failed: %v\n%s", tcase.shell, runErr, out)
 	}

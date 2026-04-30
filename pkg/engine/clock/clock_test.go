@@ -10,6 +10,9 @@ import (
 	"github.com/evcoreco/octane/pkg/engine/clock"
 )
 
+// chanBufOne is the buffer size for a single-result channel.
+const chanBufOne = 1
+
 var seed = time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 
 // TestDeterministicNow verifies that Now returns the seed time before any
@@ -63,7 +66,7 @@ func TestDeterministicSleepCancelCtx(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	done := make(chan error, 1)
+	done := make(chan error, chanBufOne)
 
 	go func() {
 		done <- clk.Sleep(ctx, time.Hour)
@@ -152,17 +155,17 @@ func TestRealClockNow(t *testing.T) {
 
 	clk := clock.Real()
 
-	t1 := clk.Now()
-	if t1.IsZero() {
+	firstTime := clk.Now()
+	if firstTime.IsZero() {
 		t.Error("Real().Now() returned zero time")
 	}
 
 	// Busy-wait briefly so the second call is later.
-	for clk.Now().Equal(t1) {
+	for clk.Now().Equal(firstTime) {
 	}
 
 	t2 := clk.Now()
-	if !t2.After(t1) {
-		t.Errorf("Real clock did not advance: t1=%v t2=%v", t1, t2)
+	if !t2.After(firstTime) {
+		t.Errorf("Real clock did not advance: t1=%v t2=%v", firstTime, t2)
 	}
 }

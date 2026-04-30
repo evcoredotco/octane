@@ -10,6 +10,18 @@ import (
 // goldenSeed is the fixed seed used for cross-platform golden comparisons.
 const goldenSeed uint64 = 0xDEADBEEF
 
+// intnBound is the upper bound for Intn calls in these tests.
+const intnBound = 100
+
+// iterRange is the number of iterations for range-check loops.
+const iterRange = 20
+
+// goldenIntnCount is the number of Intn values in the golden sequence.
+const goldenIntnCount = 10
+
+// floatZero is the float64 lower bound for Float64 range checks.
+const floatZero = 0.0
+
 // goldenInt63 is the expected sequence of Int63 values from Deterministic
 // seeded with goldenSeed. If this sequence ever changes, the determinism
 // guarantee (AC6) has been broken.
@@ -35,7 +47,7 @@ var goldenFloat64 = []float64{
 	0.019301430454382484, 0.5164767780532273,
 }
 
-// goldenIntn is the expected sequence of Intn(100) values drawn from the
+// goldenIntn is the expected sequence of Intn(intnBound) values drawn from the
 // same RNG after the Int63 and Float64 sequences above have been consumed.
 var goldenIntn = []int{
 	16, 82, 16, 77, 99, 61, 92, 25, 4, 11,
@@ -65,9 +77,9 @@ func TestGoldenSequence(t *testing.T) {
 	}
 
 	for idx, want := range goldenIntn {
-		got := rng.Intn(100)
+		got := rng.Intn(intnBound)
 		if got != want {
-			t.Errorf("Intn(100)[%d]: got %d, want %d", idx, got, want)
+			t.Errorf("Intn(intnBound)[%d]: got %d, want %d", idx, got, want)
 		}
 	}
 }
@@ -101,11 +113,16 @@ func TestDeterministicSameSeedIdentical(t *testing.T) {
 	}
 
 	for idx := range iterations {
-		got1 := rng1.Intn(100)
-		got2 := rng2.Intn(100)
+		got1 := rng1.Intn(intnBound)
+		got2 := rng2.Intn(intnBound)
 
 		if got1 != got2 {
-			t.Errorf("Intn(100)[%d]: rng1=%d rng2=%d diverge", idx, got1, got2)
+			t.Errorf(
+				"Intn(intnBound)[%d]: rng1=%d rng2=%d diverge",
+				idx,
+				got1,
+				got2,
+			)
 		}
 	}
 }
@@ -120,7 +137,7 @@ func TestDeterministicDifferentSeedsDiffer(t *testing.T) {
 
 	differ := false
 
-	for range 20 {
+	for range iterRange {
 		if rng1.Int63() != rng2.Int63() {
 			differ = true
 
@@ -140,24 +157,24 @@ func TestRealRandInterface(t *testing.T) {
 
 	rng := rand.Real()
 
-	for idx := range 20 {
+	for idx := range iterRange {
 		val := rng.Int63()
 		if val < 0 {
 			t.Errorf("Int63[%d]=%d is negative", idx, val)
 		}
 	}
 
-	for idx := range 20 {
+	for idx := range iterRange {
 		val := rng.Float64()
-		if val < 0.0 || val >= 1.0 {
+		if val < floatZero || val >= 1.0 {
 			t.Errorf("Float64[%d]=%g out of [0.0, 1.0)", idx, val)
 		}
 	}
 
-	for idx := range 20 {
-		val := rng.Intn(100)
-		if val < 0 || val >= 100 {
-			t.Errorf("Intn(100)[%d]=%d out of [0, 100)", idx, val)
+	for idx := range iterRange {
+		val := rng.Intn(intnBound)
+		if val < 0 || val >= intnBound {
+			t.Errorf("Intn(intnBound)[%d]=%d out of [0, 100)", idx, val)
 		}
 	}
 }
@@ -173,19 +190,19 @@ func TestDeterministicPrintGolden(t *testing.T) {
 
 	t.Log("Int63 sequence:")
 
-	for idx := range 20 {
+	for idx := range iterRange {
 		t.Logf("  [%02d] %d", idx, rng.Int63())
 	}
 
 	t.Log("Float64 sequence:")
 
-	for idx := range 20 {
+	for idx := range iterRange {
 		t.Logf("  [%02d] %v", idx, rng.Float64())
 	}
 
-	t.Log("Intn(100) sequence:")
+	t.Log("Intn(intnBound) sequence:")
 
-	for idx := range 10 {
-		t.Logf("  [%02d] %d", idx, rng.Intn(100))
+	for idx := range goldenIntnCount {
+		t.Logf("  [%02d] %d", idx, rng.Intn(intnBound))
 	}
 }

@@ -52,8 +52,9 @@ type Call struct {
 //
 // Wire shape: [3, "<uniqueId>", { ...payload... }]
 //
-// UniqueID correlates the result with a prior Call. Payload is the raw JSON
-// response body and may be forwarded to domain decoders without re-serialization.
+// UniqueID correlates the result with a prior Call. Payload is the raw
+// JSON response body and may be forwarded to domain decoders without
+// re-serialization.
 type Result struct {
 	// UniqueID matches the UniqueID from the originating Call frame.
 	UniqueID string
@@ -64,12 +65,12 @@ type Result struct {
 
 // WireError represents a decoded OCPP-J CALLERROR frame.
 //
-// Wire shape: [4, "<uniqueId>", "<errorCode>", "<errorDescription>", { ...details... }]
+// Wire shape:
+//
+//	[4, "<uniqueId>", "<errorCode>", "<errorDescription>", { ...details... }]
 //
 // The type is named WireError rather than Error to avoid shadowing the
 // built-in error interface. The wire.WireError stutter is intentional.
-//
-//nolint:revive // WireError is intentional: "Error" would shadow the built-in interface.
 type WireError struct {
 	// UniqueID matches the UniqueID from the originating Call frame.
 	UniqueID string
@@ -84,12 +85,12 @@ type WireError struct {
 	Details json.RawMessage
 }
 
-// ErrFrameShape is returned by ParseCall, ParseResult, and ParseError when
+// FrameShapeError is returned by ParseCall, ParseResult, and ParseError when
 // the inbound JSON does not match the expected OCPP-J array shape.
 //
 // The Reason field pinpoints the structural violation. The Raw field carries
 // the first 256 bytes of the malformed frame for diagnostic logging.
-type ErrFrameShape struct {
+type FrameShapeError struct {
 	// Reason describes what was wrong with the frame, e.g.
 	// "expected array of length 4, got 2" or
 	// "element 0 must be a number".
@@ -102,7 +103,7 @@ type ErrFrameShape struct {
 // Error implements the error interface.
 //
 // Format: "wire: malformed frame: <reason> (raw: <first 256 bytes>)".
-func (e *ErrFrameShape) Error() string {
+func (e *FrameShapeError) Error() string {
 	const diagCap = 256
 
 	raw := e.Raw

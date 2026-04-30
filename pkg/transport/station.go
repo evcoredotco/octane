@@ -45,6 +45,7 @@ func newStationHandle(conn *websocket.Conn, maxBytes int64) Station {
 		closed:     make(chan struct{}),
 		once:       sync.Once{},
 		readCancel: cancel,
+		readErr:    atomic.Pointer[error]{},
 		maxBytes:   maxBytes,
 	}
 
@@ -55,7 +56,7 @@ func newStationHandle(conn *websocket.Conn, maxBytes int64) Station {
 
 // Send encodes frame as a JSON array and writes it to the WebSocket.
 //
-// On a write failure after Close, it returns [*ErrStationClosed].
+// On a write failure after Close, it returns [*StationClosedError].
 // Send is safe for concurrent use.
 func (sta *stationHandle) Send(
 	ctx context.Context,
@@ -70,7 +71,7 @@ func (sta *stationHandle) Send(
 	if err != nil {
 		select {
 		case <-sta.closed:
-			return &ErrStationClosed{}
+			return &StationClosedError{}
 		default:
 			return fmt.Errorf("transport: write frame: %w", err)
 		}
@@ -83,9 +84,9 @@ func (sta *stationHandle) Send(
 // cancelled, or the station is closed.
 //
 // Frames already buffered in the inbound queue are delivered even after
-// Close is called — the channel is drained before ErrStationClosed is
+// Close is called — the channel is drained before StationClosedError is
 // returned. If the connection was closed due to an oversized frame,
-// [*ErrFrameTooLarge] is returned after the buffer is exhausted.
+// [*FrameTooLargeError] is returned after the buffer is exhausted.
 func (sta *stationHandle) Expect(ctx context.Context) ([]any, error) {
 	select {
 	case frame, ok := <-sta.inbound:
@@ -111,7 +112,7 @@ func (sta *stationHandle) Expect(ctx context.Context) ([]any, error) {
 		default:
 		}
 
-		return nil, &ErrStationClosed{}
+		return nil, &StationClosedError{}
 	}
 }
 
@@ -141,20 +142,20 @@ func (sta *stationHandle) IsOpen() bool {
 
 // closeError returns the appropriate error for when the inbound channel closes.
 // If the reader goroutine recorded a frame-size error it is returned as
-// *ErrFrameTooLarge; otherwise *ErrStationClosed is returned.
+// *FrameTooLargeError; otherwise *StationClosedError is returned.
 func (sta *stationHandle) closeError() error {
 	if errPtr := sta.readErr.Load(); errPtr != nil {
 		return *errPtr
 	}
 
-	return &ErrStationClosed{}
+	return &StationClosedError{}
 }
 
 // readLoop is the reader goroutine started by newStationHandle. It reads
 // frames from the WebSocket, decodes each as a JSON array, and sends the
 // result to the inbound channel.
 //
-// When conn.Read returns StatusMessageTooBig (1009), an *ErrFrameTooLarge is
+// When conn.Read returns StatusMessageTooBig (1009), an *FrameTooLargeError is
 // stored in readErr so that Expect can surface it to callers after the buffer
 // is drained. All other read errors terminate the loop silently (the
 // connection is already closed at that point).
@@ -165,7 +166,7 @@ func (sta *stationHandle) readLoop(ctx context.Context) {
 		msgType, data, err := sta.conn.Read(ctx)
 		if err != nil {
 			if websocket.CloseStatus(err) == websocket.StatusMessageTooBig {
-				frameErr := error(&ErrFrameTooLarge{
+				frameErr := error(&FrameTooLargeError{
 					Limit:  sta.maxBytes,
 					Actual: -1,
 				})

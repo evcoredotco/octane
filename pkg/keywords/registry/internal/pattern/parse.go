@@ -35,6 +35,23 @@ const (
 	KindPlaceholder
 )
 
+// emptyString is the named constant for an empty string, required
+// by the add-constant linter rule when "" appears three or more times.
+const emptyString = ""
+
+// minInitialCap is the minimum initial capacity for the token slice.
+const minInitialCap = 1
+
+// capacityDivisor is the divisor for the capacity heuristic.
+const capacityDivisor = 4
+
+// zeroIdx is the zero index / empty-length sentinel.
+const zeroIdx = 0
+
+// notFound is the sentinel value returned by strings.IndexByte when
+// a byte is not found.
+const notFound = -1
+
 // String returns a human-readable label for the Kind value.
 func (k Kind) String() string {
 	switch k {
@@ -148,18 +165,18 @@ type Token struct {
 // Parse returns.
 func Parse(pattern string) ([]Token, error) {
 	// Pre-allocate at least one slot; typical patterns are short.
-	initialCap := max(len(pattern)/4, 1)
+	initialCap := max(len(pattern)/capacityDivisor, minInitialCap)
 
-	tokens := make([]Token, 0, initialCap)
+	tokens := make([]Token, zeroIdx, initialCap)
 
 	remaining := pattern
 
-	for len(remaining) > 0 {
+	for len(remaining) > zeroIdx {
 		openIdx := strings.IndexByte(remaining, '{')
 		closeIdx := strings.IndexByte(remaining, '}')
 
 		// Bare '}' before any '{' is malformed.
-		if closeIdx != -1 && (openIdx == -1 || closeIdx < openIdx) {
+		if closeIdx != notFound && (openIdx == notFound || closeIdx < openIdx) {
 			return nil, fmt.Errorf(
 				"unexpected '}' at position %d in pattern %q",
 				len(pattern)-len(remaining)+closeIdx,
@@ -167,9 +184,9 @@ func Parse(pattern string) ([]Token, error) {
 			)
 		}
 
-		if openIdx == -1 {
+		if openIdx == notFound {
 			// No more placeholders; the rest is a literal.
-			if lit := makeLiteral(remaining); lit.Text != "" {
+			if lit := makeLiteral(remaining); lit.Text != emptyString {
 				tokens = append(tokens, lit)
 			}
 
@@ -177,8 +194,9 @@ func Parse(pattern string) ([]Token, error) {
 		}
 
 		// Capture the literal segment before the '{'.
-		if openIdx > 0 {
-			if lit := makeLiteral(remaining[:openIdx]); lit.Text != "" {
+		if openIdx > zeroIdx {
+			lit := makeLiteral(remaining[:openIdx])
+			if lit.Text != emptyString {
 				tokens = append(tokens, lit)
 			}
 		}
@@ -187,7 +205,7 @@ func Parse(pattern string) ([]Token, error) {
 
 		// Find the matching '}'.
 		closeIdx = strings.IndexByte(remaining, '}')
-		if closeIdx == -1 {
+		if closeIdx == notFound {
 			return nil, fmt.Errorf(
 				"unclosed '{' in pattern %q",
 				pattern,
@@ -206,7 +224,7 @@ func Parse(pattern string) ([]Token, error) {
 		remaining = remaining[closeIdx+1:]
 	}
 
-	if len(tokens) == 0 {
+	if len(tokens) == zeroIdx {
 		return nil, errors.New("pattern must not be empty")
 	}
 
@@ -221,8 +239,8 @@ func makeLiteral(raw string) Token {
 	return Token{
 		Kind: KindLiteral,
 		Text: strings.TrimSpace(raw),
-		Name: "",
-		Type: "",
+		Name: emptyString,
+		Type: emptyString,
 	}
 }
 
@@ -233,7 +251,7 @@ func parsePlaceholder(raw, fullPattern string) (Token, error) {
 	// raw is guaranteed to start with '{' and end with '}'.
 	inner := raw[1 : len(raw)-1]
 
-	if inner == "" {
+	if inner == emptyString {
 		return Token{}, fmt.Errorf(
 			"empty placeholder %q in pattern %q",
 			raw,
@@ -254,7 +272,7 @@ func parsePlaceholder(raw, fullPattern string) (Token, error) {
 	name := before
 	typePart := after
 
-	if name == "" {
+	if name == emptyString {
 		return Token{}, fmt.Errorf(
 			"placeholder %q has an empty name in pattern %q",
 			raw,
@@ -262,7 +280,7 @@ func parsePlaceholder(raw, fullPattern string) (Token, error) {
 		)
 	}
 
-	if typePart == "" {
+	if typePart == emptyString {
 		return Token{}, fmt.Errorf(
 			"placeholder %q has an empty type in pattern %q; "+
 				"supported types: string, int, float, bool, "+

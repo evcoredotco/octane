@@ -11,7 +11,7 @@ import (
 
 // maxLevenshteinSuggestion is the inclusive upper bound on the
 // Levenshtein edit distance for a pattern to be included as a
-// "did you mean?" suggestion in [ErrNoMatch.Closest]. Patterns
+// "did you mean?" suggestion in [NoMatchError.Closest]. Patterns
 // farther than this distance are not surfaced.
 const maxLevenshteinSuggestion = 5
 
@@ -55,8 +55,8 @@ type Match struct {
 //     OCPPVersion equals ocppVersion or when their OCPPVersion is
 //     the zero value (version-agnostic).
 //
-// Resolve returns [*ErrNoMatch] when no keyword matches step, and
-// [*ErrTypeMismatch] when a pattern matches but a placeholder value
+// Resolve returns [*NoMatchError] when no keyword matches step, and
+// [*TypeMismatchError] when a pattern matches but a placeholder value
 // cannot be coerced to its declared type.
 func Resolve(step string, ocppVersion api.OCPPVersion) (Match, error) {
 	all := All()
@@ -73,7 +73,7 @@ func Resolve(step string, ocppVersion api.OCPPVersion) (Match, error) {
 		}
 	}
 
-	return Match{}, &ErrNoMatch{
+	return Match{}, &NoMatchError{
 		StepText: step,
 		Closest:  closestPattern(step, all),
 	}
@@ -136,7 +136,7 @@ func isEligible(keyword api.Keyword, ocppVersion api.OCPPVersion) bool {
 // returns a non-nil *Match on success, nil on a pattern mismatch, or
 // a non-nil error when coercion fails.
 //
-// A *[ErrTypeMismatch] is returned when the pattern matches
+// A *[TypeMismatchError] is returned when the pattern matches
 // structurally but a placeholder value cannot be coerced to its
 // declared type.
 func tryMatch(step string, keyword api.Keyword) (Match, bool, error) {
@@ -145,19 +145,35 @@ func tryMatch(step string, keyword api.Keyword) (Match, bool, error) {
 		// A malformed pattern should have been caught at Register
 		// time; skip it defensively rather than surfacing a parse
 		// error to the caller.
-		return Match{}, false, nil //nolint:nilerr // defensive skip; not caller-visible
+		return Match{ //nolint:nilerr // defensive skip; not caller-visible
+			Keyword: api.Keyword{
+				Pattern:     "",
+				Layer:       0,
+				OCPPVersion: 0,
+				Func:        nil,
+			},
+			Args: api.Args{},
+		}, false, nil
 	}
 
 	captures, matched := pattern.Match(tokens, step)
 	if !matched {
-		return Match{}, false, nil
+		return Match{
+			Keyword: api.Keyword{
+				Pattern:     "",
+				Layer:       0,
+				OCPPVersion: 0,
+				Func:        nil,
+			},
+			Args: api.Args{},
+		}, false, nil
 	}
 
 	coerced, coerceErr := pattern.Coerce(captures, tokens)
 	if coerceErr != nil {
 		var coercErr *pattern.CoercionError
 		if errors.As(coerceErr, &coercErr) {
-			return Match{}, false, &ErrTypeMismatch{
+			return Match{}, false, &TypeMismatchError{
 				ArgName:  coercErr.ArgName,
 				Expected: coercErr.Expected,
 				Got:      coercErr.Got,

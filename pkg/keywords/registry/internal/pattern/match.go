@@ -55,6 +55,10 @@ func Match(
 
 			captures[tok.Name] = stepWords[pos]
 			pos++
+
+		default:
+			// Unknown token kinds are silently skipped; new token
+			// kinds added in future must be handled explicitly above.
 		}
 	}
 

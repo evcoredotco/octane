@@ -86,8 +86,17 @@ func Test_runner_RunPerRunPrereqRunsOnce(t *testing.T) {
 	writeFile(t, storyDir+"/pr_dep3.story", storyPerRunDep3)
 
 	cfg := runner.Config{
-		StoryPaths: []string{storyDir},
-		NoCache:    true,
+		StoryPaths:         []string{storyDir},
+		MaxParallel:        0,
+		LockTimeout:        0,
+		NoWait:             false,
+		ShardIndex:         0,
+		ShardTotal:         0,
+		CacheDir:           "",
+		NoCache:            true,
+		NoTraceOnPass:      false,
+		OCPPVersion:        "",
+		InsecureSkipVerify: false,
 	}
 
 	result, err := runner.Run(context.Background(), cfg)
@@ -136,16 +145,20 @@ func Test_runner_RunPerRunPrereqRunsOnce(t *testing.T) {
 	dependentIDs := []string{"pr_dep1", "pr_dep2", "pr_dep3"}
 	byID := storyResultsByTestID(result.Stories)
 
-	for _, id := range dependentIDs {
-		sr, ok := byID[id]
+	for _, storyID := range dependentIDs {
+		storyResult, ok := byID[storyID]
 		if !ok {
-			t.Errorf("story %q missing from results", id)
+			t.Errorf("story %q missing from results", storyID)
 
 			continue
 		}
 
-		if sr.Status != runner.StatusPassed {
-			t.Errorf("story %q: want StatusPassed, got %s", id, sr.Status)
+		if storyResult.Status != runner.StatusPassed {
+			t.Errorf(
+				"story %q: want StatusPassed, got %s",
+				storyID,
+				storyResult.Status,
+			)
 		}
 	}
 

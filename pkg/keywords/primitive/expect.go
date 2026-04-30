@@ -26,19 +26,19 @@ func init() {
 	})
 }
 
-// ErrTimeout is returned by the expect keywords when no matching frame
+// TimeoutError is returned by the expect keywords when no matching frame
 // arrives within the specified timeout. It carries the station handle, the
 // configured timeout, and the time at which the deadline was computed (per
 // the deterministic clock injected via [api.State.Now]).
 //
 // Use errors.As to inspect the fields:
 //
-//	var te *primitive.ErrTimeout
+//	var te *primitive.TimeoutError
 //	if errors.As(err, &te) {
 //	    fmt.Println("station:", te.Station)
 //	    fmt.Println("timeout:", te.Timeout)
 //	}
-type ErrTimeout struct {
+type TimeoutError struct {
 	// Station is the handle name of the station that produced no frame.
 	Station string
 
@@ -53,7 +53,7 @@ type ErrTimeout struct {
 }
 
 // Error implements the error interface.
-func (e *ErrTimeout) Error() string {
+func (e *TimeoutError) Error() string {
 	return fmt.Sprintf(
 		"primitive: expect on station %q timed out after %s (deadline: %s)",
 		e.Station,
@@ -70,7 +70,7 @@ func (e *ErrTimeout) Error() string {
 // time.Now() — so that deterministic-clock scenarios never advance real wall
 // time (constitution principle IV). The keyword blocks until a frame arrives
 // or the deadline elapses. On success the received frame is logged; on
-// timeout [*ErrTimeout] is returned.
+// timeout [*TimeoutError] is returned.
 func expectAnyFrame(
 	ctx context.Context,
 	state api.State,
@@ -96,7 +96,7 @@ func expectAnyFrame(
 	frame, expectErr := sta.Expect(dctx)
 	if expectErr != nil {
 		if dctx.Err() != nil {
-			return &ErrTimeout{
+			return &TimeoutError{
 				Station:  handle,
 				Timeout:  timeout,
 				Deadline: deadline,
@@ -134,7 +134,7 @@ func expectAnyFrame(
 // equals messageType is received. Frames with a different message-type code
 // are silently discarded and the loop continues.
 //
-// On success the keyword logs the matching frame. On timeout [*ErrTimeout]
+// On success the keyword logs the matching frame. On timeout [*TimeoutError]
 // is returned; on any non-timeout station error the error is wrapped and
 // returned immediately.
 func expectFrameOfType(
@@ -165,7 +165,7 @@ func expectFrameOfType(
 		frame, expectErr := sta.Expect(dctx)
 		if expectErr != nil {
 			if dctx.Err() != nil {
-				return &ErrTimeout{
+				return &TimeoutError{
 					Station:  handle,
 					Timeout:  timeout,
 					Deadline: deadline,

@@ -41,6 +41,12 @@ func (lc *lockCloser) Close() error {
 	return nil
 }
 
+// maxBackoffDelay is the upper bound for exponential backoff in [Acquire].
+const maxBackoffDelay = 100 * time.Millisecond
+
+// backoffMultiplier is the doubling factor applied to the retry delay.
+const backoffMultiplier = 2
+
 // backoffState holds the mutable retry-loop state for [Acquire].
 // Keeping it in a struct reduces the number of parameters threaded
 // through the loop and keeps cognitive complexity below 7.
@@ -53,7 +59,7 @@ type backoffState struct {
 // (doubled) delay, capped at maxDelay.
 func (bs *backoffState) next() time.Duration {
 	current := bs.delay
-	bs.delay *= 2
+	bs.delay *= backoffMultiplier
 
 	if bs.delay > bs.maxDelay {
 		bs.delay = bs.maxDelay
@@ -88,7 +94,7 @@ func Acquire(
 
 	backoff := &backoffState{
 		delay:    time.Millisecond,
-		maxDelay: 100 * time.Millisecond,
+		maxDelay: maxBackoffDelay,
 	}
 
 	for {

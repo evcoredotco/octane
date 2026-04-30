@@ -32,8 +32,8 @@ func (p *parser) parseMeta() (ast.Meta, error) {
 	tok := p.lex.Next()
 	if tok.Kind != lex.TokenMeta {
 		return ast.Meta{
-				Name:       "",
-				ID:         "",
+				Name:       emptyStr,
+				ID:         emptyStr,
 				SpecRef:    nil,
 				Tags:       nil,
 				Stations:   0,
@@ -49,8 +49,8 @@ func (p *parser) parseMeta() (ast.Meta, error) {
 	}
 
 	meta := ast.Meta{
-		Name:       "",
-		ID:         "",
+		Name:       emptyStr,
+		ID:         emptyStr,
 		SpecRef:    nil,
 		Tags:       nil,
 		Stations:   0,
@@ -76,8 +76,8 @@ func (p *parser) parseMeta() (ast.Meta, error) {
 		entry, err := p.parseMetaEntry()
 		if err != nil {
 			return ast.Meta{
-				Name:       "",
-				ID:         "",
+				Name:       emptyStr,
+				ID:         emptyStr,
 				SpecRef:    nil,
 				Tags:       nil,
 				Stations:   0,
@@ -92,8 +92,8 @@ func (p *parser) parseMeta() (ast.Meta, error) {
 		err = p.applyMetaEntry(&meta, entry, tracker)
 		if err != nil {
 			return ast.Meta{
-				Name:       "",
-				ID:         "",
+				Name:       emptyStr,
+				ID:         emptyStr,
 				SpecRef:    nil,
 				Tags:       nil,
 				Stations:   0,
@@ -109,8 +109,8 @@ func (p *parser) parseMeta() (ast.Meta, error) {
 	err := validateMetaRequired(p.file, meta, tracker)
 	if err != nil {
 		return ast.Meta{
-			Name:       "",
-			ID:         "",
+			Name:       emptyStr,
+			ID:         emptyStr,
 			SpecRef:    nil,
 			Tags:       nil,
 			Stations:   0,
@@ -160,7 +160,7 @@ func (p *parser) applyMetaEntry(
 
 	case "Tags":
 		for _, tag := range splitTrimmed(entry.value, ",") {
-			if tag != "" {
+			if tag != emptyStr {
 				meta.Tags = append(meta.Tags, tag)
 				tracker.hasTags = true
 			}
@@ -177,7 +177,8 @@ func (p *parser) applyMetaEntry(
 
 		if count < 1 || count > 10000 {
 			return fmt.Errorf(
-				"%s:%d:%d: Stations value %d is out of range; must be between 1 and 10000",
+				"%s:%d:%d: Stations value %d is out of range;"+
+					" must be between 1 and 10000",
 				p.file,
 				entry.line,
 				entry.column,
@@ -202,7 +203,7 @@ func (p *parser) applyMetaEntry(
 	case "Parameters":
 		// T-001-23: parse comma-separated parameter list.
 		for _, param := range splitTrimmed(entry.value, ",") {
-			if param != "" {
+			if param != emptyStr {
 				meta.Parameters = append(meta.Parameters, param)
 			}
 		}
@@ -241,7 +242,7 @@ func validateMetaRequired(
 	tracker *metaTracker,
 ) error {
 	if !tracker.hasName {
-		return &diag.ErrMissingKey{
+		return &diag.MissingKeyError{
 			File:       file,
 			Line:       meta.Position.Line,
 			Column:     meta.Position.Column,
@@ -251,7 +252,7 @@ func validateMetaRequired(
 	}
 
 	if !tracker.hasID {
-		return &diag.ErrMissingKey{
+		return &diag.MissingKeyError{
 			File:       file,
 			Line:       meta.Position.Line,
 			Column:     meta.Position.Column,
@@ -261,7 +262,7 @@ func validateMetaRequired(
 	}
 
 	if !tracker.hasStations {
-		return &diag.ErrMissingKey{
+		return &diag.MissingKeyError{
 			File:       file,
 			Line:       meta.Position.Line,
 			Column:     meta.Position.Column,
@@ -271,12 +272,13 @@ func validateMetaRequired(
 	}
 
 	if !tracker.hasTags {
-		return &diag.ErrMissingKey{
-			File:       file,
-			Line:       meta.Position.Line,
-			Column:     meta.Position.Column,
-			Key:        "Tags",
-			Suggestion: "add 'Tags: <comma-separated tags>' to the Meta section",
+		return &diag.MissingKeyError{
+			File:   file,
+			Line:   meta.Position.Line,
+			Column: meta.Position.Column,
+			Key:    "Tags",
+			Suggestion: "add 'Tags: <comma-separated tags>'" +
+				" to the Meta section",
 		}
 	}
 
@@ -290,7 +292,7 @@ func validateSpecRef(file string, meta ast.Meta, tracker *metaTracker) error {
 	isHelper := containsTag(meta.Tags, "helper")
 
 	if isHelper && meta.SpecRef != nil {
-		return &diag.ErrSpecRefOnHelper{
+		return &diag.SpecRefOnHelperError{
 			File:       file,
 			Line:       tracker.specRefLine,
 			Column:     tracker.specRefColumn,
@@ -300,7 +302,7 @@ func validateSpecRef(file string, meta ast.Meta, tracker *metaTracker) error {
 	}
 
 	if !isHelper && meta.SpecRef == nil {
-		return &diag.ErrMissingSpecRef{
+		return &diag.MissingSpecRefError{
 			File:       file,
 			Line:       meta.Position.Line,
 			Column:     meta.Position.Column,
@@ -317,8 +319,8 @@ func (p *parser) parseMetaEntry() (metaEntry, error) {
 	keyTok := p.lex.Next()
 	if keyTok.Kind != lex.TokenMetaKey {
 		return metaEntry{
-				key:    "",
-				value:  "",
+				key:    emptyStr,
+				value:  emptyStr,
 				line:   keyTok.Line,
 				column: keyTok.Column,
 			}, fmt.Errorf(
@@ -330,8 +332,8 @@ func (p *parser) parseMetaEntry() (metaEntry, error) {
 	colonTok := p.lex.Next()
 	if colonTok.Kind != lex.TokenColon {
 		return metaEntry{
-				key:    "",
-				value:  "",
+				key:    emptyStr,
+				value:  emptyStr,
 				line:   colonTok.Line,
 				column: colonTok.Column,
 			}, fmt.Errorf(
@@ -347,8 +349,8 @@ func (p *parser) parseMetaEntry() (metaEntry, error) {
 	valTok := p.lex.Next()
 	if valTok.Kind != lex.TokenValue {
 		return metaEntry{
-				key:    "",
-				value:  "",
+				key:    emptyStr,
+				value:  emptyStr,
 				line:   valTok.Line,
 				column: valTok.Column,
 			}, fmt.Errorf(

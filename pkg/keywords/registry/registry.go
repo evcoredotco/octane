@@ -64,6 +64,11 @@ var global = struct { //nolint:exhaustruct // zero value is correct initial stat
 	index: make(map[registryKey]string),
 }
 
+// callerSkip is the runtime.Callers skip depth used to capture the
+// call site of [Register]. A value of 2 skips callerLocation itself
+// and Register, landing on the actual registrant.
+const callerSkip = 2
+
 // Register adds keyword to the global keyword registry. It panics if a
 // keyword with the same (Layer, OCPPVersion, Pattern) triple has
 // already been registered. The panic message includes the formatted
@@ -75,7 +80,7 @@ var global = struct { //nolint:exhaustruct // zero value is correct initial stat
 // permitted but unusual.
 func Register(keyword api.Keyword) {
 	caller := callerLocation(
-		2,
+		callerSkip,
 	)
 
 	key := registryKey{

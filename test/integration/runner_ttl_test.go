@@ -33,7 +33,8 @@ Scenario: TTL story passes
 // valueTTLOne is the 1-second TTL used in the expiry assertions.
 const valueTTLOne = 1 * time.Second
 
-// valueTTLWait is the wait period (1100ms) that guarantees the 1s TTL has expired.
+// valueTTLWait is the wait period (1100ms) that guarantees the 1s TTL
+// has expired.
 const valueTTLWait = 1100 * time.Millisecond
 
 // Test_runner_CacheTTLDirectExpiry validates that a cache entry written with a
@@ -68,6 +69,7 @@ func Test_runner_CacheTTLDirectExpiry(t *testing.T) {
 
 	entry := cache.Entry{
 		Result:    resultJSON,
+		Trace:     nil,
 		WrittenAt: time.Now().UTC(),
 		TTL:       valueTTLOne,
 	}
@@ -108,9 +110,17 @@ func Test_runner_CacheTTLRunnerSecondRunIsHit(t *testing.T) {
 	writeFile(t, storyDir+"/ttl_story.story", storyTTL)
 
 	cfg := runner.Config{
-		StoryPaths: []string{storyDir},
-		NoCache:    false,
-		CacheDir:   cacheDir,
+		StoryPaths:         []string{storyDir},
+		MaxParallel:        0,
+		LockTimeout:        0,
+		NoWait:             false,
+		ShardIndex:         0,
+		ShardTotal:         0,
+		CacheDir:           cacheDir,
+		NoCache:            false,
+		NoTraceOnPass:      false,
+		OCPPVersion:        "",
+		InsecureSkipVerify: false,
 	}
 
 	// First run: story executes, result is cached (CacheMiss → write).

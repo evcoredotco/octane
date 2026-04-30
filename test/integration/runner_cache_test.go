@@ -52,9 +52,17 @@ func Test_runner_RunCacheHitOnSecondRun(t *testing.T) {
 	writeFile(t, storyDir+"/cache_dependent.story", storyDependent)
 
 	cfg := runner.Config{
-		StoryPaths: []string{storyDir},
-		NoCache:    false,
-		CacheDir:   cacheDir,
+		StoryPaths:         []string{storyDir},
+		MaxParallel:        0,
+		LockTimeout:        0,
+		NoWait:             false,
+		ShardIndex:         0,
+		ShardTotal:         0,
+		CacheDir:           cacheDir,
+		NoCache:            false,
+		NoTraceOnPass:      false,
+		OCPPVersion:        "",
+		InsecureSkipVerify: false,
 	}
 
 	// First run: both stories are cache misses and get executed.
@@ -72,13 +80,13 @@ func Test_runner_RunCacheHitOnSecondRun(t *testing.T) {
 		)
 	}
 
-	for _, sr := range firstResult.Stories {
+	for _, storyResult := range firstResult.Stories {
 		// Invariant: first run must be a cache miss.
-		if sr.CacheStatus != runner.CacheMiss {
+		if storyResult.CacheStatus != runner.CacheMiss {
 			t.Errorf(
 				"first run: story %q: want CacheMiss, got %s",
-				sr.TestID,
-				sr.CacheStatus,
+				storyResult.TestID,
+				storyResult.CacheStatus,
 			)
 		}
 	}
@@ -97,15 +105,15 @@ func Test_runner_RunCacheHitOnSecondRun(t *testing.T) {
 		)
 	}
 
-	for _, sr := range secondResult.Stories {
+	for _, storyResult := range secondResult.Stories {
 		// Invariant: second run must be a cache hit (pass or skip).
-		isHit := sr.CacheStatus == runner.CacheHitPass ||
-			sr.CacheStatus == runner.CacheHitSkip
+		isHit := storyResult.CacheStatus == runner.CacheHitPass ||
+			storyResult.CacheStatus == runner.CacheHitSkip
 		if !isHit {
 			t.Errorf(
 				"second run: story %q: want CacheHit*, got %s",
-				sr.TestID,
-				sr.CacheStatus,
+				storyResult.TestID,
+				storyResult.CacheStatus,
 			)
 		}
 	}

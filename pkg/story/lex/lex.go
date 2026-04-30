@@ -8,6 +8,25 @@ package lex
 
 import "strings"
 
+// emptyLiteral is the named empty-string sentinel for token Literal fields,
+// required by the add-constant linter rule.
+const emptyLiteral = ""
+
+// initialPos is the starting byte offset in the source.
+const initialPos = 0
+
+// initialLine is the starting line number (1-based).
+const initialLine = 1
+
+// initialCol is the starting column number (1-based).
+const initialCol = 1
+
+// nextByte is the lookahead offset for checking the following byte.
+const nextByte = 1
+
+// noColon flags that no ':' separator has been found yet.
+const noColon = -1
+
 // TokenKind identifies the type of a lexical token produced by the lexer.
 type TokenKind int
 
@@ -181,9 +200,9 @@ type Lexer interface {
 func NewLexer(_ string, src []byte) Lexer {
 	return &lexer{
 		src:   normaliseCRLF(src),
-		pos:   0,
-		line:  1,
-		col:   1,
+		pos:   initialPos,
+		line:  initialLine,
+		col:   initialCol,
 		queue: nil,
 	}
 }
@@ -192,10 +211,12 @@ func NewLexer(_ string, src []byte) Lexer {
 // \r bytes that are not followed by \n are left as-is so that illegal-byte
 // detection downstream can handle them.
 func normaliseCRLF(src []byte) []byte {
-	out := make([]byte, 0, len(src))
+	out := make([]byte, initialPos, len(src))
 
-	for idx := 0; idx < len(src); idx++ {
-		if src[idx] == '\r' && idx+1 < len(src) && src[idx+1] == '\n' {
+	for idx := initialPos; idx < len(src); idx++ {
+		isCRLF := src[idx] == '\r' &&
+			idx+nextByte < len(src) && src[idx+nextByte] == '\n'
+		if isCRLF {
 			out = append(out, '\n')
 			idx++ // skip the paired \n; loop increment advances past it
 
@@ -235,9 +256,9 @@ func (l *lexer) Peek() Token {
 // TokenEOF is first returned, every subsequent call also returns
 // TokenEOF.
 func (l *lexer) Next() Token {
-	if len(l.queue) > 0 {
-		tok := l.queue[0]
-		l.queue = l.queue[1:]
+	if len(l.queue) > initialPos {
+		tok := l.queue[initialPos]
+		l.queue = l.queue[nextByte:]
 
 		return tok
 	}
@@ -446,14 +467,14 @@ func (l *lexer) tryStepKeyword() (kwTok, textTok Token, matched bool) {
 
 	return Token{
 			Kind:    TokenIllegal,
-			Literal: "",
-			Line:    0,
-			Column:  0,
+			Literal: emptyLiteral,
+			Line:    initialPos,
+			Column:  initialPos,
 		}, Token{
 			Kind:    TokenIllegal,
-			Literal: "",
-			Line:    0,
-			Column:  0,
+			Literal: emptyLiteral,
+			Line:    initialPos,
+			Column:  initialPos,
 		}, false
 }
 
@@ -467,9 +488,14 @@ func (l *lexer) scanMetaEntry(indentTok Token) Token {
 	start := l.pos
 
 	// Scan forward to find ':'.
-	colonPos := -1
+	colonPos := noColon
 
-	for scanIdx := l.pos; scanIdx < len(l.src) && l.src[scanIdx] != '\n'; scanIdx++ {
+	srcLen := len(l.src)
+	for scanIdx := l.pos; scanIdx < srcLen; scanIdx++ {
+		if l.src[scanIdx] == '\n' {
+			break
+		}
+
 		if l.src[scanIdx] == ':' {
 			colonPos = scanIdx
 
@@ -690,7 +716,7 @@ func (l *lexer) advance() {
 
 	if l.src[l.pos] == '\n' {
 		l.line++
-		l.col = 1
+		l.col = initialCol
 	} else {
 		l.col++
 	}

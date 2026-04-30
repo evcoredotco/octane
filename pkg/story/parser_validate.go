@@ -12,7 +12,7 @@ import (
 // It walks every step text across background, setup, all scenario steps, and
 // teardown. For each step it extracts {placeholder} tokens using a linear
 // scan (no regex). If any placeholder name is not present in meta.Parameters
-// the function returns *diag.ErrUnboundParameter for the first offending
+// the function returns *diag.UnboundParameterError for the first offending
 // step, including all unbound names found in that step.
 //
 // Placeholder syntax: {name} or {name:type}. The :type suffix is stripped
@@ -40,19 +40,24 @@ func validateParameters(
 				continue
 			}
 
-			return &diag.ErrUnboundParameter{
+			return &diag.UnboundParameterError{
 				File:       file,
 				Line:       step.Position.Line,
 				Column:     step.Position.Column,
 				Parameters: unbound,
 				StepText:   step.Text,
-				Suggestion: "declare the parameter(s) under 'Parameters:' in the Meta section",
+				Suggestion: "declare the parameter(s) under " +
+					"'Parameters:' in the Meta section",
 			}
 		}
 	}
 
 	return nil
 }
+
+// fixedStepGroupCount is the number of fixed step groups:
+// background, setup, teardown.
+const fixedStepGroupCount = 3
 
 // buildStepGroups assembles background, setup, scenario steps, and teardown
 // into a single slice of step groups for uniform traversal. Grammar section
@@ -63,7 +68,7 @@ func buildStepGroups(
 	setup []ast.Step,
 	teardown []ast.Step,
 ) [][]ast.Step {
-	groups := make([][]ast.Step, 0, 3+len(scenarios))
+	groups := make([][]ast.Step, 0, fixedStepGroupCount+len(scenarios))
 	groups = append(groups, background, setup)
 
 	for _, sc := range scenarios {

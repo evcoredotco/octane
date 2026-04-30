@@ -1,11 +1,25 @@
-// Package dag — topological ordering via Kahn's algorithm.
-//
+package dag
+
+// Topological ordering via Kahn's algorithm.
 // This file is intentionally separate from dag.go so that the DAG
 // construction and traversal concerns stay in distinct source units.
 
-package dag
+import (
+	"cmp"
+	"slices"
+)
 
-import "sort"
+// emptyInitialLen is the initial length for pre-allocated slices.
+const emptyInitialLen = 0
+
+// firstElem is the index of the first element in a slice.
+const firstElem = 0
+
+// dropFirst is the start index used to remove the first element.
+const dropFirst = 1
+
+// zeroInDegree is the in-degree value that marks a ready node.
+const zeroInDegree = 0
 
 // TopologicalOrder returns the nodes of g in a stable topological
 // execution order. Ties — multiple nodes whose in-degree drops to
@@ -13,7 +27,7 @@ import "sort"
 // satisfying constitution principle IV (determinism).
 //
 // If the graph contains a cycle, TopologicalOrder returns a non-nil
-// [*ErrCycle] whose Edges field lists every edge that participates in
+// [*CycleError] whose Edges field lists every edge that participates in
 // the remaining subgraph. The partial result slice is nil on error.
 //
 // The algorithm is Kahn's (BFS variant). Time complexity is O(V + E).
@@ -29,26 +43,27 @@ func TopologicalOrder(grph *Graph) ([]Node, error) {
 	// Seed the ready queue with all nodes whose in-degree is zero,
 	// then sort for a stable start state.
 	ready := collectZeroInDegree(grph.nodes, inDeg)
-	sort.Slice(ready, func(i, j int) bool {
-		return ready[i].ID < ready[j].ID
+	slices.SortFunc(ready, func(a, b Node) int {
+		return cmp.Compare(a.ID, b.ID)
 	})
 
-	result := make([]Node, 0, len(grph.nodes))
+	result := make([]Node, emptyInitialLen, len(grph.nodes))
 
-	for len(ready) > 0 {
+	for len(ready) > zeroInDegree {
 		// Pop the lexicographically smallest node.
-		current := ready[0]
-		ready = ready[1:]
+		current := ready[firstElem]
+		ready = ready[dropFirst:]
 
 		result = append(result, current)
 
 		// Reduce in-degree for every dependent of current.
-		newReady := make([]Node, 0, len(grph.adjacency[current.ID]))
+		adjacentLen := len(grph.adjacency[current.ID])
+		newReady := make([]Node, emptyInitialLen, adjacentLen)
 
 		for _, neighborID := range grph.adjacency[current.ID] {
 			inDeg[neighborID]--
 
-			if inDeg[neighborID] == 0 {
+			if inDeg[neighborID] == zeroInDegree {
 				idx := grph.nodeIndex[neighborID]
 				newReady = append(newReady, grph.nodes[idx])
 			}
@@ -56,8 +71,8 @@ func TopologicalOrder(grph *Graph) ([]Node, error) {
 
 		// Sort newly eligible nodes before merging so that the
 		// overall ordering is stable without a full re-sort.
-		sort.Slice(newReady, func(i, j int) bool {
-			return newReady[i].ID < newReady[j].ID
+		slices.SortFunc(newReady, func(a, b Node) int {
+			return cmp.Compare(a.ID, b.ID)
 		})
 
 		ready = append(ready, newReady...)
@@ -65,8 +80,8 @@ func TopologicalOrder(grph *Graph) ([]Node, error) {
 		// Re-sort the combined ready queue so that lexicographic
 		// tie-breaking is global across all currently eligible nodes,
 		// not just newly added ones.
-		sort.Slice(ready, func(i, j int) bool {
-			return ready[i].ID < ready[j].ID
+		slices.SortFunc(ready, func(a, b Node) int {
+			return cmp.Compare(a.ID, b.ID)
 		})
 	}
 
@@ -89,7 +104,7 @@ func TopologicalOrder(grph *Graph) ([]Node, error) {
 			}
 		}
 
-		return nil, &ErrCycle{Edges: cycleEdges}
+		return nil, &CycleError{Edges: cycleEdges}
 	}
 
 	return result, nil
@@ -102,10 +117,10 @@ func collectZeroInDegree(
 	nodes []Node,
 	inDeg map[string]int,
 ) []Node {
-	out := make([]Node, 0, len(nodes))
+	out := make([]Node, emptyInitialLen, len(nodes))
 
 	for _, node := range nodes {
-		if inDeg[node.ID] == 0 {
+		if inDeg[node.ID] == zeroInDegree {
 			out = append(out, node)
 		}
 	}

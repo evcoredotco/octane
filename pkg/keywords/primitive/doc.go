@@ -37,7 +37,7 @@
 //
 // Both expect keywords derive their deadline from [api.State.Now] so that
 // deterministic-clock scenarios never advance real wall time. When the
-// deadline elapses before a matching frame arrives, they return [*ErrTimeout].
+// deadline elapses before a matching frame arrives, they return [*TimeoutError].
 //
 // # Wait primitive (spec 004 §10, item 8)
 //

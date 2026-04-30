@@ -32,14 +32,14 @@ var jwtRE = regexp.MustCompile(
 // recursively, and re-serialized. If parsing fails the original bytes are
 // returned unchanged (the frame is treated as opaque data).
 func Frame(raw []byte) []byte {
-	var v any
+	var value any
 
-	err := json.Unmarshal(raw, &v)
+	err := json.Unmarshal(raw, &value)
 	if err != nil {
 		return raw
 	}
 
-	scrubbed := scrubValue(v)
+	scrubbed := scrubValue(value)
 
 	out, err := json.Marshal(scrubbed)
 	if err != nil {
@@ -52,8 +52,8 @@ func Frame(raw []byte) []byte {
 // scrubValue recursively scrubs JSON values. Objects have credential keys
 // replaced; arrays have each element scrubbed; strings have JWT patterns
 // masked; other primitives are returned as-is.
-func scrubValue(v any) any {
-	switch typed := v.(type) {
+func scrubValue(value any) any {
+	switch typed := value.(type) {
 	case map[string]any:
 		return scrubObject(typed)
 	case []any:
@@ -61,7 +61,7 @@ func scrubValue(v any) any {
 	case string:
 		return scrubString(typed)
 	default:
-		return v
+		return value
 	}
 }
 

@@ -6,14 +6,14 @@
 package integration_test
 
 import (
+	"cmp"
 	"context"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"testing"
 
-	// Registers wait {duration:duration} and other primitive keywords.
-	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
+	_ "github.com/evcoreco/octane/pkg/keywords/primitive" // registers primitive keywords
 	"github.com/evcoreco/octane/pkg/runner"
 )
 
@@ -88,8 +88,17 @@ func Test_runner_RunChain(t *testing.T) {
 	writeFile(t, filepath.Join(dir, "chain_d.story"), storyChainD)
 
 	cfg := runner.Config{
-		StoryPaths: []string{dir},
-		NoCache:    true,
+		StoryPaths:         []string{dir},
+		MaxParallel:        0,
+		LockTimeout:        0,
+		NoWait:             false,
+		ShardIndex:         0,
+		ShardTotal:         0,
+		CacheDir:           "",
+		NoCache:            true,
+		NoTraceOnPass:      false,
+		OCPPVersion:        "",
+		InsecureSkipVerify: false,
 	}
 
 	result, err := runner.Run(context.Background(), cfg)
@@ -108,28 +117,28 @@ func Test_runner_RunChain(t *testing.T) {
 	}
 
 	// Invariant: all stories must have passed with cache bypassed.
-	for _, sr := range result.Stories {
-		if sr.Status != runner.StatusPassed {
+	for _, storyResult := range result.Stories {
+		if storyResult.Status != runner.StatusPassed {
 			t.Errorf(
 				"story %q: want StatusPassed, got %s",
-				sr.TestID,
-				sr.Status,
+				storyResult.TestID,
+				storyResult.Status,
 			)
 		}
 
-		if sr.CacheStatus != runner.CacheBypassed {
+		if storyResult.CacheStatus != runner.CacheBypassed {
 			t.Errorf(
 				"story %q: want CacheBypassed, got %s",
-				sr.TestID,
-				sr.CacheStatus,
+				storyResult.TestID,
+				storyResult.CacheStatus,
 			)
 		}
 	}
 
 	// Build a map of testID → Order to verify topological ordering.
 	orderByID := make(map[string]int, len(result.Stories))
-	for _, sr := range result.Stories {
-		orderByID[sr.TestID] = sr.Order
+	for _, storyResult := range result.Stories {
+		orderByID[storyResult.TestID] = storyResult.Order
 	}
 
 	requiredIDs := []string{"chain_a", "chain_b", "chain_c", "chain_d"}
@@ -162,8 +171,8 @@ func Test_runner_RunChain(t *testing.T) {
 	}
 
 	// Invariant: result.Stories must be sorted by Order.
-	if !sort.SliceIsSorted(result.Stories, func(i, j int) bool {
-		return result.Stories[i].Order < result.Stories[j].Order
+	if !slices.IsSortedFunc(result.Stories, func(a, b runner.StoryResult) int {
+		return cmp.Compare(a.Order, b.Order)
 	}) {
 		t.Error("result.Stories is not sorted by Order field")
 	}

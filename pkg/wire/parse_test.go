@@ -126,7 +126,7 @@ func TestParseErrorNilDetails(t *testing.T) {
 	}
 }
 
-// callErrShape is a helper that asserts ParseCall returns an *ErrFrameShape
+// callErrShape is a helper that asserts ParseCall returns an *FrameShapeError
 // whose Reason contains the expected substring.
 func callErrShape(
 	t *testing.T,
@@ -140,26 +140,26 @@ func callErrShape(
 		t.Fatalf("ParseCall expected error containing %q, got nil", wantSubstr)
 	}
 
-	var fsErr *wire.ErrFrameShape
+	var fsErr *wire.FrameShapeError
 
 	if !errors.As(err, &fsErr) {
-		t.Fatalf("ParseCall expected *ErrFrameShape, got %T: %v", err, err)
+		t.Fatalf("ParseCall expected *FrameShapeError, got %T: %v", err, err)
 	}
 
 	if fsErr.Reason == "" {
-		t.Error("ErrFrameShape.Reason must not be empty")
+		t.Error("FrameShapeError.Reason must not be empty")
 	}
 
 	if wantSubstr != "" && !strings.Contains(fsErr.Reason, wantSubstr) {
 		t.Errorf(
-			"ErrFrameShape.Reason = %q, want substring %q",
+			"FrameShapeError.Reason = %q, want substring %q",
 			fsErr.Reason,
 			wantSubstr,
 		)
 	}
 }
 
-// resultErrShape is a helper that asserts ParseResult returns an *ErrFrameShape.
+// resultErrShape is a helper that asserts ParseResult returns an *FrameShapeError.
 func resultErrShape(
 	t *testing.T,
 	frame []any,
@@ -171,18 +171,18 @@ func resultErrShape(
 		t.Fatal("ParseResult expected error, got nil")
 	}
 
-	var fsErr *wire.ErrFrameShape
+	var fsErr *wire.FrameShapeError
 
 	if !errors.As(err, &fsErr) {
-		t.Fatalf("ParseResult expected *ErrFrameShape, got %T: %v", err, err)
+		t.Fatalf("ParseResult expected *FrameShapeError, got %T: %v", err, err)
 	}
 
 	if fsErr.Reason == "" {
-		t.Error("ErrFrameShape.Reason must not be empty")
+		t.Error("FrameShapeError.Reason must not be empty")
 	}
 }
 
-// errorErrShape is a helper that asserts ParseError returns an *ErrFrameShape.
+// errorErrShape is a helper that asserts ParseError returns an *FrameShapeError.
 func errorErrShape(
 	t *testing.T,
 	frame []any,
@@ -194,14 +194,14 @@ func errorErrShape(
 		t.Fatal("ParseError expected error, got nil")
 	}
 
-	var fsErr *wire.ErrFrameShape
+	var fsErr *wire.FrameShapeError
 
 	if !errors.As(err, &fsErr) {
-		t.Fatalf("ParseError expected *ErrFrameShape, got %T: %v", err, err)
+		t.Fatalf("ParseError expected *FrameShapeError, got %T: %v", err, err)
 	}
 
 	if fsErr.Reason == "" {
-		t.Error("ErrFrameShape.Reason must not be empty")
+		t.Error("FrameShapeError.Reason must not be empty")
 	}
 }
 
@@ -408,9 +408,9 @@ func TestParseErrorNonMapDetails(t *testing.T) {
 	errorErrShape(t, frame)
 }
 
-// TestErrFrameShapeRawCapped verifies that ErrFrameShape.Raw is capped at
+// TestFrameShapeErrorRawCapped verifies that FrameShapeError.Raw is capped at
 // 256 bytes in its Error() output and that Reason is surfaced.
-func TestErrFrameShapeRawCapped(t *testing.T) {
+func TestFrameShapeErrorRawCapped(t *testing.T) {
 	t.Parallel()
 
 	// Build a frame that will produce a long raw representation.
@@ -431,10 +431,10 @@ func TestErrFrameShapeRawCapped(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	var fsErr *wire.ErrFrameShape
+	var fsErr *wire.FrameShapeError
 
 	if !errors.As(err, &fsErr) {
-		t.Fatalf("expected *ErrFrameShape, got %T", err)
+		t.Fatalf("expected *FrameShapeError, got %T", err)
 	}
 
 	const maxRaw = 256

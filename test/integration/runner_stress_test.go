@@ -78,9 +78,17 @@ func Test_runner_RunStress(t *testing.T) {
 	}
 
 	cfg := runner.Config{
-		StoryPaths:  []string{storyDir},
-		NoCache:     true,
-		MaxParallel: maxParallel,
+		StoryPaths:         []string{storyDir},
+		MaxParallel:        maxParallel,
+		LockTimeout:        0,
+		NoWait:             false,
+		ShardIndex:         0,
+		ShardTotal:         0,
+		CacheDir:           "",
+		NoCache:            true,
+		NoTraceOnPass:      false,
+		OCPPVersion:        "",
+		InsecureSkipVerify: false,
 	}
 
 	result, err := runner.Run(context.Background(), cfg)

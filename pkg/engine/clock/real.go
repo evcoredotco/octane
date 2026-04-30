@@ -14,13 +14,13 @@ func Real() Clock {
 }
 
 // Now returns the current wall-clock time via time.Now.
-func (c *realClock) Now() time.Time {
+func (*realClock) Now() time.Time {
 	return time.Now()
 }
 
 // Sleep blocks until d has elapsed or ctx is cancelled.
 // Returns ctx.Err() if the context is done before d elapses.
-func (c *realClock) Sleep(ctx context.Context, d time.Duration) error {
+func (*realClock) Sleep(ctx context.Context, d time.Duration) error {
 	timer := time.NewTimer(d)
 	defer timer.Stop()
 
@@ -34,6 +34,6 @@ func (c *realClock) Sleep(ctx context.Context, d time.Duration) error {
 
 // After returns a channel that fires after d has elapsed.
 // The channel is buffered with capacity 1 (guaranteed by time.After).
-func (c *realClock) After(d time.Duration) <-chan time.Time {
+func (*realClock) After(d time.Duration) <-chan time.Time {
 	return time.After(d)
 }

@@ -42,7 +42,7 @@ var allowedSchemes = map[string]struct{}{
 // handshake with the subprotocol list in opts.Subprotocols and validates the
 // server's selection. If the server selects a subprotocol not in the list (or
 // omits the header entirely), Dial closes the connection and returns
-// [*ErrSubprotocolMismatch].
+// [*SubprotocolMismatchError].
 //
 // TLS verification is on by default. Setting [DialOptions.InsecureSkipVerify]
 // to true disables certificate validation and emits a WARNING via [log/slog].
@@ -119,7 +119,7 @@ func sanitizeURL(parsed *url.URL) string {
 
 // validateSubprotocol checks that the server chose a subprotocol from the
 // requested list. It returns nil when the list is empty (caller has no
-// preference). On mismatch it returns *ErrSubprotocolMismatch.
+// preference). On mismatch it returns *SubprotocolMismatchError.
 func validateSubprotocol(
 	conn *websocket.Conn,
 	subprotocols []string,
@@ -134,7 +134,7 @@ func validateSubprotocol(
 		return nil
 	}
 
-	return &ErrSubprotocolMismatch{
+	return &SubprotocolMismatchError{
 		Requested: subprotocols,
 		Got:       negotiated,
 	}
@@ -184,7 +184,8 @@ func buildTLSConfig(safeURL string, opts DialOptions) *tls.Config {
 // If tlsCfg is nil the client's transport uses system defaults.
 func buildHTTPClient(tlsCfg *tls.Config) *http.Client {
 	if tlsCfg == nil {
-		return nil // nil instructs the websocket library to use the default client
+		// nil instructs the websocket library to use the default client.
+		return nil
 	}
 
 	return &http.Client{
@@ -198,7 +199,7 @@ func buildHTTPClient(tlsCfg *tls.Config) *http.Client {
 // the cause is recognisable as a TLS failure. safeURL has userinfo stripped.
 func wrapDialError(safeURL string, cause error) error {
 	if isTLSError(cause) {
-		return &ErrTLSValidation{
+		return &TLSValidationError{
 			URL:   safeURL,
 			Cause: cause,
 		}
@@ -228,8 +229,9 @@ func isTLSError(err error) bool {
 }
 
 // tlsErrorMarkers identifies TLS/x509 errors by error-string prefix.
-// Deliberately narrow: "certificate" was removed (too broad — a CSMS could
-// return "certificate" in an HTTP 400 body, causing a false ErrTLSValidation).
+// Deliberately narrow: "certificate" was removed (too broad — a CSMS
+// could return "certificate" in an HTTP 400 body, causing a false
+// TLSValidationError).
 var tlsErrorMarkers = []string{
 	"tls: ",
 	"x509: ",

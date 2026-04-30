@@ -10,6 +10,9 @@ import (
 	"github.com/evcoreco/octane/pkg/story/lex"
 )
 
+// indentSize is the minimum number of leading spaces for an indented step.
+const indentSize = 4
+
 // parseBackground implements T-001-24: expects TokenBackground followed by
 // one or more indented step lines. Returns the collected steps.
 func (p *parser) parseBackground() ([]ast.Step, error) {
@@ -169,7 +172,7 @@ func (p *parser) parseParallelBlock() ([]ast.Step, error) {
 // isIndentToken reports whether tok is a TokenIndent with at least one level
 // of indentation (four or more leading spaces).
 func isIndentToken(tok lex.Token) bool {
-	return tok.Kind == lex.TokenIndent && len(tok.Literal) >= 4
+	return tok.Kind == lex.TokenIndent && len(tok.Literal) >= indentSize
 }
 
 // isBareStepToken reports whether tok is a TokenIllegal produced by the

@@ -83,7 +83,7 @@ func keywordsResolve(_ *cobra.Command, args []string) error {
 	// to enumerate all version-agnostic primitives.
 	match, err := registry.Resolve(stepText, 0)
 	if err != nil {
-		var noMatch *registry.ErrNoMatch
+		var noMatch *registry.NoMatchError
 
 		if errors.As(err, &noMatch) {
 			_, _ = fmt.Fprintf(os.Stdout, "no match for: %q\n", stepText)

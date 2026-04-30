@@ -214,7 +214,10 @@ func TestPrimitivesSmoke_BootNotificationCALLRESULT(t *testing.T) {
 
 	unmarshalErr := json.Unmarshal(result.Payload, &payload)
 	if unmarshalErr != nil {
-		t.Fatalf("unmarshal BootNotification response payload: %v", unmarshalErr)
+		t.Fatalf(
+			"unmarshal BootNotification response payload: %v",
+			unmarshalErr,
+		)
 	}
 
 	if payload.Status != "Accepted" {

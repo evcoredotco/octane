@@ -38,9 +38,9 @@ func TestNegative_MissingName(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	var target *diag.ErrMissingKey
+	var target *diag.MissingKeyError
 	if !errors.As(err, &target) {
-		t.Fatalf("expected *diag.ErrMissingKey, got %T: %v", err, err)
+		t.Fatalf("expected *diag.MissingKeyError, got %T: %v", err, err)
 	}
 
 	if target.Key != "Name" {
@@ -59,9 +59,9 @@ func TestNegative_MissingID(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	var target *diag.ErrMissingKey
+	var target *diag.MissingKeyError
 	if !errors.As(err, &target) {
-		t.Fatalf("expected *diag.ErrMissingKey, got %T: %v", err, err)
+		t.Fatalf("expected *diag.MissingKeyError, got %T: %v", err, err)
 	}
 
 	if target.Key != "Id" {
@@ -80,9 +80,9 @@ func TestNegative_MissingStations(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	var target *diag.ErrMissingKey
+	var target *diag.MissingKeyError
 	if !errors.As(err, &target) {
-		t.Fatalf("expected *diag.ErrMissingKey, got %T: %v", err, err)
+		t.Fatalf("expected *diag.MissingKeyError, got %T: %v", err, err)
 	}
 
 	if target.Key != "Stations" {
@@ -101,9 +101,9 @@ func TestNegative_SpecRefOnHelper(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	var target *diag.ErrSpecRefOnHelper
+	var target *diag.SpecRefOnHelperError
 	if !errors.As(err, &target) {
-		t.Fatalf("expected *diag.ErrSpecRefOnHelper, got %T: %v", err, err)
+		t.Fatalf("expected *diag.SpecRefOnHelperError, got %T: %v", err, err)
 	}
 }
 
@@ -118,9 +118,9 @@ func TestNegative_MissingSpecRef(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	var target *diag.ErrMissingSpecRef
+	var target *diag.MissingSpecRefError
 	if !errors.As(err, &target) {
-		t.Fatalf("expected *diag.ErrMissingSpecRef, got %T: %v", err, err)
+		t.Fatalf("expected *diag.MissingSpecRefError, got %T: %v", err, err)
 	}
 }
 
@@ -135,9 +135,9 @@ func TestNegative_MalformedDependsNoID(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	var target *diag.ErrMalformedDepends
+	var target *diag.MalformedDependsError
 	if !errors.As(err, &target) {
-		t.Fatalf("expected *diag.ErrMalformedDepends, got %T: %v", err, err)
+		t.Fatalf("expected *diag.MalformedDependsError, got %T: %v", err, err)
 	}
 }
 
@@ -152,8 +152,8 @@ func TestNegative_MalformedDependsBadScope(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	var target *diag.ErrMalformedDepends
+	var target *diag.MalformedDependsError
 	if !errors.As(err, &target) {
-		t.Fatalf("expected *diag.ErrMalformedDepends, got %T: %v", err, err)
+		t.Fatalf("expected *diag.MalformedDependsError, got %T: %v", err, err)
 	}
 }

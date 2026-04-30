@@ -13,6 +13,9 @@ import (
 	"github.com/evcoreco/octane/pkg/cache"
 )
 
+// dirMode is the permission bits for directories created by cache commands.
+const dirMode = 0o750
+
 //nolint:exhaustruct // cobra.Command has many optional fields
 var cacheCmd = &cobra.Command{
 	Use:   "cache",
@@ -171,7 +174,7 @@ func cacheClear(_ *cobra.Command, _ []string) error {
 		return nil
 	}
 
-	err = os.MkdirAll(resultsDir, 0o750)
+	err = os.MkdirAll(resultsDir, dirMode)
 	if err != nil {
 		dieErrf(exitcode.ToolError, "octane: recreate results dir: %v\n", err)
 

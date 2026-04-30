@@ -41,7 +41,9 @@ func validateRunIDEntry(
 
 	reportPath := filepath.Join(sharedDir, entry.Name(), "octane.json")
 
-	data, readErr := os.ReadFile(reportPath) //nolint:gosec // G304: path from t.TempDir
+	data, readErr := os.ReadFile(
+		reportPath,
+	)
 	if readErr != nil {
 		t.Errorf("reading %s: %v", reportPath, readErr)
 
@@ -88,17 +90,17 @@ func Test_report_WriteJSON_ConcurrentDistinctRunIDs(t *testing.T) {
 
 	errs := make(chan error, goroutineCount)
 
-	var wg sync.WaitGroup
+	var workGroup sync.WaitGroup
 
-	wg.Add(goroutineCount)
+	workGroup.Add(goroutineCount)
 
-	for i := range goroutineCount {
+	for goroutineIdx := range goroutineCount {
 		go func() {
-			defer wg.Done()
+			defer workGroup.Done()
 
 			fixedTime := time.Date(2024, 1, 15, 10, 0, 0, 0, time.UTC)
 			result := &runner.RunResult{
-				RunID:      fmt.Sprintf("run-%02d", i),
+				RunID:      fmt.Sprintf("run-%02d", goroutineIdx),
 				StartedAt:  fixedTime,
 				FinishedAt: fixedTime.Add(5 * time.Second),
 				Stories:    []runner.StoryResult{},
@@ -114,12 +116,12 @@ func Test_report_WriteJSON_ConcurrentDistinctRunIDs(t *testing.T) {
 
 			err := reportjson.WriteJSON(result, outDir, opts)
 			if err != nil {
-				errs <- fmt.Errorf("goroutine %d: %w", i, err)
+				errs <- fmt.Errorf("goroutine %d: %w", goroutineIdx, err)
 			}
 		}()
 	}
 
-	wg.Wait()
+	workGroup.Wait()
 	close(errs)
 
 	// Invariant: no goroutine reported an error.

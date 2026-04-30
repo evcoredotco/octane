@@ -17,6 +17,9 @@ import (
 	"github.com/evcoreco/octane/pkg/cache/internal/lock"
 )
 
+// fmtHolderAcquire is the format string for holder Acquire failures.
+const fmtHolderAcquire = "holder Acquire: %v"
+
 // lockPath returns a per-test temp-file path suitable for use as a
 // lock file. Using a unique path per test avoids cross-test interference
 // when tests run in parallel.
@@ -71,7 +74,7 @@ func Test_lock_NoWaitReturnsBusy(t *testing.T) {
 	// Goroutine 1: hold the lock for the duration of the test.
 	holder, err := lock.Acquire(ctx, path, 0, false)
 	if err != nil {
-		t.Fatalf("holder Acquire: %v", err)
+		t.Fatalf(fmtHolderAcquire, err)
 	}
 
 	defer func() {
@@ -106,7 +109,7 @@ func Test_lock_TimeoutExpires(t *testing.T) {
 	// Goroutine 1: hold the lock throughout.
 	holder, err := lock.Acquire(ctx, path, 0, false)
 	if err != nil {
-		t.Fatalf("holder Acquire: %v", err)
+		t.Fatalf(fmtHolderAcquire, err)
 	}
 
 	defer func() {
@@ -164,7 +167,7 @@ func Test_lock_ContextCancel(t *testing.T) {
 	// Goroutine 1: hold the lock throughout.
 	holder, err := lock.Acquire(context.Background(), path, 0, false)
 	if err != nil {
-		t.Fatalf("holder Acquire: %v", err)
+		t.Fatalf(fmtHolderAcquire, err)
 	}
 
 	defer func() {

@@ -31,7 +31,7 @@ func init() {
 //	send raw frame {frame:any} on station {station:string}
 //
 // The frame argument must be a []any — the decoded Go representation of an
-// OCPP-J JSON array (per ADR 0006). Any other type returns [ErrFrameShape].
+// OCPP-J JSON array (per ADR 0006). Any other type returns [FrameShapeError].
 // The frame is encoded by the transport layer and emitted on the station's
 // WebSocket connection.
 func sendRawFrame(

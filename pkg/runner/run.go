@@ -201,7 +201,7 @@ func Run(ctx context.Context, cfg Config) (*RunResult, error) {
 
 	topoNodes, err := dag.TopologicalOrder(dagResult.graph)
 	if err != nil {
-		var errCycle *dag.ErrCycle
+		var errCycle *dag.CycleError
 		if errors.As(err, &errCycle) {
 			return nil, fmt.Errorf("%w: %w", ErrCycle, errCycle)
 		}
@@ -359,13 +359,13 @@ func runScheduler(
 	// running (doing so races and steals completion items, causing the
 	// scheduler to block forever). A sync.WaitGroup is the simplest
 	// correct synchronization here.
-	var wg sync.WaitGroup
+	var workGroup sync.WaitGroup
 
-	wg.Go(func() {
+	workGroup.Go(func() {
 		completionLoop()
 	})
 
-	wg.Wait()
+	workGroup.Wait()
 
 	return schedState.result
 }
@@ -391,7 +391,8 @@ func makeExecFunc(
 
 		// Step 1: fast path — check cache without lock.
 		if !cfg.NoCache {
-			if entry, entryErr := storyCache.Get(ctx, cacheKey); entryErr == nil {
+			entry, entryErr := storyCache.Get(ctx, cacheKey)
+			if entryErr == nil {
 				return cacheHitResult(storyNodeVal, entry, startedAt, clk)
 			}
 		}
@@ -428,7 +429,8 @@ func makeExecFunc(
 
 		// If another goroutine ran the Once, re-read from cache.
 		if lockedResult.TestID == "" {
-			if entry, entryErr := storyCache.Get(ctx, cacheKey); entryErr == nil {
+			entry, entryErr := storyCache.Get(ctx, cacheKey)
+			if entryErr == nil {
 				return cacheHitResult(storyNodeVal, entry, startedAt, clk)
 			}
 
@@ -449,7 +451,7 @@ func makeExecFunc(
 // release flock.
 func executeWithLock(
 	ctx context.Context,
-	nodeID string,
+	_ string,
 	storyNodeVal storyNode,
 	cfg Config,
 	storyCache cache.Cache,

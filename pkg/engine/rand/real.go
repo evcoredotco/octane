@@ -25,7 +25,7 @@ func Real() Rand {
 	seed2 := binary.LittleEndian.Uint64(seed[8:])
 
 	return &realRand{
-		//nolint:gosec // G404: math/rand/v2 is intentional; seed is from crypto/rand
+		//nolint:gosec // G404: math/rand/v2 is intended; seed is crypto/rand.
 		rng: mrand.New(mrand.NewPCG(seed1, seed2)),
 	}
 }

@@ -4,7 +4,7 @@
 // Task: T-004-14
 // AC3: "expect any frame on station {station:string} within {timeout:duration}"
 // returns nil when a frame arrives within the timeout and stashes the frame.
-// AC4: When no frame arrives within the timeout the keyword returns *ErrTimeout
+// AC4: When no frame arrives within the timeout the keyword returns *TimeoutError
 // carrying the configured timeout and the deterministic-clock deadline.
 
 package primitive_test
@@ -17,9 +17,7 @@ import (
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
 	"github.com/evcoreco/octane/pkg/keywords/api/mock"
-	// Named import registers all primitive keywords at init() time and
-	// provides access to primitive.ErrTimeout for typed error assertions.
-	"github.com/evcoreco/octane/pkg/keywords/primitive"
+	"github.com/evcoreco/octane/pkg/keywords/primitive" // registers primitive keywords; exposes TimeoutError
 )
 
 // ── Named constants ───────────────────────────────────────────────────────────
@@ -91,7 +89,7 @@ func Test_primitive_expectAnyFrame_HappyPath(t *testing.T) {
 }
 
 // Test_primitive_expectAnyFrame_Timeout verifies that when no frame is
-// available and the context deadline elapses the keyword returns *ErrTimeout
+// available and the context deadline elapses the keyword returns *TimeoutError
 // (AC4).
 func Test_primitive_expectAnyFrame_Timeout(t *testing.T) {
 	t.Parallel()
@@ -112,45 +110,45 @@ func Test_primitive_expectAnyFrame_Timeout(t *testing.T) {
 
 	err := keywordFunc(context.Background(), state, args)
 
-	// Invariant: a missing frame must produce *ErrTimeout.
+	// Invariant: a missing frame must produce *TimeoutError.
 	if err == nil {
 		t.Fatal("expectAnyFrame (no frames): want error, got nil")
 	}
 
-	var timeoutErr *primitive.ErrTimeout
+	var timeoutErr *primitive.TimeoutError
 
 	if !errors.As(err, &timeoutErr) {
 		t.Fatalf(
-			"expectAnyFrame (no frames): want *primitive.ErrTimeout via errors.As, got %T: %v",
+			"expectAnyFrame (no frames): want *primitive.TimeoutError via errors.As, got %T: %v",
 			err,
 			err,
 		)
 	}
 
-	// Invariant: ErrTimeout must carry the configured station handle.
+	// Invariant: TimeoutError must carry the configured station handle.
 	if timeoutErr.Station != handleExpect {
 		t.Errorf(
-			"ErrTimeout.Station: want %q, got %q",
+			"TimeoutError.Station: want %q, got %q",
 			handleExpect,
 			timeoutErr.Station,
 		)
 	}
 
-	// Invariant: ErrTimeout must carry the configured timeout duration.
+	// Invariant: TimeoutError must carry the configured timeout duration.
 	if timeoutErr.Timeout != timeoutShort {
 		t.Errorf(
-			"ErrTimeout.Timeout: want %v, got %v",
+			"TimeoutError.Timeout: want %v, got %v",
 			timeoutShort,
 			timeoutErr.Timeout,
 		)
 	}
 
-	// Invariant: ErrTimeout.Deadline must equal frozenNow + timeout (deterministic clock).
+	// Invariant: TimeoutError.Deadline must equal frozenNow + timeout (deterministic clock).
 	wantDeadline := frozenNow.Add(timeoutShort)
 
 	if !timeoutErr.Deadline.Equal(wantDeadline) {
 		t.Errorf(
-			"ErrTimeout.Deadline: want %v, got %v",
+			"TimeoutError.Deadline: want %v, got %v",
 			wantDeadline,
 			timeoutErr.Deadline,
 		)
@@ -194,7 +192,7 @@ func Test_primitive_expectFrameOfType_HappyPath(t *testing.T) {
 
 // Test_primitive_expectFrameOfType_WrongTypeThenTimeout verifies that frames
 // with the wrong message-type code are silently skipped and an eventual timeout
-// produces *ErrTimeout (AC4).
+// produces *TimeoutError (AC4).
 func Test_primitive_expectFrameOfType_WrongTypeThenTimeout(t *testing.T) {
 	t.Parallel()
 
@@ -224,27 +222,27 @@ func Test_primitive_expectFrameOfType_WrongTypeThenTimeout(t *testing.T) {
 
 	err := keywordFunc(context.Background(), state, args)
 
-	// Invariant: wrong-type frames must be skipped; eventual timeout returns *ErrTimeout.
+	// Invariant: wrong-type frames must be skipped; eventual timeout returns *TimeoutError.
 	if err == nil {
 		t.Fatal(
 			"expectFrameOfType (wrong type): want error, got nil",
 		)
 	}
 
-	var timeoutErr *primitive.ErrTimeout
+	var timeoutErr *primitive.TimeoutError
 
 	if !errors.As(err, &timeoutErr) {
 		t.Fatalf(
-			"expectFrameOfType (wrong type): want *primitive.ErrTimeout via errors.As, got %T: %v",
+			"expectFrameOfType (wrong type): want *primitive.TimeoutError via errors.As, got %T: %v",
 			err,
 			err,
 		)
 	}
 
-	// Invariant: ErrTimeout must identify the correct station handle.
+	// Invariant: TimeoutError must identify the correct station handle.
 	if timeoutErr.Station != handleExpect {
 		t.Errorf(
-			"ErrTimeout.Station: want %q, got %q",
+			"TimeoutError.Station: want %q, got %q",
 			handleExpect,
 			timeoutErr.Station,
 		)

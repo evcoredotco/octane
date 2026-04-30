@@ -91,7 +91,7 @@ func (p *parser) parseStory() (*ast.Story, error) {
 	if len(scenarios) == 0 {
 		tok := p.lex.Peek()
 
-		return nil, &diag.ErrMissingSection{
+		return nil, &diag.MissingSectionError{
 			File:       p.file,
 			Line:       tok.Line,
 			Column:     tok.Column,
@@ -111,7 +111,7 @@ func (p *parser) parseStory() (*ast.Story, error) {
 
 	tok := p.lex.Next()
 	if tok.Kind != lex.TokenEOF {
-		return nil, &diag.ErrUnexpectedToken{
+		return nil, &diag.UnexpectedTokenError{
 			File:     p.file,
 			Line:     tok.Line,
 			Column:   tok.Column,
@@ -122,7 +122,9 @@ func (p *parser) parseStory() (*ast.Story, error) {
 		}
 	}
 
-	err = validateParameters(p.file, meta, scenarios, background, setup, teardown)
+	err = validateParameters(
+		p.file, meta, scenarios, background, setup, teardown,
+	)
 	if err != nil {
 		return nil, err
 	}

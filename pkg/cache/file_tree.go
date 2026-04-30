@@ -12,6 +12,12 @@ import (
 	"github.com/evcoreco/octane/pkg/engine/clock"
 )
 
+// cacheDirMode is the permission bits for cache entry directories (rwxr-x---).
+const cacheDirMode = 0o750
+
+// cacheFileMode is the permission bits for cache data files (rw-------).
+const cacheFileMode = 0o600
+
 // resultEnvelope is the JSON structure persisted as result.json.
 // It wraps [Entry] fields with metadata required by ADR 0016
 // §"Result file schema".
@@ -160,7 +166,7 @@ func (fc *FileCache) Put(
 	hash := key.Hash()
 	dir := fc.resultDir(hash)
 
-	err = os.MkdirAll(dir, 0o750)
+	err = os.MkdirAll(dir, cacheDirMode)
 	if err != nil {
 		return fmt.Errorf("cache: create entry dir: %w", err)
 	}
@@ -249,7 +255,11 @@ func atomicWriteFile(path string, data []byte) error {
 	tmp := path + ".tmp"
 
 	//nolint:gosec // G304: tmp path is derived from a cache path, not user input
-	file, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
+	file, err := os.OpenFile(
+		tmp,
+		os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
+		cacheFileMode,
+	)
 	if err != nil {
 		return fmt.Errorf("open temp file: %w", err)
 	}

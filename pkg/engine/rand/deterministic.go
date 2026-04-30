@@ -4,6 +4,11 @@ import (
 	mrand "math/rand/v2"
 )
 
+// pcrStreamSalt is mixed with the user-provided seed to differentiate
+// the PCG stream from the seed sequence, ensuring distinct output
+// even for seed values that are powers of two or otherwise symmetric.
+const pcrStreamSalt uint64 = 0xDEADBEEF
+
 // deterministicRand wraps math/rand/v2 with a fixed PCG seed so that the
 // same seed always produces the same sequence across platforms and Go
 // versions (within the same Go major version).
@@ -16,8 +21,8 @@ type deterministicRand struct {
 // across platforms and Go versions (within the same Go major version).
 func Deterministic(seed uint64) Rand {
 	return &deterministicRand{
-		//nolint:gosec // G404: math/rand/v2 is intentional; this is a test double
-		rng: mrand.New(mrand.NewPCG(seed, seed^0xDEADBEEF)),
+		//nolint:gosec // G404: math/rand/v2 is intentional; test double.
+		rng: mrand.New(mrand.NewPCG(seed, seed^pcrStreamSalt)),
 	}
 }
 

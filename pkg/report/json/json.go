@@ -6,10 +6,11 @@
 package json
 
 import (
+	"cmp"
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/evcoreco/octane/pkg/report"
@@ -179,13 +180,13 @@ func buildJSONFindings(src []model.Finding) []jsonFinding {
 		}
 	}
 
-	sort.Slice(out, func(idx, jdx int) bool {
-		if out[idx].Severity != out[jdx].Severity {
-			// Higher severity (lexicographically larger) sorts first.
-			return out[idx].Severity > out[jdx].Severity
-		}
-
-		return out[idx].Message < out[jdx].Message
+	slices.SortFunc(out, func(a, b jsonFinding) int {
+		// Higher severity (lexicographically larger) sorts first, then
+		// sort by message for determinism within the same severity.
+		return cmp.Or(
+			cmp.Compare(b.Severity, a.Severity),
+			cmp.Compare(a.Message, b.Message),
+		)
 	})
 
 	return out

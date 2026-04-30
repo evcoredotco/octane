@@ -37,11 +37,11 @@ func (s Scope) String() string {
 type Dependency struct {
 	// ID is the stable snake_case identifier of the prerequisite story.
 	// It must match the ID Meta key of the target story exactly.
-	ID string
+	ID string `json:"id"`
 	// Scope controls how many times the prerequisite is executed relative
 	// to the dependent story. Defaults to ScopePerStation when absent.
-	Scope Scope
+	Scope Scope `json:"scope"`
 	// Position is the source location of this dependency entry in the
 	// .story file, used for diagnostic messages.
-	Position Position
+	Position Position `json:"position"`
 }
