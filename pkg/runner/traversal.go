@@ -5,7 +5,6 @@
 // "Eligible-set computation". It operates on nodeID strings, not
 // story ASTs, so that the same traversal logic works for all three
 // scope types (per-station, per-run, global).
-
 package runner
 
 import "slices"

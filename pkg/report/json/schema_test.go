@@ -1,6 +1,6 @@
 // Task: T-007-24.
 
-package json_test
+package reportjson_test
 
 import (
 	"encoding/json"
@@ -20,28 +20,52 @@ const schemaTestYear = 2024
 // schemaTestMonth is the month used in time.Date for schema test fixtures.
 const schemaTestMonth = 1
 
+// schemaTestDay is the day-of-month used in time.Date for schema test fixtures.
+const schemaTestDay = 15
+
+// schemaTestHour is the hour used in time.Date for schema test fixtures.
+const schemaTestHour = 12
+
 // minimalTotalStories is the total story count for the minimal test result.
 const minimalTotalStories = 1
 
 // noFailures is the expected failed story count in the passing minimal result.
 const noFailures = 0
 
-// requiredTopLevelKeys are the JSON keys that must appear at the top
+// noSkipped is the expected skipped story count in the passing minimal result.
+const noSkipped = 0
+
+// noCacheHits is the expected cache-hit count in the passing minimal result.
+const noCacheHits = 0
+
+// orderZero is the Order index for the first story in the minimal result.
+const orderZero = 0
+
+// requiredTopLevelKeys returns the JSON keys that must appear at the top
 // level of every octane.json report.
-var requiredTopLevelKeys = []string{
-	"schemaVersion",
-	"octaneVersion",
-	"runId",
-	"startedAt",
-	"finishedAt",
-	"summary",
-	"stories",
+func requiredTopLevelKeys() []string {
+	return []string{
+		"schemaVersion",
+		"octaneVersion",
+		"runId",
+		"startedAt",
+		"finishedAt",
+		"summary",
+		"stories",
+	}
 }
 
 // buildMinimalResult creates a minimal runner.RunResult suitable for
 // schema validation tests.
 func buildMinimalResult() *runner.RunResult {
-	now := time.Date(schemaTestYear, schemaTestMonth, 15, 12, 0, 0, 0, time.UTC)
+	now := time.Date(
+		schemaTestYear,
+		schemaTestMonth,
+		schemaTestDay,
+		schemaTestHour,
+		0, 0, 0,
+		time.UTC,
+	)
 
 	return &runner.RunResult{
 		RunID:      "01ARZ3NDEKTSV4RRFFQ69G5FAV",
@@ -51,12 +75,12 @@ func buildMinimalResult() *runner.RunResult {
 			Total:     minimalTotalStories,
 			Passed:    minimalTotalStories,
 			Failed:    noFailures,
-			Skipped:   0,
-			CacheHits: 0,
+			Skipped:   noSkipped,
+			CacheHits: noCacheHits,
 		},
 		Stories: []runner.StoryResult{
 			{
-				Order:       0,
+				Order:       orderZero,
 				TestID:      "tc_example",
 				ScopeKey:    "CP01",
 				OCPPVersion: "1.6",
@@ -104,7 +128,7 @@ func Test_json_Schema(t *testing.T) {
 		t.Fatalf("unmarshal: %v", unmarshalErr)
 	}
 
-	for _, key := range requiredTopLevelKeys {
+	for _, key := range requiredTopLevelKeys() {
 		if _, present := top[key]; !present {
 			t.Errorf("missing required top-level key: %q", key)
 		}

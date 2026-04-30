@@ -1,10 +1,3 @@
-// Package runner — T-005-45: shard partitioning.
-//
-// applyShardFilter removes from the provided story slice any story
-// whose test_id does not belong to the current shard. Prerequisites
-// required by remaining stories are preserved regardless of their
-// shard assignment, per ADR 0019 §"Sharding: --shard N/M".
-
 package runner
 
 import "github.com/evcoreco/octane/pkg/story/ast"
@@ -54,30 +47,39 @@ func collectPrerequisites(
 	roots []*ast.Story,
 	allStories map[string]*ast.Story,
 ) []*ast.Story {
-	seen := make(map[string]bool, len(roots))
-	out := make([]*ast.Story, 0, len(roots))
-
-	var walk func(storyAST *ast.Story)
-
-	walk = func(storyAST *ast.Story) {
-		if seen[storyAST.Meta.ID] {
-			return
-		}
-
-		seen[storyAST.Meta.ID] = true
-
-		out = append(out, storyAST)
-
-		for _, dep := range storyAST.Meta.Depends {
-			if prereq, ok := allStories[dep.ID]; ok {
-				walk(prereq)
-			}
-		}
+	walker := &prereqWalker{
+		seen:       make(map[string]bool, len(roots)),
+		out:        make([]*ast.Story, 0, len(roots)),
+		allStories: allStories,
 	}
 
 	for _, storyAST := range roots {
-		walk(storyAST)
+		walker.walk(storyAST)
 	}
 
-	return out
+	return walker.out
+}
+
+// prereqWalker performs a depth-first walk over story prerequisites,
+// collecting each story exactly once.
+type prereqWalker struct {
+	seen       map[string]bool
+	out        []*ast.Story
+	allStories map[string]*ast.Story
+}
+
+// walk visits storyAST and its transitive prerequisites once each.
+func (pw *prereqWalker) walk(storyAST *ast.Story) {
+	if pw.seen[storyAST.Meta.ID] {
+		return
+	}
+
+	pw.seen[storyAST.Meta.ID] = true
+	pw.out = append(pw.out, storyAST)
+
+	for _, dep := range storyAST.Meta.Depends {
+		if prereq, ok := pw.allStories[dep.ID]; ok {
+			pw.walk(prereq)
+		}
+	}
 }

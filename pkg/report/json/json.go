@@ -1,9 +1,9 @@
-// Package json implements the JSON emitter for OCTANE run reports.
+// Package reportjson implements the JSON emitter for OCTANE run reports.
 // The public entry point is [WriteJSON], which projects a
 // [runner.RunResult] into a byte-deterministic octane.json file.
 //
 // Task: T-007-20.
-package json
+package reportjson
 
 import (
 	"cmp"

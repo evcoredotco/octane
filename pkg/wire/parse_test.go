@@ -14,6 +14,35 @@ import (
 // testUniqueID is the correlation identifier used in happy-path test frames.
 const testUniqueID = "abc-123"
 
+const (
+	// actionBootNotification is the OCPP action name used across parse tests.
+	actionBootNotification = "BootNotification"
+	// actionNotImplemented is the error code used in CALLERROR test frames.
+	actionNotImplemented = "NotImplemented"
+	// descNotImplemented is the error description used in CALLERROR test
+	// frames.
+	descNotImplemented = "The requested action is not implemented."
+	// testID1 is a reusable uniqueId string for malformed-frame tests.
+	testID1 = "id1"
+	// testErrorDesc is a short error description used in shape-error tests.
+	testErrorDesc = "desc"
+	// fmtUniqueIDGotWant is the Errorf format for UniqueID mismatches.
+	fmtUniqueIDGotWant = "UniqueID: got %q, want %q"
+	// emptyString is the empty string constant used for Reason emptiness
+	// checks.
+	emptyString = ""
+	// errReasonMustNotBeEmpty is the failure message for an empty Reason field.
+	errReasonMustNotBeEmpty = "FrameShapeError.Reason must not be empty"
+	// nonNumericUniqueID is an integer used in place of a string uniqueId.
+	nonNumericUniqueID = 42
+	// nonNumericAction is an integer used in place of a string action.
+	nonNumericAction = 99
+	// nonNumericErrorCode is an integer used in place of a string error code.
+	nonNumericErrorCode = 404
+	// longPayloadLen is the byte length used to produce a capped Raw field.
+	longPayloadLen = 512
+)
+
 // TestParseCallHappyPath verifies that a well-formed CALL frame is decoded
 // into the expected Call value.
 func TestParseCallHappyPath(t *testing.T) {
@@ -22,7 +51,7 @@ func TestParseCallHappyPath(t *testing.T) {
 	frame := []any{
 		float64(wire.MessageTypeCall),
 		testUniqueID,
-		"BootNotification",
+		actionBootNotification,
 		map[string]any{"chargePointModel": "ACME"},
 	}
 
@@ -32,14 +61,15 @@ func TestParseCallHappyPath(t *testing.T) {
 	}
 
 	if got.UniqueID != testUniqueID {
-		t.Errorf("UniqueID: got %q, want %q", got.UniqueID, testUniqueID)
+		t.Errorf(fmtUniqueIDGotWant, got.UniqueID, testUniqueID)
 	}
 
-	if got.Action != "BootNotification" {
-		t.Errorf("Action: got %q, want %q", got.Action, "BootNotification")
+	if got.Action != actionBootNotification {
+		t.Errorf("Action: got %q, want %q", got.Action, actionBootNotification)
 	}
 
-	if len(got.Payload) == 0 {
+	const emptyLen = 0
+	if len(got.Payload) == emptyLen {
 		t.Error("Payload must not be empty for a non-empty map")
 	}
 }
@@ -61,10 +91,11 @@ func TestParseResultHappyPath(t *testing.T) {
 	}
 
 	if got.UniqueID != testUniqueID {
-		t.Errorf("UniqueID: got %q, want %q", got.UniqueID, testUniqueID)
+		t.Errorf(fmtUniqueIDGotWant, got.UniqueID, testUniqueID)
 	}
 
-	if len(got.Payload) == 0 {
+	const emptyLen = 0
+	if len(got.Payload) == emptyLen {
 		t.Error("Payload must not be empty for a non-empty map")
 	}
 }
@@ -77,8 +108,8 @@ func TestParseErrorHappyPath(t *testing.T) {
 	frame := []any{
 		float64(wire.MessageTypeError),
 		testUniqueID,
-		"NotImplemented",
-		"The requested action is not implemented.",
+		actionNotImplemented,
+		descNotImplemented,
 		map[string]any{},
 	}
 
@@ -88,18 +119,22 @@ func TestParseErrorHappyPath(t *testing.T) {
 	}
 
 	if got.UniqueID != testUniqueID {
-		t.Errorf("UniqueID: got %q, want %q", got.UniqueID, testUniqueID)
+		t.Errorf(fmtUniqueIDGotWant, got.UniqueID, testUniqueID)
 	}
 
-	if got.ErrorCode != "NotImplemented" {
-		t.Errorf("ErrorCode: got %q, want %q", got.ErrorCode, "NotImplemented")
+	if got.ErrorCode != actionNotImplemented {
+		t.Errorf(
+			"ErrorCode: got %q, want %q",
+			got.ErrorCode,
+			actionNotImplemented,
+		)
 	}
 
-	if got.ErrorDescription != "The requested action is not implemented." {
+	if got.ErrorDescription != descNotImplemented {
 		t.Errorf(
 			"ErrorDescription: got %q, want %q",
 			got.ErrorDescription,
-			"The requested action is not implemented.",
+			descNotImplemented,
 		)
 	}
 }
@@ -137,20 +172,28 @@ func callErrShape(
 
 	_, err := wire.ParseCall(frame)
 	if err == nil {
-		t.Fatalf("ParseCall expected error containing %q, got nil", wantSubstr)
+		t.Fatalf(
+			"ParseCall expected error containing %q, got nil",
+			wantSubstr,
+		)
 	}
 
 	var fsErr *wire.FrameShapeError
 
 	if !errors.As(err, &fsErr) {
-		t.Fatalf("ParseCall expected *FrameShapeError, got %T: %v", err, err)
+		t.Fatalf(
+			"ParseCall expected *FrameShapeError, got %T: %v",
+			err, err,
+		)
 	}
 
-	if fsErr.Reason == "" {
-		t.Error("FrameShapeError.Reason must not be empty")
+	if fsErr.Reason == emptyString {
+		t.Error(errReasonMustNotBeEmpty)
 	}
 
-	if wantSubstr != "" && !strings.Contains(fsErr.Reason, wantSubstr) {
+	substrOK := wantSubstr == emptyString ||
+		strings.Contains(fsErr.Reason, wantSubstr)
+	if !substrOK {
 		t.Errorf(
 			"FrameShapeError.Reason = %q, want substring %q",
 			fsErr.Reason,
@@ -159,7 +202,8 @@ func callErrShape(
 	}
 }
 
-// resultErrShape is a helper that asserts ParseResult returns an *FrameShapeError.
+// resultErrShape is a helper that asserts ParseResult returns a
+// *FrameShapeError.
 func resultErrShape(
 	t *testing.T,
 	frame []any,
@@ -174,15 +218,18 @@ func resultErrShape(
 	var fsErr *wire.FrameShapeError
 
 	if !errors.As(err, &fsErr) {
-		t.Fatalf("ParseResult expected *FrameShapeError, got %T: %v", err, err)
+		t.Fatalf(
+			"ParseResult expected *FrameShapeError, got %T: %v",
+			err, err,
+		)
 	}
 
-	if fsErr.Reason == "" {
-		t.Error("FrameShapeError.Reason must not be empty")
+	if fsErr.Reason == emptyString {
+		t.Error(errReasonMustNotBeEmpty)
 	}
 }
 
-// errorErrShape is a helper that asserts ParseError returns an *FrameShapeError.
+// errorErrShape is a helper that asserts ParseError returns a *FrameShapeError.
 func errorErrShape(
 	t *testing.T,
 	frame []any,
@@ -197,11 +244,14 @@ func errorErrShape(
 	var fsErr *wire.FrameShapeError
 
 	if !errors.As(err, &fsErr) {
-		t.Fatalf("ParseError expected *FrameShapeError, got %T: %v", err, err)
+		t.Fatalf(
+			"ParseError expected *FrameShapeError, got %T: %v",
+			err, err,
+		)
 	}
 
-	if fsErr.Reason == "" {
-		t.Error("FrameShapeError.Reason must not be empty")
+	if fsErr.Reason == emptyString {
+		t.Error(errReasonMustNotBeEmpty)
 	}
 }
 
@@ -226,8 +276,8 @@ func TestParseCallWrongMessageType(t *testing.T) {
 
 	frame := []any{
 		float64(wire.MessageTypeResult),
-		"id1",
-		"BootNotification",
+		testID1,
+		actionBootNotification,
 		map[string]any{},
 	}
 	callErrShape(t, frame, "must be 2")
@@ -240,8 +290,8 @@ func TestParseCallNonNumericTypeCode(t *testing.T) {
 
 	frame := []any{
 		"2",
-		"id1",
-		"BootNotification",
+		testID1,
+		actionBootNotification,
 		map[string]any{},
 	}
 	callErrShape(t, frame, "must be 2")
@@ -254,8 +304,8 @@ func TestParseCallNonStringUniqueId(t *testing.T) {
 
 	frame := []any{
 		float64(wire.MessageTypeCall),
-		42,
-		"BootNotification",
+		nonNumericUniqueID,
+		actionBootNotification,
 		map[string]any{},
 	}
 	callErrShape(t, frame, "uniqueId")
@@ -267,8 +317,8 @@ func TestParseCallNonStringAction(t *testing.T) {
 
 	frame := []any{
 		float64(wire.MessageTypeCall),
-		"id1",
-		99,
+		testID1,
+		nonNumericAction,
 		map[string]any{},
 	}
 	callErrShape(t, frame, "action")
@@ -280,8 +330,8 @@ func TestParseCallNonMapPayload(t *testing.T) {
 
 	frame := []any{
 		float64(wire.MessageTypeCall),
-		"id1",
-		"BootNotification",
+		testID1,
+		actionBootNotification,
 		"not-a-map",
 	}
 	callErrShape(t, frame, "payload")
@@ -304,7 +354,7 @@ func TestParseResultWrongMessageType(t *testing.T) {
 
 	frame := []any{
 		float64(wire.MessageTypeCall),
-		"id1",
+		testID1,
 		map[string]any{},
 	}
 	resultErrShape(t, frame)
@@ -330,8 +380,8 @@ func TestParseResultNonMapPayload(t *testing.T) {
 
 	frame := []any{
 		float64(wire.MessageTypeResult),
-		"id1",
-		42,
+		testID1,
+		nonNumericUniqueID,
 	}
 	resultErrShape(t, frame)
 }
@@ -342,9 +392,19 @@ func TestParseErrorWrongLength(t *testing.T) {
 	t.Parallel()
 
 	errorErrShape(t, []any{})
-	errorErrShape(t, []any{float64(4), "id", "NotImplemented", "desc"})
 	errorErrShape(t, []any{
-		float64(4), "id", "NotImplemented", "desc", map[string]any{}, "extra",
+		float64(wire.MessageTypeError),
+		"id",
+		actionNotImplemented,
+		testErrorDesc,
+	})
+	errorErrShape(t, []any{
+		float64(wire.MessageTypeError),
+		"id",
+		actionNotImplemented,
+		testErrorDesc,
+		map[string]any{},
+		"extra",
 	})
 }
 
@@ -355,9 +415,9 @@ func TestParseErrorWrongMessageType(t *testing.T) {
 
 	frame := []any{
 		float64(wire.MessageTypeCall),
-		"id1",
-		"NotImplemented",
-		"desc",
+		testID1,
+		actionNotImplemented,
+		testErrorDesc,
 		map[string]any{},
 	}
 	errorErrShape(t, frame)
@@ -370,9 +430,9 @@ func TestParseErrorNonStringErrorCode(t *testing.T) {
 
 	frame := []any{
 		float64(wire.MessageTypeError),
-		"id1",
-		404,
-		"desc",
+		testID1,
+		nonNumericErrorCode,
+		testErrorDesc,
 		map[string]any{},
 	}
 	errorErrShape(t, frame)
@@ -385,8 +445,8 @@ func TestParseErrorNonStringDescription(t *testing.T) {
 
 	frame := []any{
 		float64(wire.MessageTypeError),
-		"id1",
-		"NotImplemented",
+		testID1,
+		actionNotImplemented,
 		false,
 		map[string]any{},
 	}
@@ -400,9 +460,9 @@ func TestParseErrorNonMapDetails(t *testing.T) {
 
 	frame := []any{
 		float64(wire.MessageTypeError),
-		"id1",
-		"NotImplemented",
-		"desc",
+		testID1,
+		actionNotImplemented,
+		testErrorDesc,
 		"not-a-map",
 	}
 	errorErrShape(t, frame)
@@ -414,15 +474,15 @@ func TestFrameShapeErrorRawCapped(t *testing.T) {
 	t.Parallel()
 
 	// Build a frame that will produce a long raw representation.
-	longID := make([]byte, 512)
+	longID := make([]byte, longPayloadLen)
 	for idx := range longID {
 		longID[idx] = 'x'
 	}
 
 	frame := []any{
 		float64(wire.MessageTypeCall),
-		"id1",
-		"BootNotification",
+		testID1,
+		actionBootNotification,
 		string(longID), // non-map payload triggers the error
 	}
 
@@ -444,15 +504,16 @@ func TestFrameShapeErrorRawCapped(t *testing.T) {
 	}
 }
 
-// TestParseCallEmptyUniqueID verifies that an empty uniqueId string is rejected.
-// A CSMS could send [2, "", "Action", {}]; the empty string breaks correlation.
+// TestParseCallEmptyUniqueID verifies that an empty uniqueId string is
+// rejected. A CSMS could send [2, "", "Action", {}]; the empty string
+// breaks correlation.
 func TestParseCallEmptyUniqueID(t *testing.T) {
 	t.Parallel()
 
 	frame := []any{
 		float64(wire.MessageTypeCall),
-		"",
-		"BootNotification",
+		emptyString,
+		actionBootNotification,
 		map[string]any{},
 	}
 
@@ -465,8 +526,8 @@ func TestParseCallEmptyAction(t *testing.T) {
 
 	frame := []any{
 		float64(wire.MessageTypeCall),
-		"id1",
-		"",
+		testID1,
+		emptyString,
 		map[string]any{},
 	}
 
@@ -480,7 +541,7 @@ func TestParseResultEmptyUniqueID(t *testing.T) {
 
 	frame := []any{
 		float64(wire.MessageTypeResult),
-		"",
+		emptyString,
 		map[string]any{},
 	}
 
@@ -494,9 +555,9 @@ func TestParseErrorEmptyUniqueID(t *testing.T) {
 
 	frame := []any{
 		float64(wire.MessageTypeError),
-		"",
-		"NotImplemented",
-		"desc",
+		emptyString,
+		actionNotImplemented,
+		testErrorDesc,
 		map[string]any{},
 	}
 

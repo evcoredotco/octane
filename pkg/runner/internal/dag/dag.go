@@ -13,6 +13,10 @@ import (
 	"strings"
 )
 
+// firstEdgeIdx is the index of the first edge in the cycle edge list,
+// used when printing the closing node of a cycle path.
+const firstEdgeIdx = 0
+
 // Node is a vertex in the dependency graph. Each node corresponds to
 // a single story identified by its stable snake_case ID.
 type Node struct {
@@ -219,7 +223,7 @@ func (e *CycleError) Error() string {
 	}
 
 	msg += msgSb.String()
-	msg += " -> " + e.Edges[0].From
+	msg += " -> " + e.Edges[firstEdgeIdx].From
 
 	return msg
 }

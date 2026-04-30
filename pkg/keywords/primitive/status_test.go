@@ -17,7 +17,7 @@ import (
 	_ "github.com/evcoreco/octane/pkg/keywords/primitive" // blank import
 )
 
-// ── Named constants ───────────────────────────────────────────────────────────
+// ── Named constants ──────────────────────────────────────────────────────────
 
 const (
 	// handleStatus is the station handle name used across status tests.
@@ -30,7 +30,7 @@ const (
 	patternIsClosed = "the connection on station {station:string} is closed"
 )
 
-// ── "is open" tests ───────────────────────────────────────────────────────────
+// ── "is open" tests ──────────────────────────────────────────────────────────
 
 // Test_primitive_assertConnectionOpen_Passes verifies that the is-open keyword
 // returns nil when MockStation.IsOpen() is true.
@@ -84,7 +84,7 @@ func Test_primitive_assertConnectionOpen_Fails(t *testing.T) {
 	}
 }
 
-// ── "is closed" tests ─────────────────────────────────────────────────────────
+// ── "is closed" tests ────────────────────────────────────────────────────────
 
 // Test_primitive_assertConnectionClosed_Passes verifies that the is-closed
 // keyword returns nil when MockStation.IsOpen() is false.

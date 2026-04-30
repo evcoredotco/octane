@@ -1,8 +1,3 @@
-// Package redact provides deny-by-default credential scrubbers.
-// This file implements HTTP header redaction.
-//
-// Task: T-007-11.
-
 package redact
 
 import "regexp"

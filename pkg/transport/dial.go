@@ -41,12 +41,16 @@ const (
 )
 
 // errUnsupportedScheme is returned when the URL scheme is not ws or wss.
-var errUnsupportedScheme = errors.New("transport: unsupported URL scheme (want ws or wss)")
+var errUnsupportedScheme = errors.New(
+	"transport: unsupported URL scheme (want ws or wss)",
+)
 
-// allowedSchemes lists the URL schemes accepted by Dial.
-var allowedSchemes = map[string]struct{}{
-	"ws":  {},
-	"wss": {},
+// allowedSchemes returns the set of URL schemes accepted by Dial.
+func allowedSchemes() map[string]struct{} {
+	return map[string]struct{}{
+		"ws":  {},
+		"wss": {},
+	}
 }
 
 // Dial opens a WebSocket connection to rawURL and returns a [Station] handle.
@@ -73,15 +77,40 @@ func Dial(
 		return nil, fmt.Errorf("transport: invalid URL: %w", err)
 	}
 
-	if _, ok := allowedSchemes[parsed.Scheme]; !ok {
-		return nil, fmt.Errorf("%w: got %q", errUnsupportedScheme, parsed.Scheme)
+	if _, ok := allowedSchemes()[parsed.Scheme]; !ok {
+		return nil, fmt.Errorf(
+			"%w: got %q",
+			errUnsupportedScheme,
+			parsed.Scheme,
+		)
 	}
 
 	safeURL := sanitizeURL(parsed)
 
-	tlsCfg := buildTLSConfig(safeURL, opts)
-	maxBytes := opts.MaxFrameBytes
+	conn, maxBytes, err := dialWebSocket(ctx, rawURL, safeURL, opts)
+	if err != nil {
+		return nil, err
+	}
 
+	return newStationHandle(
+		context.WithoutCancel(ctx),
+		conn,
+		maxBytes,
+	), nil
+}
+
+// dialWebSocket performs the raw WebSocket handshake and subprotocol
+// validation. It returns the open connection and the effective max-bytes
+// limit, or an error.
+func dialWebSocket(
+	ctx context.Context,
+	rawURL string,
+	safeURL string,
+	opts DialOptions,
+) (*websocket.Conn, int64, error) {
+	tlsCfg := buildTLSConfig(safeURL, opts)
+
+	maxBytes := opts.MaxFrameBytes
 	if maxBytes <= noMaxBytes {
 		maxBytes = defaultMaxFrameBytes
 	}
@@ -105,19 +134,18 @@ func Dial(
 	}
 
 	if err != nil {
-		return nil, wrapDialError(safeURL, err)
+		return nil, 0, wrapDialError(safeURL, err)
 	}
 
 	conn.SetReadLimit(maxBytes)
 
-	err = validateSubprotocol(conn, opts.Subprotocols)
-	if err != nil {
+	if err = validateSubprotocol(conn, opts.Subprotocols); err != nil {
 		_ = conn.Close(websocket.StatusNormalClosure, "subprotocol mismatch")
 
-		return nil, err
+		return nil, 0, err
 	}
 
-	return newStationHandle(context.WithoutCancel(ctx), conn, maxBytes), nil
+	return conn, maxBytes, nil
 }
 
 // sanitizeURL strips userinfo (credentials) from the parsed URL so that the
@@ -234,7 +262,7 @@ func isTLSError(err error) bool {
 
 	msg := err.Error()
 
-	for _, marker := range tlsErrorMarkers {
+	for _, marker := range tlsErrorMarkers() {
 		if strings.Contains(msg, marker) {
 			return true
 		}
@@ -243,14 +271,16 @@ func isTLSError(err error) bool {
 	return false
 }
 
-// tlsErrorMarkers identifies TLS/x509 errors by error-string prefix.
-// Deliberately narrow: "certificate" was removed (too broad — a CSMS
+// tlsErrorMarkers returns the slice of substrings that identify TLS/x509
+// errors. Deliberately narrow: "certificate" was removed (too broad — a CSMS
 // could return "certificate" in an HTTP 400 body, causing a false
 // TLSValidationError).
-var tlsErrorMarkers = []string{
-	"tls: ",
-	"x509: ",
-	"handshake failure",
+func tlsErrorMarkers() []string {
+	return []string{
+		"tls: ",
+		"x509: ",
+		"handshake failure",
+	}
 }
 
 // contains reports whether needle is an element of haystack.

@@ -8,7 +8,8 @@ import (
 	"time"
 )
 
-// errUnknownPlaceholderType is returned when a placeholder's type is not supported.
+// errUnknownPlaceholderType is returned when a placeholder's type is
+// not supported.
 var errUnknownPlaceholderType = errors.New("internal: unknown placeholder type")
 
 // float64BitSize is the bit-width passed to strconv.ParseFloat.
@@ -121,54 +122,16 @@ func coerceOne(
 		return raw, nil
 
 	case TypeInt:
-		intVal, err := strconv.Atoi(raw)
-		if err != nil {
-			return nil, &CoercionError{
-				ArgName:  name,
-				Expected: string(TypeInt),
-				Got:      raw,
-			}
-		}
-
-		return intVal, nil
+		return coerceInt(name, raw)
 
 	case TypeFloat:
-		floatVal, err := strconv.ParseFloat(raw, float64BitSize)
-		if err != nil {
-			return nil, &CoercionError{
-				ArgName:  name,
-				Expected: string(TypeFloat),
-				Got:      raw,
-			}
-		}
-
-		return floatVal, nil
+		return coerceFloat(name, raw)
 
 	case TypeBool:
-		switch strings.ToLower(raw) {
-		case "true":
-			return true, nil
-		case "false":
-			return false, nil
-		default:
-			return nil, &CoercionError{
-				ArgName:  name,
-				Expected: string(TypeBool),
-				Got:      raw,
-			}
-		}
+		return coerceBool(name, raw)
 
 	case TypeDuration:
-		durVal, err := time.ParseDuration(raw)
-		if err != nil {
-			return nil, &CoercionError{
-				ArgName:  name,
-				Expected: string(TypeDuration),
-				Got:      raw,
-			}
-		}
-
-		return durVal, nil
+		return coerceDuration(name, raw)
 
 	default:
 		// Parse rejects unknown types at registration time, so
@@ -181,4 +144,62 @@ func coerceOne(
 			name,
 		)
 	}
+}
+
+// coerceInt parses raw as a base-10 integer.
+func coerceInt(name, raw string) (any, error) {
+	intVal, err := strconv.Atoi(raw)
+	if err != nil {
+		return nil, &CoercionError{
+			ArgName:  name,
+			Expected: string(TypeInt),
+			Got:      raw,
+		}
+	}
+
+	return intVal, nil
+}
+
+// coerceFloat parses raw as a 64-bit float.
+func coerceFloat(name, raw string) (any, error) {
+	floatVal, err := strconv.ParseFloat(raw, float64BitSize)
+	if err != nil {
+		return nil, &CoercionError{
+			ArgName:  name,
+			Expected: string(TypeFloat),
+			Got:      raw,
+		}
+	}
+
+	return floatVal, nil
+}
+
+// coerceBool parses raw as a case-insensitive boolean ("true"/"false").
+func coerceBool(name, raw string) (any, error) {
+	switch strings.ToLower(raw) {
+	case "true":
+		return true, nil
+	case "false":
+		return false, nil
+	default:
+		return nil, &CoercionError{
+			ArgName:  name,
+			Expected: string(TypeBool),
+			Got:      raw,
+		}
+	}
+}
+
+// coerceDuration parses raw using time.ParseDuration.
+func coerceDuration(name, raw string) (any, error) {
+	durVal, err := time.ParseDuration(raw)
+	if err != nil {
+		return nil, &CoercionError{
+			ArgName:  name,
+			Expected: string(TypeDuration),
+			Got:      raw,
+		}
+	}
+
+	return durVal, nil
 }

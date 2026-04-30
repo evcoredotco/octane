@@ -68,6 +68,11 @@ const capacityDivisor = 4
 // zeroIdx is the zero index / empty-length sentinel.
 const zeroIdx = 0
 
+// fmtPlaceholderError is the repeated format string used when a
+// placeholder is malformed; it is extracted to avoid the add-constant
+// lint violation for string literals that appear three or more times.
+const fmtPlaceholderError = "placeholder %q: %w in pattern %q"
+
 // notFound is the sentinel value returned by strings.IndexByte when
 // a byte is not found.
 const notFound = -1
@@ -126,17 +131,19 @@ const (
 	TypeAny PlaceholderType = "any"
 )
 
-// validTypes is the closed set of accepted placeholder type tokens.
+// validTypes returns the closed set of accepted placeholder type tokens.
 // Keeping it as a map[PlaceholderType]struct{} gives O(1) lookup
 // without regexp.
-var validTypes = map[PlaceholderType]struct{}{
-	TypeString:   {},
-	TypeInt:      {},
-	TypeFloat:    {},
-	TypeBool:     {},
-	TypeDuration: {},
-	TypeStation:  {},
-	TypeAny:      {},
+func validTypes() map[PlaceholderType]struct{} {
+	return map[PlaceholderType]struct{}{
+		TypeString:   {},
+		TypeInt:      {},
+		TypeFloat:    {},
+		TypeBool:     {},
+		TypeDuration: {},
+		TypeStation:  {},
+		TypeAny:      {},
+	}
 }
 
 // Token is one segment of a parsed keyword pattern. Every pattern
@@ -165,6 +172,18 @@ type Token struct {
 	// Type is the declared placeholder type. Zero for literal
 	// tokens.
 	Type PlaceholderType
+}
+
+// parseResult carries the output of one parseStep iteration.
+type parseResult struct {
+	// tokens is the updated token slice after processing.
+	tokens []Token
+
+	// remaining is the unprocessed portion of the pattern string.
+	remaining string
+
+	// done is true when the end of the pattern has been reached.
+	done bool
 }
 
 // Parse splits a keyword pattern string into an ordered slice of
@@ -196,54 +215,17 @@ func Parse(pattern string) ([]Token, error) {
 	remaining := pattern
 
 	for len(remaining) > zeroIdx {
-		openIdx := strings.IndexByte(remaining, '{')
-		closeIdx := strings.IndexByte(remaining, '}')
-
-		// Bare '}' before any '{' is malformed.
-		if closeIdx != notFound && (openIdx == notFound || closeIdx < openIdx) {
-			return nil, fmt.Errorf(
-				"%w at position %d in pattern %q",
-				errBareCloseBrace,
-				len(pattern)-len(remaining)+closeIdx,
-				pattern,
-			)
-		}
-
-		if openIdx == notFound {
-			// No more placeholders; the rest is a literal.
-			if lit := makeLiteral(remaining); lit.Text != emptyString {
-				tokens = append(tokens, lit)
-			}
-
-			break
-		}
-
-		// Capture the literal segment before the '{'.
-		if openIdx > zeroIdx {
-			lit := makeLiteral(remaining[:openIdx])
-			if lit.Text != emptyString {
-				tokens = append(tokens, lit)
-			}
-		}
-
-		remaining = remaining[openIdx:]
-
-		// Find the matching '}'.
-		closeIdx = strings.IndexByte(remaining, '}')
-		if closeIdx == notFound {
-			return nil, fmt.Errorf("%w in pattern %q", errUnclosedBrace, pattern)
-		}
-
-		raw := remaining[:closeIdx+bracketWidth]
-
-		tok, err := parsePlaceholder(raw, pattern)
+		res, err := parseStep(tokens, remaining, pattern)
 		if err != nil {
 			return nil, err
 		}
 
-		tokens = append(tokens, tok)
+		tokens = res.tokens
+		remaining = res.remaining
 
-		remaining = remaining[closeIdx+bracketWidth:]
+		if res.done {
+			break
+		}
 	}
 
 	if len(tokens) == zeroIdx {
@@ -251,6 +233,117 @@ func Parse(pattern string) ([]Token, error) {
 	}
 
 	return tokens, nil
+}
+
+// parseStep processes one iteration of the Parse loop. It returns a
+// parseResult carrying the updated tokens, remaining string, and done
+// flag, plus any parse error.
+func parseStep(
+	tokens []Token,
+	remaining string,
+	pattern string,
+) (parseResult, error) {
+	openIdx := strings.IndexByte(remaining, '{')
+	closeIdx := strings.IndexByte(remaining, '}')
+
+	emptyResult := parseResult{
+		tokens:    tokens,
+		remaining: emptyString,
+		done:      false,
+	}
+
+	err := checkBareClose(closeIdx, openIdx, remaining, pattern)
+	if err != nil {
+		return emptyResult, err
+	}
+
+	if openIdx == notFound {
+		if lit := makeLiteral(remaining); lit.Text != emptyString {
+			tokens = append(tokens, lit)
+		}
+
+		return parseResult{
+			tokens:    tokens,
+			remaining: emptyString,
+			done:      true,
+		}, nil
+	}
+
+	tokens = appendLeadingLiteral(tokens, remaining, openIdx)
+
+	remaining = remaining[openIdx:]
+
+	tok, newRemaining, err := parsePlaceholderFromRemaining(remaining, pattern)
+	if err != nil {
+		return emptyResult, err
+	}
+
+	return parseResult{
+		tokens:    append(tokens, tok),
+		remaining: newRemaining,
+		done:      false,
+	}, nil
+}
+
+// checkBareClose returns an error when a '}' appears before any '{'.
+func checkBareClose(
+	closeIdx, openIdx int,
+	remaining, pattern string,
+) error {
+	isBareClose := closeIdx != notFound &&
+		(openIdx == notFound || closeIdx < openIdx)
+
+	if !isBareClose {
+		return nil
+	}
+
+	return fmt.Errorf(
+		"%w at position %d in pattern %q",
+		errBareCloseBrace,
+		len(pattern)-len(remaining)+closeIdx,
+		pattern,
+	)
+}
+
+// appendLeadingLiteral appends the literal segment before the first '{'
+// to tokens when openIdx > 0.
+func appendLeadingLiteral(
+	tokens []Token,
+	remaining string,
+	openIdx int,
+) []Token {
+	if openIdx <= zeroIdx {
+		return tokens
+	}
+
+	lit := makeLiteral(remaining[:openIdx])
+	if lit.Text != emptyString {
+		tokens = append(tokens, lit)
+	}
+
+	return tokens
+}
+
+// parsePlaceholderFromRemaining extracts the placeholder token from remaining
+// (which starts with '{'), advances remaining past the closing '}', and
+// returns the token and the new remaining string.
+func parsePlaceholderFromRemaining(
+	remaining, pattern string,
+) (Token, string, error) {
+	closeIdx := strings.IndexByte(remaining, '}')
+	if closeIdx == notFound {
+		return Token{}, emptyString,
+			fmt.Errorf("%w in pattern %q", errUnclosedBrace, pattern)
+	}
+
+	raw := remaining[:closeIdx+bracketWidth]
+
+	tok, err := parsePlaceholder(raw, pattern)
+	if err != nil {
+		return Token{}, emptyString, err
+	}
+
+	return tok, remaining[closeIdx+bracketWidth:], nil
 }
 
 // makeLiteral builds a [KindLiteral] token from a raw string
@@ -285,7 +378,7 @@ func parsePlaceholder(raw, fullPattern string) (Token, error) {
 	before, after, ok := strings.Cut(inner, ":")
 	if !ok {
 		return Token{}, fmt.Errorf(
-			"placeholder %q: %w in pattern %q",
+			fmtPlaceholderError,
 			raw,
 			errMissingColon,
 			fullPattern,
@@ -297,7 +390,7 @@ func parsePlaceholder(raw, fullPattern string) (Token, error) {
 
 	if name == emptyString {
 		return Token{}, fmt.Errorf(
-			"placeholder %q: %w in pattern %q",
+			fmtPlaceholderError,
 			raw,
 			errEmptyName,
 			fullPattern,
@@ -306,7 +399,7 @@ func parsePlaceholder(raw, fullPattern string) (Token, error) {
 
 	if typePart == emptyString {
 		return Token{}, fmt.Errorf(
-			"placeholder %q: %w in pattern %q",
+			fmtPlaceholderError,
 			raw,
 			errEmptyType,
 			fullPattern,
@@ -315,7 +408,7 @@ func parsePlaceholder(raw, fullPattern string) (Token, error) {
 
 	pType := PlaceholderType(typePart)
 
-	if _, supported := validTypes[pType]; !supported {
+	if _, supported := validTypes()[pType]; !supported {
 		return Token{}, fmt.Errorf(
 			"placeholder %q type %q: %w in pattern %q",
 			raw,

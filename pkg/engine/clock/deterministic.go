@@ -7,6 +7,11 @@ import (
 	"time"
 )
 
+// waiterChanBuf is the buffer size for each waiter's time channel.
+// A buffer of 1 allows Advance to send without blocking even when the
+// waiter has not yet selected on the channel.
+const waiterChanBuf = 1
+
 // waiter represents a single goroutine blocked in Sleep or After, holding
 // the duration it is waiting for and the deadline (seed + accumulated wait).
 type waiter struct {
@@ -67,7 +72,7 @@ func (c *DeterministicClock) Sleep(ctx context.Context, d time.Duration) error {
 
 // After returns a channel that fires when the clock has been advanced by at
 // least d from the moment After is called. The channel is buffered with
-// capacity 1.
+// capacity [waiterChanBuf].
 func (c *DeterministicClock) After(d time.Duration) <-chan time.Time {
 	wtr := c.register(d)
 
@@ -93,7 +98,7 @@ func (c *DeterministicClock) register(d time.Duration) *waiter {
 
 	wtr := &waiter{
 		deadline: c.now.Add(d),
-		ch:       make(chan time.Time, 1),
+		ch:       make(chan time.Time, waiterChanBuf),
 	}
 
 	if !c.now.Before(wtr.deadline) {
@@ -129,7 +134,7 @@ func (c *DeterministicClock) deregister(target *waiter) {
 //
 // The slice reuse (remaining = c.waiters[:0]) is intentional — it keeps
 // the backing array in place to avoid a per-Advance allocation. This is safe
-// because all sends to wtr.ch are non-blocking (buffered with capacity 1)
+// because all sends to wtr.ch are non-blocking (buffered with waiterChanBuf)
 // and c.waiters is only accessed while c.mu is held.
 func (c *DeterministicClock) drainWaiters() {
 	remaining := c.waiters[:0]

@@ -106,19 +106,7 @@ func (sta *stationHandle) Expect(ctx context.Context) ([]any, error) {
 		return nil, fmt.Errorf("transport: expect context: %w", ctx.Err())
 
 	case <-sta.closed:
-		// Drain one buffered frame before signalling closure so that
-		// keyword authors can collect the final server response.
-		select {
-		case frame, ok := <-sta.inbound:
-			if ok {
-				return frame, nil
-			}
-
-			return nil, sta.closeError()
-		default:
-		}
-
-		return nil, &StationClosedError{}
+		return sta.drainOnClose()
 	}
 }
 
@@ -145,6 +133,23 @@ func (sta *stationHandle) IsOpen() bool {
 	}
 }
 
+// drainOnClose attempts to return one buffered inbound frame after the
+// station has been closed, giving keyword authors a chance to collect the
+// final server response before the closed error is propagated.
+func (sta *stationHandle) drainOnClose() ([]any, error) {
+	select {
+	case frame, ok := <-sta.inbound:
+		if ok {
+			return frame, nil
+		}
+
+		return nil, sta.closeError()
+	default:
+	}
+
+	return nil, &StationClosedError{}
+}
+
 // closeError returns the appropriate error for when the inbound channel closes.
 // If the reader goroutine recorded a frame-size error it is returned as
 // *FrameTooLargeError; otherwise *StationClosedError is returned.
@@ -168,37 +173,55 @@ func (sta *stationHandle) readLoop(ctx context.Context) {
 	defer close(sta.inbound)
 
 	for {
-		msgType, data, err := sta.conn.Read(ctx)
-		if err != nil {
-			if websocket.CloseStatus(err) == websocket.StatusMessageTooBig {
-				frameErr := error(&FrameTooLargeError{
-					Limit:  sta.maxBytes,
-					Actual: -1,
-				})
-				sta.readErr.Store(&frameErr)
-			}
-
-			return
-		}
-
-		if msgType != websocket.MessageText {
-			continue
-		}
-
-		var frame []any
-
-		err = json.Unmarshal(data, &frame)
-		if err != nil {
-			// Non-JSON frames are silently dropped; they are not valid
-			// OCPP-J and will surface as a missing Expect delivery to
-			// the test scenario.
-			continue
-		}
-
-		select {
-		case sta.inbound <- frame:
-		case <-sta.closed:
+		if done := sta.readOneFrame(ctx); done {
 			return
 		}
 	}
+}
+
+// readOneFrame reads a single frame from the WebSocket and forwards it to
+// the inbound channel. It returns true when the loop should terminate.
+func (sta *stationHandle) readOneFrame(ctx context.Context) bool {
+	msgType, data, err := sta.conn.Read(ctx)
+	if err != nil {
+		sta.storeReadError(err)
+
+		return true
+	}
+
+	if msgType != websocket.MessageText {
+		return false
+	}
+
+	var frame []any
+
+	if err = json.Unmarshal(data, &frame); err != nil {
+		// Non-JSON frames are silently dropped; they are not valid
+		// OCPP-J and will surface as a missing Expect delivery to
+		// the test scenario.
+		return false
+	}
+
+	select {
+	case sta.inbound <- frame:
+	case <-sta.closed:
+		return true
+	}
+
+	return false
+}
+
+// storeReadError records a *FrameTooLargeError when the WebSocket reports
+// StatusMessageTooBig. All other errors are silently discarded because the
+// connection is already closed at that point.
+func (sta *stationHandle) storeReadError(err error) {
+	if websocket.CloseStatus(err) != websocket.StatusMessageTooBig {
+		return
+	}
+
+	frameErr := error(&FrameTooLargeError{
+		Limit:  sta.maxBytes,
+		Actual: -1,
+	})
+	sta.readErr.Store(&frameErr)
 }

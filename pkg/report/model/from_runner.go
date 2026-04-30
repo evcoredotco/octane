@@ -1,4 +1,5 @@
-// from_runner.go implements the projection from runner.RunResult to model.Report.
+// from_runner.go implements the projection from runner.RunResult
+// to model.Report.
 //
 // Task: T-007-03.
 

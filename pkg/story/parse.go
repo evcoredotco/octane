@@ -59,30 +59,127 @@ func (p *parser) parseStory() (*ast.Story, error) {
 		return nil, err
 	}
 
-	var background []ast.Step
-
-	if p.lex.Peek().Kind == lex.TokenBackground {
-		background, err = p.parseBackground()
-		if err != nil {
-			return nil, err
-		}
+	sections, err := p.parseStorySections()
+	if err != nil {
+		return nil, err
 	}
 
-	var setup []ast.Step
-
-	if p.lex.Peek().Kind == lex.TokenSetup {
-		setup, err = p.parseSetup()
-		if err != nil {
-			return nil, err
-		}
+	err = validateParameters(
+		p.file, meta,
+		sections.scenarios, sections.background,
+		sections.setup, sections.teardown,
+	)
+	if err != nil {
+		return nil, err
 	}
 
+	return &ast.Story{
+		Path:       p.file,
+		Meta:       meta,
+		Background: sections.background,
+		Setup:      sections.setup,
+		Scenarios:  sections.scenarios,
+		Teardown:   sections.teardown,
+		Position: ast.Position{
+			Line:   startTok.Line,
+			Column: startTok.Column,
+		},
+	}, nil
+}
+
+// storySections groups the four optional/required grammar sections.
+type storySections struct {
+	background []ast.Step
+	setup      []ast.Step
+	scenarios  []ast.Scenario
+	teardown   []ast.Step
+}
+
+// parseStorySections parses Background?, Setup?, Scenario+, Teardown? and
+// validates that at least one Scenario is present.
+func (p *parser) parseStorySections() (storySections, error) {
+	var (
+		sections storySections
+		err      error
+	)
+
+	sections.background, err = p.parseOptionalBackground()
+	if err != nil {
+		return storySections{}, err
+	}
+
+	sections.setup, err = p.parseOptionalSetup()
+	if err != nil {
+		return storySections{}, err
+	}
+
+	sections.scenarios, err = p.parseAllScenarios()
+	if err != nil {
+		return storySections{}, err
+	}
+
+	sections.teardown, err = p.parseOptionalTeardown()
+	if err != nil {
+		return storySections{}, err
+	}
+
+	return sections, p.expectEOF()
+}
+
+// parseOptionalBackground parses the Background section when present.
+func (p *parser) parseOptionalBackground() ([]ast.Step, error) {
+	if p.lex.Peek().Kind != lex.TokenBackground {
+		return nil, nil
+	}
+
+	return p.parseBackground()
+}
+
+// parseOptionalSetup parses the Setup section when present.
+func (p *parser) parseOptionalSetup() ([]ast.Step, error) {
+	if p.lex.Peek().Kind != lex.TokenSetup {
+		return nil, nil
+	}
+
+	return p.parseSetup()
+}
+
+// parseOptionalTeardown parses the Teardown section when present.
+func (p *parser) parseOptionalTeardown() ([]ast.Step, error) {
+	if p.lex.Peek().Kind != lex.TokenTeardown {
+		return nil, nil
+	}
+
+	return p.parseTeardown()
+}
+
+// expectEOF consumes the next token and returns an error when it is not EOF.
+func (p *parser) expectEOF() error {
+	tok := p.lex.Next()
+	if tok.Kind == lex.TokenEOF {
+		return nil
+	}
+
+	return &diag.UnexpectedTokenError{
+		File:     p.file,
+		Line:     tok.Line,
+		Column:   tok.Column,
+		Got:      tok.Kind.String(),
+		Expected: "EOF",
+		Suggestion: "remove or relocate content after the final section " +
+			"(Background, Scenario, Teardown)",
+	}
+}
+
+// parseAllScenarios parses one or more Scenario blocks. It returns
+// *diag.MissingSectionError when no Scenario is found.
+func (p *parser) parseAllScenarios() ([]ast.Scenario, error) {
 	var scenarios []ast.Scenario
 
 	for p.lex.Peek().Kind == lex.TokenScenario {
-		sc, scErr := p.parseScenario()
-		if scErr != nil {
-			return nil, scErr
+		sc, err := p.parseScenario()
+		if err != nil {
+			return nil, err
 		}
 
 		scenarios = append(scenarios, sc)
@@ -100,45 +197,5 @@ func (p *parser) parseStory() (*ast.Story, error) {
 		}
 	}
 
-	var teardown []ast.Step
-
-	if p.lex.Peek().Kind == lex.TokenTeardown {
-		teardown, err = p.parseTeardown()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	tok := p.lex.Next()
-	if tok.Kind != lex.TokenEOF {
-		return nil, &diag.UnexpectedTokenError{
-			File:     p.file,
-			Line:     tok.Line,
-			Column:   tok.Column,
-			Got:      tok.Kind.String(),
-			Expected: "EOF",
-			Suggestion: "remove or relocate content after the final section " +
-				"(Background, Scenario, Teardown)",
-		}
-	}
-
-	err = validateParameters(
-		p.file, meta, scenarios, background, setup, teardown,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return &ast.Story{
-		Path:       p.file,
-		Meta:       meta,
-		Background: background,
-		Setup:      setup,
-		Scenarios:  scenarios,
-		Teardown:   teardown,
-		Position: ast.Position{
-			Line:   startTok.Line,
-			Column: startTok.Column,
-		},
-	}, nil
+	return scenarios, nil
 }

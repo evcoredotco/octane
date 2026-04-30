@@ -13,22 +13,29 @@ import (
 // chanBufOne is the buffer size for a single-result channel.
 const chanBufOne = 1
 
-var seed = time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+// clockTestYear is the year used in the fixed seed time for clock tests.
+const clockTestYear = 2026
+
+// clockSeed returns the fixed test seed time used across clock tests.
+func clockSeed() time.Time {
+	return time.Date(clockTestYear, 1, 1, 0, 0, 0, 0, time.UTC)
+}
 
 // TestDeterministicNow verifies that Now returns the seed time before any
 // Advance calls, and the advanced time afterwards.
 func TestDeterministicNow(t *testing.T) {
 	t.Parallel()
 
-	clk := clock.Deterministic(seed)
+	seedTime := clockSeed()
+	clk := clock.Deterministic(seedTime)
 
-	if got := clk.Now(); !got.Equal(seed) {
-		t.Errorf("Now() = %v, want %v", got, seed)
+	if got := clk.Now(); !got.Equal(seedTime) {
+		t.Errorf("Now() = %v, want %v", got, seedTime)
 	}
 
 	clk.Advance(time.Hour)
 
-	want := seed.Add(time.Hour)
+	want := seedTime.Add(time.Hour)
 	if got := clk.Now(); !got.Equal(want) {
 		t.Errorf("After Advance(1h), Now() = %v, want %v", got, want)
 	}
@@ -40,7 +47,8 @@ func TestDeterministicNow(t *testing.T) {
 func TestDeterministicSleepUnblocks(t *testing.T) {
 	t.Parallel()
 
-	clk := clock.Deterministic(seed)
+	seedTime := clockSeed()
+	clk := clock.Deterministic(seedTime)
 
 	// Register the waiter via After (synchronous); then Advance and verify.
 	ch := clk.After(5 * time.Second)
@@ -48,7 +56,7 @@ func TestDeterministicSleepUnblocks(t *testing.T) {
 
 	select {
 	case fired := <-ch:
-		want := seed.Add(10 * time.Second)
+		want := seedTime.Add(10 * time.Second)
 		if !fired.Equal(want) {
 			t.Errorf("After fired with time %v, want %v", fired, want)
 		}
@@ -62,7 +70,7 @@ func TestDeterministicSleepUnblocks(t *testing.T) {
 func TestDeterministicSleepCancelCtx(t *testing.T) {
 	t.Parallel()
 
-	clk := clock.Deterministic(seed)
+	clk := clock.Deterministic(clockSeed())
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -89,7 +97,8 @@ func TestDeterministicSleepCancelCtx(t *testing.T) {
 func TestDeterministicAfterUnblocks(t *testing.T) {
 	t.Parallel()
 
-	clk := clock.Deterministic(seed)
+	seedTime := clockSeed()
+	clk := clock.Deterministic(seedTime)
 
 	ch := clk.After(3 * time.Second)
 
@@ -97,7 +106,7 @@ func TestDeterministicAfterUnblocks(t *testing.T) {
 
 	select {
 	case got := <-ch:
-		want := seed.Add(5 * time.Second)
+		want := seedTime.Add(5 * time.Second)
 		if !got.Equal(want) {
 			t.Errorf("After: received time %v, want %v", got, want)
 		}
@@ -110,7 +119,7 @@ func TestDeterministicAfterUnblocks(t *testing.T) {
 func TestDeterministicSleepZero(t *testing.T) {
 	t.Parallel()
 
-	clk := clock.Deterministic(seed)
+	clk := clock.Deterministic(clockSeed())
 
 	err := clk.Sleep(context.Background(), 0)
 	if err != nil {
@@ -125,7 +134,7 @@ func TestDeterministicSleepZero(t *testing.T) {
 func TestDeterministicMultipleWaiters(t *testing.T) {
 	t.Parallel()
 
-	clk := clock.Deterministic(seed)
+	clk := clock.Deterministic(clockSeed())
 
 	const n = 10
 

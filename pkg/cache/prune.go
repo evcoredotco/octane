@@ -51,26 +51,54 @@ func (fc *FileCache) Prune(
 	}
 
 	for _, fanout := range fanouts {
-		err = ctx.Err()
-		if err != nil {
-			return fmt.Errorf("cache: prune: %w", err)
-		}
-
-		if !fanout.IsDir() {
-			continue
-		}
-
-		fanoutPath := filepath.Join(resultsDir, fanout.Name())
-
-		err = pruneEntriesUnder(fanoutPath, now, maxAge)
+		err = pruneOneFanout(ctx, fanout, resultsDir, now, maxAge)
 		if err != nil {
 			return err
 		}
+	}
 
-		// Remove the fanout directory if it is now empty.
-		if dirIsEmpty(fanoutPath) {
-			_ = os.Remove(fanoutPath)
-		}
+	return nil
+}
+
+// pruneOneFanout checks ctx cancellation and delegates to [pruneFanout]
+// for a single fanout directory entry. Extracted to keep [Prune]'s
+// cognitive complexity within the configured limit.
+func pruneOneFanout(
+	ctx context.Context,
+	fanout os.DirEntry,
+	resultsDir string,
+	now time.Time,
+	maxAge time.Duration,
+) error {
+	if err := ctx.Err(); err != nil {
+		return fmt.Errorf("cache: prune: %w", err)
+	}
+
+	return pruneFanout(fanout, resultsDir, now, maxAge)
+}
+
+// pruneFanout prunes a single fanout directory entry. Non-directory
+// entries are skipped. After pruning expired entries inside
+// fanoutEntry, the fanout directory itself is removed when empty.
+func pruneFanout(
+	fanoutEntry os.DirEntry,
+	resultsDir string,
+	now time.Time,
+	maxAge time.Duration,
+) error {
+	if !fanoutEntry.IsDir() {
+		return nil
+	}
+
+	fanoutPath := filepath.Join(resultsDir, fanoutEntry.Name())
+
+	if err := pruneEntriesUnder(fanoutPath, now, maxAge); err != nil {
+		return err
+	}
+
+	// Remove the fanout directory if it is now empty.
+	if dirIsEmpty(fanoutPath) {
+		_ = os.Remove(fanoutPath)
 	}
 
 	return nil
@@ -100,17 +128,32 @@ func pruneEntriesUnder(
 
 		entryDir := filepath.Join(fanoutDir, ent.Name())
 
-		if shouldPrune(entryDir, now, maxAge) {
-			err = os.RemoveAll(entryDir)
-			if err != nil &&
-				!errors.Is(err, os.ErrNotExist) {
-				return fmt.Errorf(
-					"cache: prune: remove entry %q: %w",
-					entryDir,
-					err,
-				)
-			}
+		if err = pruneEntryDir(entryDir, now, maxAge); err != nil {
+			return err
 		}
+	}
+
+	return nil
+}
+
+// pruneEntryDir removes entryDir when it should be pruned, ignoring
+// [os.ErrNotExist] (concurrent prune or already removed).
+func pruneEntryDir(
+	entryDir string,
+	now time.Time,
+	maxAge time.Duration,
+) error {
+	if !shouldPrune(entryDir, now, maxAge) {
+		return nil
+	}
+
+	err := os.RemoveAll(entryDir)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf(
+			"cache: prune: remove entry %q: %w",
+			entryDir,
+			err,
+		)
 	}
 
 	return nil

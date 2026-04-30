@@ -15,6 +15,18 @@ import (
 	"github.com/evcoreco/octane/pkg/wire"
 )
 
+const (
+	// msgTypeElem is the index of the message-type code in a decoded OCPP-J
+	// frame (always element 0).
+	msgTypeElem = 0
+	// fmtUnmarshalFailed is the Fatalf format used when json.Unmarshal fails.
+	fmtUnmarshalFailed = "json.Unmarshal failed: %v"
+	// fmtExpectedFloat64 is the Fatalf format when element 0 is not float64.
+	fmtExpectedFloat64 = "element 0: expected float64 from JSON decode, got %T"
+	// fmtGotWantFloat64 is the Errorf format for a wrong float64 type code.
+	fmtGotWantFloat64 = "element 0: got %v, want float64(%d)"
+)
+
 // TestJSONFloat64CoercionCall verifies that decoding a CALL frame JSON string
 // into []any yields float64(2) at element 0, and that ParseCall accepts it.
 //
@@ -29,22 +41,16 @@ func TestJSONFloat64CoercionCall(t *testing.T) {
 
 	err := json.Unmarshal([]byte(raw), &frame)
 	if err != nil {
-		t.Fatalf("json.Unmarshal failed: %v", err)
+		t.Fatalf(fmtUnmarshalFailed, err)
 	}
 
-	typeCode, ok := frame[0].(float64)
+	typeCode, ok := frame[msgTypeElem].(float64)
 	if !ok {
-		t.Fatalf(
-			"element 0: expected float64 from JSON decode, got %T",
-			frame[0],
-		)
+		t.Fatalf(fmtExpectedFloat64, frame[msgTypeElem])
 	}
 
 	if typeCode != float64(wire.MessageTypeCall) {
-		t.Errorf(
-			"element 0: got %v, want float64(%d)",
-			typeCode, wire.MessageTypeCall,
-		)
+		t.Errorf(fmtGotWantFloat64, typeCode, wire.MessageTypeCall)
 	}
 
 	_, parseCallErr := wire.ParseCall(frame)
@@ -67,22 +73,16 @@ func TestJSONFloat64CoercionResult(t *testing.T) {
 
 	err := json.Unmarshal([]byte(raw), &frame)
 	if err != nil {
-		t.Fatalf("json.Unmarshal failed: %v", err)
+		t.Fatalf(fmtUnmarshalFailed, err)
 	}
 
-	typeCode, ok := frame[0].(float64)
+	typeCode, ok := frame[msgTypeElem].(float64)
 	if !ok {
-		t.Fatalf(
-			"element 0: expected float64 from JSON decode, got %T",
-			frame[0],
-		)
+		t.Fatalf(fmtExpectedFloat64, frame[msgTypeElem])
 	}
 
 	if typeCode != float64(wire.MessageTypeResult) {
-		t.Errorf(
-			"element 0: got %v, want float64(%d)",
-			typeCode, wire.MessageTypeResult,
-		)
+		t.Errorf(fmtGotWantFloat64, typeCode, wire.MessageTypeResult)
 	}
 
 	_, parseResultErr := wire.ParseResult(frame)
@@ -105,22 +105,16 @@ func TestJSONFloat64CoercionError(t *testing.T) {
 
 	err := json.Unmarshal([]byte(raw), &frame)
 	if err != nil {
-		t.Fatalf("json.Unmarshal failed: %v", err)
+		t.Fatalf(fmtUnmarshalFailed, err)
 	}
 
-	typeCode, ok := frame[0].(float64)
+	typeCode, ok := frame[msgTypeElem].(float64)
 	if !ok {
-		t.Fatalf(
-			"element 0: expected float64 from JSON decode, got %T",
-			frame[0],
-		)
+		t.Fatalf(fmtExpectedFloat64, frame[msgTypeElem])
 	}
 
 	if typeCode != float64(wire.MessageTypeError) {
-		t.Errorf(
-			"element 0: got %v, want float64(%d)",
-			typeCode, wire.MessageTypeError,
-		)
+		t.Errorf(fmtGotWantFloat64, typeCode, wire.MessageTypeError)
 	}
 
 	_, parseErrorErr := wire.ParseError(frame)

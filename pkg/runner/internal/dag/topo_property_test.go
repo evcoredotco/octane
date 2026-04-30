@@ -186,6 +186,30 @@ func Test_dag_TopologicalOrder_emptyGraph(t *testing.T) {
 // Helpers
 // ---------------------------------------------------------------------------
 
+// maybeAddEdge attempts to add an edge from ids[from] to ids[toNode] with
+// a probability of edgeProbabilityNumerator/edgeProbabilityDenominator.
+// It returns the added edge and true when the edge was accepted by the
+// graph; otherwise it returns a zero Edge and false.
+func maybeAddEdge(
+	rng *mrand.Rand,
+	grph *dag.Graph,
+	ids []string,
+	from, toNode int,
+) (dag.Edge, bool) {
+	if rng.IntN(edgeProbabilityDenominator) >= edgeProbabilityNumerator {
+		return dag.Edge{From: "", To: ""}, false
+	}
+
+	edge := dag.Edge{From: ids[from], To: ids[toNode]}
+
+	err := grph.AddEdge(edge)
+	if err != nil {
+		return dag.Edge{From: "", To: ""}, false
+	}
+
+	return edge, true
+}
+
 // buildRandomDAG creates a new *dag.Graph with a random number of nodes
 // [minNodesProperty, maxNodesProperty] and random acyclic edges (only
 // from lower-index to higher-index nodes). It returns the graph and the
@@ -206,14 +230,8 @@ func buildRandomDAG(rng *mrand.Rand) (*dag.Graph, []dag.Edge) {
 
 	for from := range nodeCount - 1 {
 		for to := from + 1; to < nodeCount; to++ {
-			// Add this edge with 30 % probability to keep graphs sparse.
-			if rng.IntN(edgeProbabilityDenominator) < edgeProbabilityNumerator {
-				edge := dag.Edge{From: ids[from], To: ids[to]}
-
-				err := grph.AddEdge(edge)
-				if err == nil {
-					edges = append(edges, edge)
-				}
+			if edge, ok := maybeAddEdge(rng, grph, ids, from, to); ok {
+				edges = append(edges, edge)
 			}
 		}
 	}

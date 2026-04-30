@@ -21,9 +21,12 @@ import (
 	"github.com/evcoreco/octane/pkg/keywords/primitive" // exposes TimeoutError
 )
 
-// ── Named constants ───────────────────────────────────────────────────────────
+// ── Named constants ──────────────────────────────────────────────────────────
 
 const (
+	// frozenYear is the year component of the deterministic clock value.
+	frozenYear = 2026
+
 	// handleExpect is the station handle name used across expect tests.
 	handleExpect = "CP05"
 
@@ -31,9 +34,10 @@ const (
 	patternExpectAny = "expect any frame on station {station:string}" +
 		" within {timeout:duration}"
 
-	// patternExpectOfType is the step text for the expect-frame-of-type keyword.
-	patternExpectOfType = "expect a frame of type {messageType:int} on station" +
-		" {station:string} within {timeout:duration}"
+	// patternExpectOfType is the step text for the expect-frame-of-type
+	// keyword.
+	patternExpectOfType = "expect a frame of type {messageType:int}" +
+		" on station {station:string} within {timeout:duration}"
 
 	// timeoutShort is a very short deadline used to trigger timeout behaviour.
 	timeoutShort = time.Millisecond
@@ -49,12 +53,14 @@ const (
 	messageTypeCALLRESULT = 3
 )
 
-// frozenNow is a fixed deterministic clock value injected into MockState
+// frozenNow returns a fixed deterministic clock value to inject into MockState
 // so that deadline calculations are reproducible across runs
 // (constitution principle IV).
-var frozenNow = time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+func frozenNow() time.Time {
+	return time.Date(frozenYear, 1, 1, 0, 0, 0, 0, time.UTC)
+}
 
-// ── expectAnyFrame tests ──────────────────────────────────────────────────────
+// ── expectAnyFrame tests ─────────────────────────────────────────────────────
 
 // Test_primitive_expectAnyFrame_HappyPath verifies that when a frame is
 // pre-queued on the mock station the keyword returns nil (AC3).
@@ -62,7 +68,7 @@ func Test_primitive_expectAnyFrame_HappyPath(t *testing.T) {
 	t.Parallel()
 
 	state := mock.NewMockState()
-	state.SetNow(frozenNow)
+	state.SetNow(frozenNow())
 
 	station := mock.NewMockStation()
 	station.QueueFrame(
@@ -97,7 +103,7 @@ func Test_primitive_expectAnyFrame_Timeout(t *testing.T) {
 	t.Parallel()
 
 	state := mock.NewMockState()
-	state.SetNow(frozenNow)
+	state.SetNow(frozenNow())
 
 	// Empty mock station — Expect will block until context expires.
 	station := mock.NewMockStation()
@@ -146,7 +152,7 @@ func Test_primitive_expectAnyFrame_Timeout(t *testing.T) {
 	}
 
 	// Invariant: TimeoutError.Deadline must equal frozenNow + timeout.
-	wantDeadline := frozenNow.Add(timeoutShort)
+	wantDeadline := frozenNow().Add(timeoutShort)
 
 	if !timeoutErr.Deadline.Equal(wantDeadline) {
 		t.Errorf(
@@ -157,7 +163,7 @@ func Test_primitive_expectAnyFrame_Timeout(t *testing.T) {
 	}
 }
 
-// ── expectFrameOfType tests ───────────────────────────────────────────────────
+// ── expectFrameOfType tests ──────────────────────────────────────────────────
 
 // Test_primitive_expectFrameOfType_HappyPath verifies that when a queued frame
 // has the correct message-type code at index 0 the keyword returns nil (AC3).
@@ -165,7 +171,7 @@ func Test_primitive_expectFrameOfType_HappyPath(t *testing.T) {
 	t.Parallel()
 
 	state := mock.NewMockState()
-	state.SetNow(frozenNow)
+	state.SetNow(frozenNow())
 
 	station := mock.NewMockStation()
 	// Queue a CALLRESULT frame (type 3).
@@ -199,7 +205,7 @@ func Test_primitive_expectFrameOfType_WrongTypeThenTimeout(t *testing.T) {
 	t.Parallel()
 
 	state := mock.NewMockState()
-	state.SetNow(frozenNow)
+	state.SetNow(frozenNow())
 
 	station := mock.NewMockStation()
 	// Queue only CALL frames (type 2); the keyword expects type 3.

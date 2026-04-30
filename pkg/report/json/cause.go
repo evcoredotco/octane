@@ -1,4 +1,4 @@
-package json
+package reportjson
 
 import (
 	"github.com/evcoreco/octane/pkg/report/model"

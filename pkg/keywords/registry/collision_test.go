@@ -17,7 +17,7 @@ import (
 	"github.com/evcoreco/octane/pkg/keywords/api"
 )
 
-// ── Named test-value constants ────────────────────────────────────────────────
+// ── Named test-value constants ───────────────────────────────────────────────
 
 const (
 	// patternCollision is the shared pattern used in collision scenarios.
@@ -27,7 +27,7 @@ const (
 	patternAlt = "station {s:station} sends Heartbeat"
 )
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// ── helpers ──────────────────────────────────────────────────────────────────
 
 // noopFunc is a minimal keyword Func that satisfies the api.Func signature
 // without performing any action. It is used wherever a real implementation
@@ -74,7 +74,7 @@ func mustPanic(t *testing.T, callFunc func()) string {
 	return msg
 }
 
-// ── Collision tests ───────────────────────────────────────────────────────────
+// ── Collision tests ──────────────────────────────────────────────────────────
 
 // Test_registry_Register_collisionPanics verifies that registering two
 // keywords with identical (Layer, OCPPVersion, Pattern) causes a panic.
@@ -145,7 +145,8 @@ func Test_registry_Register_collisionPanicNamesOriginalSite(t *testing.T) {
 func Test_registry_Register_collisionPanicNamesNewSite(t *testing.T) {
 	t.Parallel()
 
-	// Invariant: panic message references the new (duplicate) registrant's call site.
+	// Invariant: panic message references the new (duplicate) registrant's
+	// call site.
 	reset()
 
 	Register(api.Keyword{

@@ -26,22 +26,24 @@ func TestDeterminism(t *testing.T) {
 
 	root := filepath.Join("..", "..", "scenarios")
 
+	storyPaths := collectDeterminismPaths(t, root)
+
+	for _, p := range storyPaths {
+		t.Run(filepath.ToSlash(p), func(t *testing.T) {
+			t.Parallel()
+			runDeterminismCheck(t, p)
+		})
+	}
+}
+
+// collectDeterminismPaths walks root and returns all .story file paths.
+// It calls t.Fatal when the walk fails or yields no files.
+func collectDeterminismPaths(t *testing.T, root string) []string {
+	t.Helper()
+
 	var storyPaths []string
 
-	err := filepath.WalkDir(
-		root,
-		func(path string, d os.DirEntry, walkErr error) error {
-			if walkErr != nil {
-				return walkErr
-			}
-
-			if !d.IsDir() && filepath.Ext(path) == ".story" {
-				storyPaths = append(storyPaths, path)
-			}
-
-			return nil
-		},
-	)
+	err := filepath.WalkDir(root, collectStoryEntry(&storyPaths))
 	if err != nil {
 		t.Fatalf("walking scenarios/: %v", err)
 	}
@@ -50,11 +52,22 @@ func TestDeterminism(t *testing.T) {
 		t.Fatal("no .story files found under scenarios/")
 	}
 
-	for _, p := range storyPaths {
-		t.Run(filepath.ToSlash(p), func(t *testing.T) {
-			t.Parallel()
-			runDeterminismCheck(t, p)
-		})
+	return storyPaths
+}
+
+// collectStoryEntry returns a WalkDir callback that appends .story file paths
+// to dst.
+func collectStoryEntry(dst *[]string) func(string, os.DirEntry, error) error {
+	return func(path string, d os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+
+		if !d.IsDir() && filepath.Ext(path) == ".story" {
+			*dst = append(*dst, path)
+		}
+
+		return nil
 	}
 }
 

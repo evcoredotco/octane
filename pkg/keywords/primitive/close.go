@@ -5,17 +5,7 @@ import (
 	"fmt"
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
-	"github.com/evcoreco/octane/pkg/keywords/registry"
 )
-
-func init() {
-	registry.Register(api.Keyword{
-		Pattern:     "close station {station:string}",
-		Layer:       api.LayerPrimitive,
-		OCPPVersion: 0,
-		Func:        closeStation,
-	})
-}
 
 // closeStation implements the primitive keyword:
 //

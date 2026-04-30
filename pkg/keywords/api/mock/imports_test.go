@@ -24,6 +24,37 @@ import (
 	"github.com/evcoreco/octane/pkg/keywords/api/mock"
 )
 
+// ── named constants ──────────────────────────────────────────────────────────
+
+const (
+	// stationHandle is the station handle used in registration tests.
+	stationHandle = "CP01"
+
+	// yearSetNow is the year used in Test_MockState_SetNow.
+	yearSetNow = 2024
+
+	// monthSetNow is the month used in Test_MockState_SetNow (June = 6).
+	monthSetNow = 6
+
+	// stepNumber is the step number argument passed to Logf in log tests.
+	stepNumber = 1
+
+	// msgTypeCALLRESULT is the OCPP-J message-type code for a CALLRESULT (3).
+	msgTypeCALLRESULT = 3
+
+	// msgTypeCALL is the OCPP-J message-type code for a CALL (2).
+	msgTypeCALL = 2
+
+	// oneSentFrame is the expected count when exactly one frame was sent.
+	oneSentFrame = 1
+
+	// logIdx0 is the index of the first log entry.
+	logIdx0 = 0
+
+	// logIdx1 is the index of the second log entry.
+	logIdx1 = 1
+)
+
 // ── package-level sentinel errors ────────────────────────────────────────────
 
 var (
@@ -33,7 +64,7 @@ var (
 	errTransient    = errors.New("transient error")
 )
 
-// ── interface-satisfaction compile-time checks ────────────────────────────────
+// ── interface-satisfaction compile-time checks ───────────────────────────────
 
 // Verify at compile time that *mock.State implements api.State and that
 // *mock.Station implements api.Station. These assignments produce a compile
@@ -43,7 +74,7 @@ var (
 	_ api.Station = (*mock.Station)(nil)
 )
 
-// ── mock.State tests ──────────────────────────────────────────────────────────
+// ── mock.State tests ─────────────────────────────────────────────────────────
 
 // Test_MockState_NowReturnsZeroByDefault verifies that a freshly created
 // mock.State returns the zero time.Time from Now().
@@ -65,7 +96,7 @@ func Test_MockState_SetNow(t *testing.T) {
 	t.Parallel()
 
 	state := mock.NewMockState()
-	want := time.Date(2024, 6, 1, 12, 0, 0, 0, time.UTC)
+	want := time.Date(yearSetNow, monthSetNow, 1, 12, 0, 0, 0, time.UTC)
 
 	state.SetNow(want)
 
@@ -83,8 +114,8 @@ func Test_MockState_LogfAppendsMessages(t *testing.T) {
 
 	state := mock.NewMockState()
 
-	state.Logf("step %d started", 1)
-	state.Logf("station %q connected", "CP01")
+	state.Logf("step %d started", stepNumber)
+	state.Logf("station %q connected", stationHandle)
 
 	got := state.Logs()
 
@@ -96,14 +127,14 @@ func Test_MockState_LogfAppendsMessages(t *testing.T) {
 
 	const wantFirst = "step 1 started"
 
-	if got[0] != wantFirst {
-		t.Errorf("Logs()[0]: want %q, got %q", wantFirst, got[0])
+	if got[logIdx0] != wantFirst {
+		t.Errorf("Logs()[0]: want %q, got %q", wantFirst, got[logIdx0])
 	}
 
 	const wantSecond = `station "CP01" connected`
 
-	if got[1] != wantSecond {
-		t.Errorf("Logs()[1]: want %q, got %q", wantSecond, got[1])
+	if got[logIdx1] != wantSecond {
+		t.Errorf("Logs()[1]: want %q, got %q", wantSecond, got[logIdx1])
 	}
 }
 
@@ -121,7 +152,7 @@ func Test_MockState_LogsReturnsSnapshot(t *testing.T) {
 
 	later := state.Logs()
 
-	if len(later) != 1 {
+	if len(later) != oneSentFrame {
 		t.Errorf(
 			"Logs() after mutation of previous snapshot: "+
 				"want 1 entry, got %d",
@@ -157,19 +188,22 @@ func Test_MockState_RegisterStation(t *testing.T) {
 	state := mock.NewMockState()
 	station := mock.NewMockStation()
 
-	state.RegisterStation("CP01", station)
+	state.RegisterStation(stationHandle, station)
 
-	got, err := state.Station("CP01")
+	got, err := state.Station(stationHandle)
 	if err != nil {
-		t.Fatalf("Station(\"CP01\") unexpected error: %v", err)
+		t.Fatalf("Station(%q) unexpected error: %v", stationHandle, err)
 	}
 
 	if got != station {
-		t.Error("Station(\"CP01\"): returned unexpected station instance")
+		t.Errorf(
+			"Station(%q): returned unexpected station instance",
+			stationHandle,
+		)
 	}
 }
 
-// ── mock.Station tests ────────────────────────────────────────────────────────
+// ── mock.Station tests ───────────────────────────────────────────────────────
 
 // Test_MockStation_SendRecordsFrame verifies that Send appends the frame
 // to the internal buffer and SentFrames returns it.
@@ -178,7 +212,7 @@ func Test_MockStation_SendRecordsFrame(t *testing.T) {
 
 	station := mock.NewMockStation()
 	ctx := context.Background()
-	frame := []any{2, "msg-01", "BootNotification", map[string]any{}}
+	frame := []any{msgTypeCALL, "msg-01", "BootNotification", map[string]any{}}
 
 	err := station.Send(ctx, frame)
 	if err != nil {
@@ -187,7 +221,7 @@ func Test_MockStation_SendRecordsFrame(t *testing.T) {
 
 	sent := station.SentFrames()
 
-	if len(sent) != 1 {
+	if len(sent) != oneSentFrame {
 		t.Fatalf("SentFrames() count: want 1, got %d", len(sent))
 	}
 }
@@ -252,11 +286,11 @@ func Test_MockStation_ExpectDequeuesFrame(t *testing.T) {
 	ctx := context.Background()
 
 	first := []any{
-		3, "msg-01", "BootNotificationResponse",
+		msgTypeCALLRESULT, "msg-01", "BootNotificationResponse",
 		map[string]any{"status": "Accepted"},
 	}
 	second := []any{
-		3, "msg-02", "HeartbeatResponse",
+		msgTypeCALLRESULT, "msg-02", "HeartbeatResponse",
 		map[string]any{},
 	}
 
@@ -301,7 +335,7 @@ func Test_MockStation_ExpectReturnsConfiguredError(t *testing.T) {
 	wantErr := errExpectFailed
 
 	station.QueueFrame([]any{
-		3, "msg-01", "HeartbeatResponse", map[string]any{},
+		msgTypeCALLRESULT, "msg-01", "HeartbeatResponse", map[string]any{},
 	})
 	station.SetExpectError(wantErr)
 
@@ -347,14 +381,17 @@ func Test_MockStation_SentFramesReturnsSnapshot(t *testing.T) {
 	station := mock.NewMockStation()
 	ctx := context.Background()
 
-	_ = station.Send(ctx, []any{2, "msg-01", "Action", map[string]any{}})
+	_ = station.Send(
+		ctx,
+		[]any{msgTypeCALL, "msg-01", "Action", map[string]any{}},
+	)
 
 	snapshot := station.SentFrames()
-	snapshot[0] = nil
+	snapshot[logIdx0] = nil
 
 	later := station.SentFrames()
 
-	if later[0] == nil {
+	if later[logIdx0] == nil {
 		t.Error(
 			"SentFrames(): mutation of returned snapshot " +
 				"affected subsequent call",
@@ -396,7 +433,7 @@ func Test_MockStation_SetExpectErrorNilClearsError(t *testing.T) {
 	ctx := context.Background()
 
 	station.QueueFrame([]any{
-		3, "msg-01", "Response", map[string]any{},
+		msgTypeCALLRESULT, "msg-01", "Response", map[string]any{},
 	})
 	station.SetExpectError(errTransient)
 	station.SetExpectError(nil)

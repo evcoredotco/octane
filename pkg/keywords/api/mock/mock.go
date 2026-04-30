@@ -207,6 +207,16 @@ type Station struct {
 	open bool
 }
 
+// firstFrameIdx is the index of the first element in pendingFrames.
+const firstFrameIdx = 0
+
+// afterFirstIdx is the start index of the slice after consuming the first
+// element (used with pendingFrames[afterFirstIdx:]).
+const afterFirstIdx = 1
+
+// noFrames is the zero-length sentinel used to check if the queue is empty.
+const noFrames = 0
+
 // NewMockStation returns a ready-to-use *[Station] with empty frame
 // buffers, nil errors, and the connection open (IsOpen returns true
 // until [Station.Close] is called).
@@ -256,9 +266,9 @@ func (st *Station) Expect(ctx context.Context) ([]any, error) {
 		return nil, st.expectErr
 	}
 
-	if len(st.pendingFrames) > 0 {
-		frame := st.pendingFrames[0]
-		st.pendingFrames = st.pendingFrames[1:]
+	if len(st.pendingFrames) > noFrames {
+		frame := st.pendingFrames[firstFrameIdx]
+		st.pendingFrames = st.pendingFrames[afterFirstIdx:]
 
 		return frame, nil
 	}

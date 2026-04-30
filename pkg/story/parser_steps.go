@@ -16,8 +16,10 @@ var (
 	errExpectedTeardown           = errors.New("expected Teardown keyword")
 	errExpectedScenario           = errors.New("expected Scenario keyword")
 	errExpectedColonAfterScenario = errors.New("expected ':' after Scenario")
-	errExpectedScenarioTitle      = errors.New("expected scenario title text after 'Scenario:'")
-	errExpectedStepText           = errors.New("expected step text after keyword")
+	errExpectedScenarioTitle      = errors.New(
+		"expected scenario title text after 'Scenario:'",
+	)
+	errExpectedStepText = errors.New("expected step text after keyword")
 )
 
 // indentedColumn is the minimum column value that indicates a token
@@ -33,8 +35,9 @@ func (p *parser) parseBackground() ([]ast.Step, error) {
 	tok := p.lex.Next()
 	if tok.Kind != lex.TokenBackground {
 		return nil, fmt.Errorf(
-			"%s:%d:%d: %w, got %s",
-			p.file, tok.Line, tok.Column, errExpectedBackground, tok.Kind,
+			fmtPosExpected,
+			p.file, tok.Line, tok.Column,
+			errExpectedBackground, tok.Kind,
 		)
 	}
 
@@ -47,8 +50,9 @@ func (p *parser) parseSetup() ([]ast.Step, error) {
 	tok := p.lex.Next()
 	if tok.Kind != lex.TokenSetup {
 		return nil, fmt.Errorf(
-			"%s:%d:%d: %w, got %s",
-			p.file, tok.Line, tok.Column, errExpectedSetup, tok.Kind,
+			fmtPosExpected,
+			p.file, tok.Line, tok.Column,
+			errExpectedSetup, tok.Kind,
 		)
 	}
 
@@ -61,8 +65,9 @@ func (p *parser) parseTeardown() ([]ast.Step, error) {
 	tok := p.lex.Next()
 	if tok.Kind != lex.TokenTeardown {
 		return nil, fmt.Errorf(
-			"%s:%d:%d: %w, got %s",
-			p.file, tok.Line, tok.Column, errExpectedTeardown, tok.Kind,
+			fmtPosExpected,
+			p.file, tok.Line, tok.Column,
+			errExpectedTeardown, tok.Kind,
 		)
 	}
 
@@ -77,24 +82,27 @@ func (p *parser) parseScenario() (ast.Scenario, error) {
 	scTok := p.lex.Next()
 	if scTok.Kind != lex.TokenScenario {
 		return ast.Scenario{}, fmt.Errorf(
-			"%s:%d:%d: %w, got %s",
-			p.file, scTok.Line, scTok.Column, errExpectedScenario, scTok.Kind,
+			fmtPosExpected,
+			p.file, scTok.Line, scTok.Column,
+			errExpectedScenario, scTok.Kind,
 		)
 	}
 
 	colonTok := p.lex.Next()
 	if colonTok.Kind != lex.TokenColon {
 		return ast.Scenario{}, fmt.Errorf(
-			"%s:%d:%d: %w, got %s",
-			p.file, colonTok.Line, colonTok.Column, errExpectedColonAfterScenario, colonTok.Kind,
+			fmtPosExpected,
+			p.file, colonTok.Line, colonTok.Column,
+			errExpectedColonAfterScenario, colonTok.Kind,
 		)
 	}
 
 	titleTok := p.lex.Next()
 	if titleTok.Kind != lex.TokenText {
 		return ast.Scenario{}, fmt.Errorf(
-			"%s:%d:%d: %w, got %s",
-			p.file, titleTok.Line, titleTok.Column, errExpectedScenarioTitle, titleTok.Kind,
+			fmtPosExpected,
+			p.file, titleTok.Line, titleTok.Column,
+			errExpectedScenarioTitle, titleTok.Kind,
 		)
 	}
 
@@ -120,31 +128,39 @@ func (p *parser) parseScenarioBody() ([]ast.Step, error) {
 	var steps []ast.Step
 
 	for {
-		peek := p.lex.Peek()
+		batch, done, err := p.parseScenarioBodyStep()
+		if err != nil {
+			return nil, err
+		}
 
-		switch {
-		case isIndentToken(peek):
-			batch, err := p.parseSteps()
-			if err != nil {
-				return nil, err
-			}
-
-			steps = append(steps, batch...)
-
-		case peek.Kind == lex.TokenParallel:
-			_ = p.lex.Next() // consume Parallel
-
-			inner, err := p.parseParallelBlock()
-			if err != nil {
-				return nil, err
-			}
-
-			steps = append(steps, inner...)
-
-		default:
+		if done {
 			return steps, nil
 		}
+
+		steps = append(steps, batch...)
 	}
+}
+
+// parseScenarioBodyStep processes one token from a scenario body. It returns
+// (steps, done=true, nil) when no more scenario-body tokens remain.
+func (p *parser) parseScenarioBodyStep() ([]ast.Step, bool, error) {
+	peek := p.lex.Peek()
+
+	if isIndentToken(peek) {
+		batch, err := p.parseSteps()
+
+		return batch, false, err
+	}
+
+	if peek.Kind == lex.TokenParallel {
+		_ = p.lex.Next() // consume Parallel
+
+		inner, err := p.parseParallelBlock()
+
+		return inner, false, err
+	}
+
+	return nil, true, nil
 }
 
 // parseParallelBlock collects steps between a Parallel and End-Parallel
@@ -155,32 +171,47 @@ func (p *parser) parseParallelBlock() ([]ast.Step, error) {
 	var steps []ast.Step
 
 	for {
-		peek := p.lex.Peek()
+		batch, done, err := p.parseParallelBlockStep()
+		if err != nil {
+			return nil, err
+		}
 
-		if peek.Kind == lex.TokenEndParallel || peek.Kind == lex.TokenEOF {
-			if peek.Kind == lex.TokenEndParallel {
-				_ = p.lex.Next() // consume End-Parallel
-			}
-
+		if done {
 			return steps, nil
 		}
 
-		if isIndentToken(peek) {
-			batch, err := p.parseSteps()
-			if err != nil {
-				return nil, err
-			}
+		steps = append(steps, batch...)
+	}
+}
 
-			steps = append(steps, batch...)
+// parseParallelBlockStep processes one token inside a Parallel block.
+// It returns (nil, done=true, nil) when End-Parallel or EOF is encountered.
+func (p *parser) parseParallelBlockStep() ([]ast.Step, bool, error) {
+	peek := p.lex.Peek()
 
-			continue
+	isTerminator := peek.Kind == lex.TokenEndParallel ||
+		peek.Kind == lex.TokenEOF
+
+	if isTerminator {
+		if peek.Kind == lex.TokenEndParallel {
+			_ = p.lex.Next() // consume End-Parallel
 		}
 
-		// Skip unrecognised tokens inside a Parallel block rather than
-		// erroring, so that future Parallel sub-syntax does not break
-		// existing parsers.
-		_ = p.lex.Next()
+		return nil, true, nil
 	}
+
+	if isIndentToken(peek) {
+		batch, err := p.parseSteps()
+
+		return batch, false, err
+	}
+
+	// Skip unrecognised tokens inside a Parallel block rather than
+	// erroring, so that future Parallel sub-syntax does not break
+	// existing parsers.
+	_ = p.lex.Next()
+
+	return nil, false, nil
 }
 
 // isIndentToken reports whether tok is a TokenIndent with at least one level
@@ -207,72 +238,97 @@ func (p *parser) parseSteps() ([]ast.Step, error) {
 	var steps []ast.Step
 
 	for {
-		peek := p.lex.Peek()
+		step, done, err := p.parseOneStep()
+		if err != nil {
+			return nil, err
+		}
 
-		switch {
-		case isIndentToken(peek):
-			_ = p.lex.Next() // consume the indent
-
-			kwTok := p.lex.Next()
-
-			kind, bare, err := stepKindFromToken(kwTok)
-			if err != nil {
-				return nil, fmt.Errorf(
-					"%s:%d:%d: %w",
-					p.file, kwTok.Line, kwTok.Column, err,
-				)
-			}
-
-			if bare {
-				// Bare text line: the illegal token's literal IS the text.
-				steps = append(steps, ast.Step{
-					Kind: ast.StepAction,
-					Text: strings.TrimSpace(kwTok.Literal),
-					Position: ast.Position{
-						Line:   kwTok.Line,
-						Column: kwTok.Column,
-					},
-				})
-
-				continue
-			}
-
-			textTok := p.lex.Next()
-			if textTok.Kind != lex.TokenText {
-				return nil, fmt.Errorf(
-					"%s:%d:%d: %w after %s, got %s",
-					p.file, textTok.Line, textTok.Column,
-					errExpectedStepText, kwTok.Literal, textTok.Kind,
-				)
-			}
-
-			steps = append(steps, ast.Step{
-				Kind: kind,
-				Text: textTok.Literal,
-				Position: ast.Position{
-					Line:   kwTok.Line,
-					Column: kwTok.Column,
-				},
-			})
-
-		case isBareStepToken(peek):
-			// The lexer emitted TokenIllegal directly (no preceding
-			// TokenIndent) because scanMetaEntry found no colon. The
-			// literal is the full bare text of the indented line.
-			tok := p.lex.Next()
-			steps = append(steps, ast.Step{
-				Kind: ast.StepAction,
-				Text: strings.TrimSpace(tok.Literal),
-				Position: ast.Position{
-					Line:   tok.Line,
-					Column: tok.Column,
-				},
-			})
-
-		default:
+		if done {
 			return steps, nil
 		}
+
+		if step != nil {
+			steps = append(steps, *step)
+		}
 	}
+}
+
+// parseOneStep reads the next step from the token stream.
+// It returns (step, done=true, nil) when no step token is available.
+// The step pointer is nil when the token produced no AST node (never
+// happens in practice, but kept for type safety).
+func (p *parser) parseOneStep() (*ast.Step, bool, error) {
+	peek := p.lex.Peek()
+
+	if isBareStepToken(peek) {
+		tok := p.lex.Next()
+		step := ast.Step{
+			Kind: ast.StepAction,
+			Text: strings.TrimSpace(tok.Literal),
+			Position: ast.Position{
+				Line:   tok.Line,
+				Column: tok.Column,
+			},
+		}
+
+		return &step, false, nil
+	}
+
+	if !isIndentToken(peek) {
+		return nil, true, nil
+	}
+
+	return p.parseIndentedStep()
+}
+
+// parseIndentedStep consumes a TokenIndent, reads the following keyword
+// token, and returns the assembled ast.Step. For bare text lines (where
+// the keyword token is TokenIllegal) it returns an action step directly.
+func (p *parser) parseIndentedStep() (*ast.Step, bool, error) {
+	_ = p.lex.Next() // consume the indent
+
+	kwTok := p.lex.Next()
+
+	kind, bare, err := stepKindFromToken(kwTok)
+	if err != nil {
+		return nil, false, fmt.Errorf(
+			"%s:%d:%d: %w",
+			p.file, kwTok.Line, kwTok.Column, err,
+		)
+	}
+
+	if bare {
+		step := ast.Step{
+			Kind: ast.StepAction,
+			Text: strings.TrimSpace(kwTok.Literal),
+			Position: ast.Position{
+				Line:   kwTok.Line,
+				Column: kwTok.Column,
+			},
+		}
+
+		return &step, false, nil
+	}
+
+	textTok := p.lex.Next()
+	if textTok.Kind != lex.TokenText {
+		return nil, false, fmt.Errorf(
+			"%s:%d:%d: %w after %s, got %s",
+			p.file, textTok.Line, textTok.Column,
+			errExpectedStepText, kwTok.Literal, textTok.Kind,
+		)
+	}
+
+	step := ast.Step{
+		Kind: kind,
+		Text: textTok.Literal,
+		Position: ast.Position{
+			Line:   kwTok.Line,
+			Column: kwTok.Column,
+		},
+	}
+
+	return &step, false, nil
 }
 
 // stepKindFromToken maps a lexer token to the AST StepKind constant. The

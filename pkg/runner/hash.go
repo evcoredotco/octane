@@ -7,6 +7,14 @@ import "crypto/sha256"
 // so that the add-constant linter does not flag the literal 32.
 const sha256DigestSize = sha256.Size
 
+// negativeIntThreshold is the boundary below which an integer is
+// considered negative and must be clamped in safeUint64.
+const negativeIntThreshold = 0
+
+// clampedUint64Zero is the clamped result returned by safeUint64
+// when the input is negative.
+const clampedUint64Zero uint64 = 0
+
 // sha256Of returns the SHA-256 digest of b. It is the single
 // place in the runner that imports crypto/sha256, so the
 // dependency is centralised and easy to audit.
@@ -18,8 +26,8 @@ func sha256Of(b []byte) [sha256DigestSize]byte {
 // If n is negative (which should not occur given validated inputs),
 // it is clamped to 0 to prevent gosec G115 integer overflow issues.
 func safeUint64(n int) uint64 {
-	if n < 0 {
-		return 0
+	if n < negativeIntThreshold {
+		return clampedUint64Zero
 	}
 
 	return uint64(n)

@@ -62,8 +62,8 @@ const (
 	// stepMultiPlaceholderUnquoted is the step text for the multi-placeholder
 	// test (AC3). Values are unquoted so the whitespace-delimited matcher
 	// captures each token without embedded quote characters.
-	stepMultiPlaceholderUnquoted = "the CSMS sends ReserveNow with connectorId 1" +
-		" and idTag X to station CP01 within 30s"
+	stepMultiPlaceholderUnquoted = "the CSMS sends ReserveNow" +
+		" with connectorId 1 and idTag X to station CP01 within 30s"
 
 	// stepIntTypeGood is a step text that satisfies the int placeholder.
 	stepIntTypeGood = "count is 7"
@@ -99,7 +99,8 @@ const (
 	// emptyClosest is the empty string used for NoMatchError.Closest.
 	emptyClosest = ""
 
-	// fmtResolveUnexpectedErr is the format string for unexpected Resolve errors.
+	// fmtResolveUnexpectedErr is the format string for unexpected Resolve
+	// errors.
 	fmtResolveUnexpectedErr = "Resolve: unexpected error: %v"
 
 	// fmtResolveErrType is the format string for unexpected error types from
@@ -149,7 +150,7 @@ func registerDomain16(version api.OCPPVersion) api.Keyword {
 	return registered
 }
 
-// ── Happy path: primitive keyword ─────────────────────────────────────────────
+// ── Happy path: primitive keyword ────────────────────────────────────────────
 
 // Test_registry_Resolve_primitiveKeywordResolvesByStepText verifies that a
 // primitive-layer keyword is matched when the step text satisfies its pattern
@@ -195,7 +196,7 @@ func Test_registry_Resolve_primitiveKeywordResolvesByStepText(t *testing.T) {
 	}
 }
 
-// ── Happy path: domain keyword for matching OCPPVersion ───────────────────────
+// ── Happy path: domain keyword for matching OCPPVersion ──────────────────────
 
 // Test_registry_Resolve_domainKeywordResolvesForMatchingVersion verifies that
 // a domain-layer keyword registered for OCPP 1.6 is matched when the resolver
@@ -238,7 +239,7 @@ func Test_registry_Resolve_domainKeywordResolvesForMatchingVersion(
 	}
 }
 
-// ── AC6: domain wins over primitive for same step text ────────────────────────
+// ── AC6: domain wins over primitive for same step text ───────────────────────
 
 // Test_registry_Resolve_domainWinsOverPrimitiveForSamePattern verifies that
 // when both a domain-layer and a primitive-layer keyword share the same
@@ -260,7 +261,8 @@ func Test_registry_Resolve_domainWinsOverPrimitiveForSamePattern(t *testing.T) {
 
 	if match.Keyword.Layer != api.LayerDomain {
 		t.Errorf(
-			"Match.Keyword.Layer: want LayerDomain (domain wins over primitive), got %v",
+			"Match.Keyword.Layer: want LayerDomain"+
+				" (domain wins over primitive), got %v",
 			match.Keyword.Layer,
 		)
 	}
@@ -316,10 +318,10 @@ func Test_registry_Resolve_domainVersionAgnosticMatchesOCPP16(t *testing.T) {
 	}
 }
 
-// ── AC4: no match → NoMatchError; Closest populated when near pattern exists ───
+// ── AC4: no match → NoMatchError; Closest populated when near pattern ────────
 
-// Test_registry_Resolve_noMatchReturnsNoMatchError verifies that Resolve returns
-// *NoMatchError when the step text matches no registered pattern (AC4).
+// Test_registry_Resolve_noMatchReturnsNoMatchError verifies that Resolve
+// returns *NoMatchError when the step text matches no registered pattern (AC4).
 func Test_registry_Resolve_noMatchReturnsNoMatchError(t *testing.T) {
 	t.Parallel()
 
@@ -379,7 +381,8 @@ func Test_registry_Resolve_noMatchClosestPopulatedWhenNearPatternExists(
 
 	// Register the near-miss pattern. "open connexion" vs "open connection"
 	// has a Levenshtein distance of 2 — well within the threshold of 5.
-	// The step text does not structurally match because "connexion" != "connection".
+	// The step text does not structurally match because
+	// "connexion" != "connection".
 	registerPrimitive(patternNearMiss)
 
 	_, err := Resolve(stepNearMissInput, api.OCPP16)
@@ -391,7 +394,8 @@ func Test_registry_Resolve_noMatchClosestPopulatedWhenNearPatternExists(
 
 	if noMatch.Closest == "" {
 		t.Errorf(
-			"NoMatchError.Closest: want non-empty suggestion for near-miss step %q against pattern %q",
+			"NoMatchError.Closest: want non-empty suggestion for "+
+				"near-miss step %q against pattern %q",
 			stepNearMissInput,
 			patternNearMiss,
 		)
@@ -426,7 +430,7 @@ func Test_registry_Resolve_noMatchClosestEmptyWhenNoNearPattern(t *testing.T) {
 	}
 }
 
-// ── AC5: type coercion failure → TypeMismatchError ──────────────────────────────
+// ── AC5: type coercion failure → TypeMismatchError ───────────────────────────
 
 // Test_registry_Resolve_typeMismatchReturnedForBadIntToken verifies that
 // Resolve returns *TypeMismatchError when the step text supplies a non-integer
@@ -497,7 +501,7 @@ func Test_registry_Resolve_goodIntTokenResolves(t *testing.T) {
 	}
 }
 
-// ── AC3: multi-placeholder step resolves into correctly-bound Args ────────────
+// ── AC3: multi-placeholder step resolves into correctly-bound Args ───────────
 
 // Test_registry_Resolve_multiPlaceholderStepBindsAllArgs verifies that a
 // step with four placeholders (int, string, station, duration) is correctly
@@ -540,7 +544,7 @@ func Test_registry_Resolve_multiPlaceholderStepBindsAllArgs(t *testing.T) {
 		t.Errorf("Args.String(%q): want %q, got %q", "idTag", "X", gotIDTag)
 	}
 
-	// Invariant: station is bound as string "CP01" (station type stores as string).
+	// Invariant: station is bound as string "CP01" (station stores as string).
 	gotStation := match.Args.Station("station")
 	if gotStation != "CP01" {
 		t.Errorf(
@@ -569,7 +573,7 @@ func Test_registry_Resolve_multiPlaceholderStepBindsAllArgs(t *testing.T) {
 	}
 }
 
-// ── Eligibility: empty registry ───────────────────────────────────────────────
+// ── Eligibility: empty registry ──────────────────────────────────────────────
 
 // Test_registry_Resolve_emptyRegistryReturnsNoMatchError verifies that Resolve
 // against an empty registry always returns NoMatchError.
@@ -590,7 +594,7 @@ func Test_registry_Resolve_emptyRegistryReturnsNoMatchError(t *testing.T) {
 	}
 }
 
-// ── Resolution: longer domain pattern beats shorter one ───────────────────────
+// ── Resolution: longer domain pattern beats shorter one ──────────────────────
 
 // Test_registry_Resolve_longerPatternPreferredWithinSameLayer verifies that
 // within the same layer, a longer (more specific) pattern is tried before a
@@ -606,7 +610,8 @@ func Test_registry_Resolve_longerPatternPreferredWithinSameLayer(t *testing.T) {
 	// not affect resolution order.
 	const (
 		shortPattern = "station {s:station} sends BootNotification"
-		longPattern  = "station {s:station} sends BootNotification with reason {r:string}"
+		longPattern  = "station {s:station} sends BootNotification" +
+			" with reason {r:string}"
 	)
 
 	registerPrimitive(shortPattern)
@@ -628,7 +633,7 @@ func Test_registry_Resolve_longerPatternPreferredWithinSameLayer(t *testing.T) {
 	}
 }
 
-// ── NoMatchError.Error() format ─────────────────────────────────────────────────
+// ── NoMatchError.Error() format ──────────────────────────────────────────────
 
 // Test_registry_NoMatchError_errorStringWithoutClosest verifies the error
 // message format when no Closest suggestion is available.
@@ -686,7 +691,7 @@ func Test_registry_NoMatchError_errorStringWithClosest(t *testing.T) {
 	}
 }
 
-// ── TypeMismatchError.Error() format ────────────────────────────────────────────
+// ── TypeMismatchError.Error() format ─────────────────────────────────────────
 
 // Test_registry_TypeMismatchError_errorStringFormat verifies the error message
 // format of TypeMismatchError.

@@ -85,36 +85,21 @@ func Test_runner_RunPerRunPrereqRunsOnce(t *testing.T) {
 	writeFile(t, storyDir+"/pr_dep2.story", storyPerRunDep2)
 	writeFile(t, storyDir+"/pr_dep3.story", storyPerRunDep3)
 
-	cfg := runner.Config{
-		StoryPaths:         []string{storyDir},
-		MaxParallel:        0,
-		LockTimeout:        0,
-		NoWait:             false,
-		ShardIndex:         0,
-		ShardTotal:         0,
-		CacheDir:           "",
-		NoCache:            true,
-		NoTraceOnPass:      false,
-		OCPPVersion:        "",
-		InsecureSkipVerify: false,
-	}
+	cfg := noopCfg(storyDir)
 
 	result, err := runner.Run(context.Background(), cfg)
 	if err != nil {
 		t.Fatalf("runner.Run: %v", err)
 	}
 
-	// Collect prereq entries.
-	var prereqEntries []runner.StoryResult
-
-	for _, sr := range result.Stories {
-		if sr.TestID == "pr_prereq" {
-			prereqEntries = append(prereqEntries, sr)
-		}
-	}
+	prereqEntries := collectByTestID(result.Stories, "pr_prereq")
 
 	// Invariant: per-run prereq must appear exactly once.
-	const expectedPrereqCount = 1
+	const (
+		expectedPrereqCount = 1
+		firstEntry          = 0
+	)
+
 	if len(prereqEntries) != expectedPrereqCount {
 		t.Fatalf(
 			"pr_prereq instance count: want %d, got %d",
@@ -124,28 +109,64 @@ func Test_runner_RunPerRunPrereqRunsOnce(t *testing.T) {
 	}
 
 	// Invariant: the single prereq instance ScopeKey must equal the RunID.
-	prereqScopeKey := prereqEntries[0].ScopeKey
-	if prereqScopeKey != result.RunID {
+	if prereqEntries[firstEntry].ScopeKey != result.RunID {
 		t.Errorf(
 			"pr_prereq ScopeKey: want RunID %q, got %q",
 			result.RunID,
-			prereqScopeKey,
+			prereqEntries[firstEntry].ScopeKey,
 		)
 	}
 
 	// Invariant: prereq must have passed.
-	if prereqEntries[0].Status != runner.StatusPassed {
+	if prereqEntries[firstEntry].Status != runner.StatusPassed {
 		t.Errorf(
 			"pr_prereq: want StatusPassed, got %s",
-			prereqEntries[0].Status,
+			prereqEntries[firstEntry].Status,
 		)
 	}
 
-	// Invariant: all three dependents must have passed.
-	dependentIDs := []string{"pr_dep1", "pr_dep2", "pr_dep3"}
-	byID := storyResultsByTestID(result.Stories)
+	assertDependentsPassed(
+		t, result.Stories, []string{"pr_dep1", "pr_dep2", "pr_dep3"},
+	)
 
-	for _, storyID := range dependentIDs {
+	// Invariant: exactly 4 stories total (1 prereq + 3 dependents).
+	const expectedTotal = 4
+	if len(result.Stories) != expectedTotal {
+		t.Errorf(
+			"total stories: want %d, got %d",
+			expectedTotal,
+			len(result.Stories),
+		)
+	}
+}
+
+// collectByTestID returns all StoryResult entries whose TestID equals id.
+func collectByTestID(
+	stories []runner.StoryResult,
+	id string,
+) []runner.StoryResult {
+	var out []runner.StoryResult
+
+	for _, sr := range stories {
+		if sr.TestID == id {
+			out = append(out, sr)
+		}
+	}
+
+	return out
+}
+
+// assertDependentsPassed checks that each id in ids is present and passed.
+func assertDependentsPassed(
+	t *testing.T,
+	stories []runner.StoryResult,
+	ids []string,
+) {
+	t.Helper()
+
+	byID := storyResultsByTestID(stories)
+
+	for _, storyID := range ids {
 		storyResult, ok := byID[storyID]
 		if !ok {
 			t.Errorf("story %q missing from results", storyID)
@@ -160,15 +181,5 @@ func Test_runner_RunPerRunPrereqRunsOnce(t *testing.T) {
 				storyResult.Status,
 			)
 		}
-	}
-
-	// Invariant: exactly 4 stories total (1 prereq + 3 dependents).
-	const expectedTotal = 4
-	if len(result.Stories) != expectedTotal {
-		t.Errorf(
-			"total stories: want %d, got %d",
-			expectedTotal,
-			len(result.Stories),
-		)
 	}
 }

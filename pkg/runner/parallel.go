@@ -1,16 +1,13 @@
-// Package runner — T-005-44: worker pool implementation.
-//
-// This file contains the workerPool type which manages N goroutines
-// that consume story execution requests from a channel and report
-// their results back to the scheduler via a completion channel.
-// The model follows ADR 0019 §"Worker-pool model".
-
 package runner
 
 import (
 	"context"
 	"sync"
 )
+
+// minWorkerCount is the minimum number of workers in the pool. A pool
+// with zero or negative count falls back to sequential execution.
+const minWorkerCount = 1
 
 // workItem is a single unit of work dispatched from the scheduler
 // to a worker goroutine. It carries the node identifier and the
@@ -62,7 +59,7 @@ func newWorkerPool(
 	workerCount int,
 ) *workerPool {
 	if workerCount <= 0 {
-		workerCount = 1
+		workerCount = minWorkerCount
 	}
 
 	// Buffer the completion channel so workers never block writing

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -18,9 +19,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// runFlags holds the parsed values of the flags specific to the
+// Sentinel errors for parseShard. These are package-level so callers can
+// use errors.Is to distinguish error kinds.
+var (
+	errShardBadFormat  = errors.New("expected format N/M (e.g. \"1/4\")")
+	errShardTotalRange = errors.New("shard total must be >= 1")
+	errShardIndexRange = errors.New("shard index out of range")
+)
+
+// runFlagsT holds the parsed values of the flags specific to the
 // "octane run" subcommand.
-var runFlags struct {
+type runFlagsT struct {
 	maxParallel        int
 	shard              string
 	ocppVersion        string
@@ -32,11 +41,44 @@ var runFlags struct {
 	noTraceOnPass      bool
 }
 
+const (
+	// shardParts is the expected number of parts in a "N/M" shard value.
+	shardParts = 2
+
+	// shardMinValue is the minimum valid value for shard index or total.
+	shardMinValue = 1
+
+	// defaultReportDir is the default value for the --report-dir flag.
+	defaultReportDir = "reports/"
+
+	// emptyFlagValue is the zero string used to detect unset string flags.
+	emptyFlagValue = ""
+
+	// zeroIntDefault is the zero default for integer flags (meaning
+	// "inherit from config" for max-parallel and lock-timeout).
+	zeroIntDefault = 0
+
+	// exactlyOneArg is the expected positional argument count for
+	// subcommands that require exactly one argument.
+	exactlyOneArg = 1
+
+	// firstArgIndex is the index of the first positional argument in
+	// the args slice passed to RunE.
+	firstArgIndex = 0
+)
+
+// newRunCmd constructs and returns the "octane run" subcommand.
+// globalFlags is the parent global-flags struct populated by cobra before
+// RunE executes.
+//
 //nolint:exhaustruct // cobra.Command has many optional fields
-var runCmd = &cobra.Command{
-	Use:   "run [story-paths...]",
-	Short: "Run .story conformance test suites",
-	Long: `Run discovers and executes .story files against a CSMS endpoint.
+func newRunCmd(globalFlags *globalFlagsT) *cobra.Command {
+	flags := &runFlagsT{}
+
+	cmd := &cobra.Command{
+		Use:   "run [story-paths...]",
+		Short: "Run .story conformance test suites",
+		Long: `Run discovers and executes .story files against a CSMS endpoint.
 
 Story paths may be files or directories. When no paths are given,
 octane searches the stories_dir configured in octane.yml (default:
@@ -45,117 +87,111 @@ octane searches the stories_dir configured in octane.yml (default:
 Sharding splits the story set across CI workers:
   --shard 1/4   run the first quarter of stories
   --shard 2/4   run the second quarter, etc.`,
-	RunE: runStories,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runStories(cmd, args, globalFlags, flags)
+		},
+	}
+
+	registerRunFlags(cmd, flags)
+
+	return cmd
 }
 
-func init() {
-	flags := runCmd.Flags()
+// registerRunFlags adds all "octane run" subcommand flags to cmd and
+// binds their values into flags.
+func registerRunFlags(cmd *cobra.Command, flags *runFlagsT) {
+	registerRunExecutionFlags(cmd, flags)
+	registerRunOutputFlags(cmd, flags)
+}
 
-	flags.IntVar(
-		&runFlags.maxParallel,
+// registerRunExecutionFlags registers the execution-control flags for
+// "octane run": parallelism, sharding, OCPP version, lock timeout, and
+// TLS settings.
+func registerRunExecutionFlags(cmd *cobra.Command, flags *runFlagsT) {
+	cmdFlags := cmd.Flags()
+
+	cmdFlags.IntVar(
+		&flags.maxParallel,
 		"max-parallel",
-		0,
+		zeroIntDefault,
 		"maximum number of stories to run concurrently",
 	)
 
-	flags.StringVar(
-		&runFlags.shard,
+	cmdFlags.StringVar(
+		&flags.shard,
 		"shard",
-		"",
+		emptyFlagValue,
 		`shard index in "N/M" format (e.g. "1/4" for the first of four shards)`,
 	)
 
-	flags.StringVar(
-		&runFlags.ocppVersion,
+	cmdFlags.StringVar(
+		&flags.ocppVersion,
 		"ocpp-version",
-		"",
-		"restrict run to stories declaring this OCPP version (e.g. \"1.6\")",
+		emptyFlagValue,
+		`restrict run to stories declaring this OCPP version (e.g. "1.6")`,
 	)
 
-	flags.DurationVar(
-		&runFlags.lockTimeout,
+	cmdFlags.DurationVar(
+		&flags.lockTimeout,
 		"lock-timeout",
-		0,
+		zeroIntDefault,
 		"maximum wait time to acquire a cache lock (default: 60s)",
 	)
 
-	flags.BoolVar(
-		&runFlags.noWait,
+	cmdFlags.BoolVar(
+		&flags.noWait,
 		"no-wait",
 		false,
 		"fail immediately when a cache lock is busy instead of waiting",
 	)
 
-	flags.BoolVar(
-		&runFlags.insecureSkipVerify,
+	cmdFlags.BoolVar(
+		&flags.insecureSkipVerify,
 		"insecure-skip-verify",
 		false,
 		"disable TLS certificate verification (WARNING: insecure)",
 	)
+}
 
-	flags.StringVar(
-		&runFlags.failOn,
+// registerRunOutputFlags registers the output and reporting flags for
+// "octane run": fail-on threshold, report directory, and trace settings.
+func registerRunOutputFlags(cmd *cobra.Command, flags *runFlagsT) {
+	cmdFlags := cmd.Flags()
+
+	cmdFlags.StringVar(
+		&flags.failOn,
 		"fail-on",
-		"",
-		`exit with failure when threshold is reached: "any" (default) or "major"`,
+		emptyFlagValue,
+		`exit with failure when reached: "any" (default) or "major"`,
 	)
 
-	flags.StringVar(
-		&runFlags.reportDir,
+	cmdFlags.StringVar(
+		&flags.reportDir,
 		"report-dir",
-		"reports/",
+		defaultReportDir,
 		"directory in which per-run report subdirectories are written",
 	)
 
-	flags.BoolVar(
-		&runFlags.noTraceOnPass,
+	cmdFlags.BoolVar(
+		&flags.noTraceOnPass,
 		"no-trace-on-pass",
 		false,
 		"omit wire-trace data from reports for stories that passed",
 	)
-
-	rootCmd.AddCommand(runCmd)
 }
 
 // runStories is the RunE function for "octane run". It loads
 // configuration, resolves flags over the config, builds a
 // runner.Config, and delegates to runner.Run.
-func runStories(_ *cobra.Command, storyPaths []string) error {
-	cfg, err := config.Load(globalFlags.configPath)
-	if err != nil {
-		dieErrf(
-			exitcode.ConfigError,
-			"octane: %q: config error: %v\n",
-			globalFlags.configPath,
-			err,
-		)
+func runStories(
+	_ *cobra.Command,
+	storyPaths []string,
+	globalFlags *globalFlagsT,
+	flags *runFlagsT,
+) error {
+	cfg, shard := loadRunConfig(globalFlags, flags)
 
-		return nil
-	}
-
-	cfg = config.ApplyEnv(cfg)
-	cfg = applyRunFlagOverrides(cfg)
-
-	if cfg.InsecureSkipVerify {
-		_, _ = fmt.Fprintln(
-			os.Stderr,
-			"WARNING: --insecure-skip-verify is set;"+
-				" TLS certificate verification is disabled",
-		)
-	}
-
-	shardIndex, shardTotal, shardErr := parseShard(runFlags.shard)
-	if shardErr != nil {
-		dieErrf(
-			exitcode.ConfigError,
-			"octane: invalid --shard value: %v\n",
-			shardErr,
-		)
-
-		return nil
-	}
-
-	if len(storyPaths) == 0 {
+	if len(storyPaths) == zeroIntDefault {
 		storyPaths = []string{cfg.StoriesDir}
 	}
 
@@ -163,12 +199,12 @@ func runStories(_ *cobra.Command, storyPaths []string) error {
 		StoryPaths:         storyPaths,
 		MaxParallel:        cfg.MaxParallel,
 		LockTimeout:        cfg.LockTimeout,
-		NoWait:             runFlags.noWait,
-		ShardIndex:         shardIndex,
-		ShardTotal:         shardTotal,
+		NoWait:             flags.noWait,
+		ShardIndex:         shard.index,
+		ShardTotal:         shard.total,
 		CacheDir:           cfg.CacheDir,
 		NoCache:            globalFlags.noCache,
-		NoTraceOnPass:      runFlags.noTraceOnPass,
+		NoTraceOnPass:      flags.noTraceOnPass,
 		OCPPVersion:        cfg.OCPPVersion,
 		InsecureSkipVerify: cfg.InsecureSkipVerify,
 	}
@@ -180,87 +216,144 @@ func runStories(_ *cobra.Command, storyPaths []string) error {
 		return nil
 	}
 
-	_, _ = fmt.Fprintf(
-		os.Stdout,
-		"passed=%d failed=%d skipped=%d cache-hits=%d\n",
-		result.Summary.Passed,
-		result.Summary.Failed,
-		result.Summary.Skipped,
-		result.Summary.CacheHits,
-	)
+	printRunSummary(result.Summary)
+	writeReports(result, flags)
 
-	if runFlags.reportDir != "" {
-		reportPath := filepath.Join(runFlags.reportDir, result.RunID)
-
-		jsonOpts := reportpkg.JSONOptions{
-			NoTraceOnPass: runFlags.noTraceOnPass,
-			OctaneVersion: version,
-		}
-
-		writeErr := reportjson.WriteJSON(result, reportPath, jsonOpts)
-		if writeErr != nil {
-			_, _ = fmt.Fprintf(
-				os.Stderr,
-				"octane: warning: JSON report write failed: %v\n",
-				writeErr,
-			)
-		}
-
-		xmlOpts := reportpkg.RobotXMLOptions{ //nolint:exhaustruct // SuiteName defaults to "OCTANE Conformance"
-		}
-
-		writeErr = robotxml.WriteRobotXML(result, reportPath, xmlOpts)
-		if writeErr != nil {
-			_, _ = fmt.Fprintf(
-				os.Stderr,
-				"octane: warning: Robot XML report write failed: %v\n",
-				writeErr,
-			)
-		}
-
-		_, _ = fmt.Fprintf(os.Stdout, "report-dir=%s\n", reportPath)
-	}
-
-	if result.Summary.Failed > 0 {
-		exitcode.Exec(exitcode.TestFailed)
+	if result.Summary.Failed > zeroIntDefault {
+		dieErrf(exitcode.TestFailed, emptyFlagValue)
 	}
 
 	return nil
+}
+
+// loadRunConfig loads, applies env vars, and overrides the config, then
+// parses the shard flag. On any error it calls dieErrf (which panics) so
+// the caller never receives invalid values. It returns the effective config
+// and a zero shardSpec when sharding is disabled.
+func loadRunConfig(
+	globalFlags *globalFlagsT,
+	flags *runFlagsT,
+) (config.Config, shardSpec) {
+	cfg, err := config.Load(globalFlags.configPath)
+	if err != nil {
+		dieErrf(
+			exitcode.ConfigError,
+			"octane: %q: config error: %v\n",
+			globalFlags.configPath,
+			err,
+		)
+	}
+
+	cfg = config.ApplyEnv(cfg)
+	cfg = applyRunFlagOverrides(cfg, globalFlags, flags)
+
+	if cfg.InsecureSkipVerify {
+		_, _ = fmt.Fprintln(
+			os.Stderr,
+			"WARNING: --insecure-skip-verify is set;"+
+				" TLS certificate verification is disabled",
+		)
+	}
+
+	shard, shardErr := parseShard(flags.shard)
+	if shardErr != nil {
+		dieErrf(
+			exitcode.ConfigError,
+			"octane: invalid --shard value: %v\n",
+			shardErr,
+		)
+	}
+
+	return cfg, shard
+}
+
+// printRunSummary writes the one-line result summary to stdout.
+func printRunSummary(summary runner.Summary) {
+	_, _ = fmt.Fprintf(
+		os.Stdout,
+		"passed=%d failed=%d skipped=%d cache-hits=%d\n",
+		summary.Passed,
+		summary.Failed,
+		summary.Skipped,
+		summary.CacheHits,
+	)
+}
+
+// writeReports writes JSON and Robot XML reports when a report dir is
+// configured.
+func writeReports(result *runner.RunResult, flags *runFlagsT) {
+	if flags.reportDir == emptyFlagValue {
+		return
+	}
+
+	reportPath := filepath.Join(flags.reportDir, result.RunID)
+
+	jsonOpts := reportpkg.JSONOptions{
+		NoTraceOnPass: flags.noTraceOnPass,
+		OctaneVersion: version,
+	}
+
+	jsonErr := reportjson.WriteJSON(result, reportPath, jsonOpts)
+	if jsonErr != nil {
+		_, _ = fmt.Fprintf(
+			os.Stderr,
+			"octane: warning: JSON report write failed: %v\n",
+			jsonErr,
+		)
+	}
+
+	// RobotXMLOptions: SuiteName defaults to "OCTANE Conformance".
+	xmlOpts := reportpkg.RobotXMLOptions{} //nolint:exhaustruct
+
+	xmlErr := robotxml.WriteRobotXML(result, reportPath, xmlOpts)
+	if xmlErr != nil {
+		_, _ = fmt.Fprintf(
+			os.Stderr,
+			"octane: warning: Robot XML report write failed: %v\n",
+			xmlErr,
+		)
+	}
+
+	_, _ = fmt.Fprintf(os.Stdout, "report-dir=%s\n", reportPath)
 }
 
 // applyRunFlagOverrides builds a FlagOverrides from the run-specific
 // flags and applies them to cfg. Only non-zero/non-empty flag values
 // are treated as explicit overrides; the zero value of each flag type
 // means the operator did not set that flag.
-func applyRunFlagOverrides(cfg config.Config) config.Config {
+func applyRunFlagOverrides(
+	cfg config.Config,
+	globalFlags *globalFlagsT,
+	flags *runFlagsT,
+) config.Config {
 	var overrides config.FlagOverrides
 
-	if runFlags.maxParallel != 0 {
-		maxParallel := runFlags.maxParallel
+	if flags.maxParallel != zeroIntDefault {
+		maxParallel := flags.maxParallel
 		overrides.MaxParallel = &maxParallel
 	}
 
-	if runFlags.ocppVersion != "" {
-		ocppVersion := runFlags.ocppVersion
+	if flags.ocppVersion != emptyFlagValue {
+		ocppVersion := flags.ocppVersion
 		overrides.OCPPVersion = &ocppVersion
 	}
 
-	if runFlags.lockTimeout != 0 {
-		lockTimeout := runFlags.lockTimeout
+	if flags.lockTimeout != zeroIntDefault {
+		lockTimeout := flags.lockTimeout
 		overrides.LockTimeout = &lockTimeout
 	}
 
-	if runFlags.failOn != "" {
-		failOn := runFlags.failOn
+	if flags.failOn != emptyFlagValue {
+		failOn := flags.failOn
 		overrides.FailOn = &failOn
 	}
 
-	if runFlags.insecureSkipVerify {
+	if flags.insecureSkipVerify {
 		skip := true
 		overrides.InsecureSkipVerify = &skip
 	}
 
-	if globalFlags.cacheDir != "" {
+	if globalFlags.cacheDir != emptyFlagValue {
 		cacheDir := globalFlags.cacheDir
 		overrides.CacheDir = &cacheDir
 	}
@@ -268,50 +361,69 @@ func applyRunFlagOverrides(cfg config.Config) config.Config {
 	return config.Resolve(cfg, overrides)
 }
 
+// shardSpec holds the parsed shard index (zero-based) and total from
+// a "--shard N/M" flag value.
+type shardSpec struct {
+	// index is the zero-based shard index for runner.Config.ShardIndex.
+	index int
+	// total is the shard count for runner.Config.ShardTotal.
+	total int
+}
+
 // parseShard parses the "--shard N/M" flag value. An empty string
-// is valid and returns (0, 0, nil) meaning sharding is disabled.
-// Returns an error when the format is invalid or the values are out
-// of range (N < 1, N > M, M < 1).
-func parseShard(value string) (int, int, error) {
-	if value == "" {
-		return 0, 0, nil
+// is valid and returns a zero shardSpec (sharding disabled). Returns
+// an error when the format is invalid or values are out of range
+// (N < 1, N > M, M < 1).
+func parseShard(value string) (shardSpec, error) {
+	zeroShard := shardSpec{index: zeroIntDefault, total: zeroIntDefault}
+
+	if value == emptyFlagValue {
+		return zeroShard, nil
 	}
 
-	parts := strings.SplitN(value, "/", 2) //nolint:mnd // 2 parts: N and M
-	if len(
-		parts,
-	) != 2 { //nolint:mnd // exactly 2 parts required
-		return 0, 0, fmt.Errorf(
-			"expected format N/M (e.g. \"1/4\"), got %q",
-			value,
-		)
+	parts := strings.SplitN(value, "/", shardParts)
+	if len(parts) != shardParts {
+		return zeroShard, errShardFormat(value)
 	}
 
 	numerator, parseErr := strconv.Atoi(parts[0])
 	if parseErr != nil {
-		return 0, 0, fmt.Errorf("shard index %q is not an integer", parts[0])
+		return zeroShard, fmt.Errorf("shard index %q: %w", parts[0], parseErr)
 	}
 
 	denominator, parseErr := strconv.Atoi(parts[1])
 	if parseErr != nil {
-		return 0, 0, fmt.Errorf("shard total %q is not an integer", parts[1])
+		return zeroShard, fmt.Errorf("shard total %q: %w", parts[1], parseErr)
 	}
 
-	if denominator < 1 {
-		return 0, 0, fmt.Errorf(
-			"shard total must be >= 1, got %d",
-			denominator,
-		)
+	if denominator < shardMinValue {
+		return zeroShard, errShardTotal(denominator)
 	}
 
-	if numerator < 1 || numerator > denominator {
-		return 0, 0, fmt.Errorf(
-			"shard index must be between 1 and %d, got %d",
-			denominator,
-			numerator,
-		)
+	if numerator < shardMinValue || numerator > denominator {
+		return zeroShard, errShardIndex(numerator, denominator)
 	}
 
 	// runner.Config uses zero-based ShardIndex.
-	return numerator - 1, denominator, nil
+	return shardSpec{index: numerator - shardMinValue, total: denominator}, nil
+}
+
+// errShardFormat wraps errShardBadFormat with the offending value.
+func errShardFormat(value string) error {
+	return fmt.Errorf("got %q: %w", value, errShardBadFormat)
+}
+
+// errShardTotal wraps errShardTotalRange with the actual denominator.
+func errShardTotal(denominator int) error {
+	return fmt.Errorf("got %d: %w", denominator, errShardTotalRange)
+}
+
+// errShardIndex wraps errShardIndexRange with the actual numerator and range.
+func errShardIndex(numerator, denominator int) error {
+	return fmt.Errorf(
+		"index %d not in [1, %d]: %w",
+		numerator,
+		denominator,
+		errShardIndexRange,
+	)
 }

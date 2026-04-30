@@ -24,7 +24,7 @@ import (
 	"github.com/evcoreco/octane/pkg/keywords/registry"
 )
 
-// ── Named constants ───────────────────────────────────────────────────────────
+// ── Named constants ──────────────────────────────────────────────────────────
 
 const (
 	// fixturePrefix is the shared prefix for precedence fixture patterns.
@@ -50,7 +50,7 @@ const (
 	msgResolveUnexpectedErr = "registry.Resolve: unexpected error: %v"
 )
 
-// ── init: register fixture keywords ──────────────────────────────────────────
+// ── fixture helpers ──────────────────────────────────────────────────────────
 
 // fixtureNoopFunc is the Func shared by all fixture keywords.  Its body is
 // intentionally empty; the test only cares about which keyword the resolver
@@ -59,9 +59,10 @@ func fixtureNoopFunc(_ context.Context, _ api.State, _ api.Args) error {
 	return nil
 }
 
-func init() {
-	// Register the fixture primitive keyword.  This runs once at package
-	// init time, before any test function executes.
+// TestMain registers fixture keywords once before any test in this package
+// runs, replacing the former init() to satisfy gochecknoinits.
+func TestMain(m *testing.M) {
+	// Register the fixture primitive keyword.
 	registry.Register(api.Keyword{
 		Pattern:     patternPrecedenceFixture,
 		Layer:       api.LayerPrimitive,
@@ -78,9 +79,11 @@ func init() {
 		OCPPVersion: api.OCPP16,
 		Func:        fixtureNoopFunc,
 	})
+
+	m.Run()
 }
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
+// ── Tests ────────────────────────────────────────────────────────────────────
 
 // Test_primitive_precedence_domainWinsForOCPP16 verifies that when the
 // resolver runs for OCPP 1.6 and both a domain keyword (OCPP16-scoped) and a
@@ -142,7 +145,8 @@ func Test_primitive_precedence_argsCorrectlyBound(t *testing.T) {
 func Test_primitive_precedence_domainPatternString(t *testing.T) {
 	t.Parallel()
 
-	// Invariant: the returned Match carries the exact registered pattern string.
+	// Invariant: the returned Match carries the exact registered
+	// pattern string.
 	match, err := registry.Resolve(stepPrecedenceFixture, api.OCPP16)
 	if err != nil {
 		t.Fatalf(msgResolveUnexpectedErr, err)

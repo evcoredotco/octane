@@ -145,7 +145,7 @@ func Test_primitive_closeStation_LogsCloseMessage(t *testing.T) {
 	}
 }
 
-// ── test-local helpers ────────────────────────────────────────────────────────
+// ── test-local helpers ───────────────────────────────────────────────────────
 
 // errCloseStub is the sentinel error returned by closeErrorStation.Close().
 var errCloseStub = errors.New("stub: Close failed")
@@ -200,4 +200,4 @@ func (s *closeErrorStation) IsOpen() bool {
 //       an error should be provided.
 //
 // Until one of these is resolved, the error-from-missing-handle branch in
-// close.go, status.go is unreachable from black-box unit tests using mock.State.
+// close.go and status.go are unreachable from black-box tests via mock.State.

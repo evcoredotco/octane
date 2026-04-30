@@ -112,55 +112,46 @@ const (
 	TokenText
 )
 
+// tokenKindName returns the human-readable name for kind, or "Unknown". Using
+// a function-local map avoids a long switch and brings the cyclomatic
+// complexity below the configured limit without introducing a package-level
+// variable.
+func tokenKindName(kind TokenKind) string {
+	names := map[TokenKind]string{
+		TokenIllegal:     "Illegal",
+		TokenEOF:         "EOF",
+		TokenNewline:     "Newline",
+		TokenComment:     "Comment",
+		TokenIndent:      "Indent",
+		TokenMeta:        "Meta",
+		TokenBackground:  "Background",
+		TokenSetup:       "Setup",
+		TokenScenario:    "Scenario",
+		TokenTeardown:    "Teardown",
+		TokenParallel:    "Parallel",
+		TokenEndParallel: "EndParallel",
+		TokenGiven:       "Given",
+		TokenWhen:        "When",
+		TokenThen:        "Then",
+		TokenAnd:         "And",
+		TokenBut:         "But",
+		TokenMetaKey:     "MetaKey",
+		TokenColon:       "Colon",
+		TokenValue:       "Value",
+		TokenText:        "Text",
+	}
+
+	if name, ok := names[kind]; ok {
+		return name
+	}
+
+	return "Unknown"
+}
+
 // String returns a human-readable name for the token kind. The returned
 // string is useful in error messages and debug output.
 func (k TokenKind) String() string {
-	switch k {
-	case TokenIllegal:
-		return "Illegal"
-	case TokenEOF:
-		return "EOF"
-	case TokenNewline:
-		return "Newline"
-	case TokenComment:
-		return "Comment"
-	case TokenIndent:
-		return "Indent"
-	case TokenMeta:
-		return "Meta"
-	case TokenBackground:
-		return "Background"
-	case TokenSetup:
-		return "Setup"
-	case TokenScenario:
-		return "Scenario"
-	case TokenTeardown:
-		return "Teardown"
-	case TokenParallel:
-		return "Parallel"
-	case TokenEndParallel:
-		return "EndParallel"
-	case TokenGiven:
-		return "Given"
-	case TokenWhen:
-		return "When"
-	case TokenThen:
-		return "Then"
-	case TokenAnd:
-		return "And"
-	case TokenBut:
-		return "But"
-	case TokenMetaKey:
-		return "MetaKey"
-	case TokenColon:
-		return "Colon"
-	case TokenValue:
-		return "Value"
-	case TokenText:
-		return "Text"
-	default:
-		return "Unknown"
-	}
+	return tokenKindName(k)
 }
 
 // Token is the smallest unit produced by the lexer. Each token carries its
@@ -337,32 +328,47 @@ func (l *lexer) scanIndentedLine() Token {
 	count := l.countLeadingSpaces()
 
 	if count < indentWidth {
-		raw := l.src[l.pos : l.pos+count]
-
-		for range count {
-			l.advance()
-		}
-
-		// Also consume the rest of the malformed line so the lexer
-		// recovers cleanly at the next line boundary.
-		start := l.pos
-
-		for l.pos < len(l.src) && l.src[l.pos] != '\n' {
-			l.advance()
-		}
-
-		literal := string(raw) + string(l.src[start:l.pos])
-		l.consumeNewline()
-
-		return Token{
-			Kind:    TokenIllegal,
-			Literal: literal,
-			Line:    startLine,
-			Column:  startCol,
-		}
+		return l.scanUnderIndented(startLine, startCol, count)
 	}
 
-	// Consume ALL leading spaces; the literal records the full depth.
+	return l.scanProperlyIndented(startLine, startCol, count)
+}
+
+// scanUnderIndented handles a line with fewer than four leading spaces, which
+// is not a valid indent level. It consumes the malformed line and returns
+// TokenIllegal.
+func (l *lexer) scanUnderIndented(
+	startLine, startCol, count int,
+) Token {
+	raw := l.src[l.pos : l.pos+count]
+
+	for range count {
+		l.advance()
+	}
+
+	start := l.pos
+
+	for l.pos < len(l.src) && l.src[l.pos] != '\n' {
+		l.advance()
+	}
+
+	literal := string(raw) + string(l.src[start:l.pos])
+	l.consumeNewline()
+
+	return Token{
+		Kind:    TokenIllegal,
+		Literal: literal,
+		Line:    startLine,
+		Column:  startCol,
+	}
+}
+
+// scanProperlyIndented handles a line with at least four leading spaces.
+// It dispatches to blank-line, comment, step-keyword, or meta-entry
+// handling.
+func (l *lexer) scanProperlyIndented(
+	startLine, startCol, count int,
+) Token {
 	indentLiteral := strings.Repeat(" ", count)
 
 	for range count {
@@ -395,10 +401,10 @@ func (l *lexer) scanIndentedLine() Token {
 	}
 
 	// Try step keywords first.
-	if kwTok, textTok, matched := l.tryStepKeyword(); matched {
-		l.enqueue(textTok)
+	if res := l.tryStepKeyword(); res.matched {
+		l.enqueue(res.textTok)
 
-		return l.withIndentQueued(indentTok, kwTok)
+		return l.withIndentQueued(indentTok, res.keywordTok)
 	}
 
 	// Otherwise treat as a meta entry: Key: Value.
@@ -414,11 +420,17 @@ func (l *lexer) withIndentQueued(indentTok, kwTok Token) Token {
 	return indentTok
 }
 
+// stepMatchResult carries the result of a step-keyword match attempt.
+type stepMatchResult struct {
+	keywordTok Token
+	textTok    Token
+	matched    bool
+}
+
 // tryStepKeyword checks whether the current position starts with one of
 // the five step keywords. If so, it consumes the keyword and the
-// following step text up to EOL and returns the keyword token, text
-// token, and true.
-func (l *lexer) tryStepKeyword() (kwTok, textTok Token, matched bool) {
+// following step text up to EOL and returns the populated stepMatchResult.
+func (l *lexer) tryStepKeyword() stepMatchResult {
 	type stepEntry struct {
 		text string
 		kind TokenKind
@@ -433,49 +445,71 @@ func (l *lexer) tryStepKeyword() (kwTok, textTok Token, matched bool) {
 	}
 
 	for _, step := range steps {
-		if !l.hasPrefix(step.text) {
-			continue
+		if res := l.matchStepKeyword(step.text, step.kind); res.matched {
+			return res
 		}
-
-		// Ensure the keyword is followed by a space or end-of-line,
-		// not by an arbitrary identifier character.
-		afterKeyword := l.pos + len(step.text)
-		if afterKeyword < len(l.src) &&
-			l.src[afterKeyword] != ' ' &&
-			l.src[afterKeyword] != '\n' {
-			continue
-		}
-
-		kwLine, kwCol := l.line, l.col
-		l.consumeBytes(len(step.text))
-
-		// Consume the single separating space if present.
-		if l.pos < len(l.src) && l.src[l.pos] == ' ' {
-			l.advance()
-		}
-
-		kwTok = Token{
-			Kind:    step.kind,
-			Literal: step.text,
-			Line:    kwLine,
-			Column:  kwCol,
-		}
-		textTok = l.scanToEOLasText()
-
-		return kwTok, textTok, true
 	}
 
-	return Token{
-			Kind:    TokenIllegal,
-			Literal: emptyLiteral,
-			Line:    initialPos,
-			Column:  initialPos,
-		}, Token{
-			Kind:    TokenIllegal,
-			Literal: emptyLiteral,
-			Line:    initialPos,
-			Column:  initialPos,
-		}, false
+	illegal := Token{
+		Kind:    TokenIllegal,
+		Literal: emptyLiteral,
+		Line:    initialPos,
+		Column:  initialPos,
+	}
+
+	return stepMatchResult{keywordTok: illegal, textTok: illegal, matched: false}
+}
+
+// matchStepKeyword attempts to match a single step keyword at the current
+// position. It returns a stepMatchResult with matched=true on success.
+func (l *lexer) matchStepKeyword(
+	text string,
+	kind TokenKind,
+) stepMatchResult {
+	noMatch := Token{
+		Kind:    TokenIllegal,
+		Literal: emptyLiteral,
+		Line:    initialPos,
+		Column:  initialPos,
+	}
+
+	if !l.hasPrefix(text) {
+		return stepMatchResult{
+			keywordTok: noMatch,
+			textTok:    noMatch,
+			matched:    false,
+		}
+	}
+
+	// Ensure the keyword is followed by a space or end-of-line.
+	afterKeyword := l.pos + len(text)
+	if afterKeyword < len(l.src) &&
+		l.src[afterKeyword] != ' ' &&
+		l.src[afterKeyword] != '\n' {
+		return stepMatchResult{
+			keywordTok: noMatch,
+			textTok:    noMatch,
+			matched:    false,
+		}
+	}
+
+	kwLine, kwCol := l.line, l.col
+	l.consumeBytes(len(text))
+
+	// Consume the single separating space if present.
+	if l.pos < len(l.src) && l.src[l.pos] == ' ' {
+		l.advance()
+	}
+
+	kwTok := Token{
+		Kind:    kind,
+		Literal: text,
+		Line:    kwLine,
+		Column:  kwCol,
+	}
+	textTok := l.scanToEOLasText()
+
+	return stepMatchResult{keywordTok: kwTok, textTok: textTok, matched: true}
 }
 
 // scanMetaEntry scans a meta-entry line of the form "Key: Value" after
@@ -487,37 +521,10 @@ func (l *lexer) scanMetaEntry(indentTok Token) Token {
 	keyLine, keyCol := l.line, l.col
 	start := l.pos
 
-	// Scan forward to find ':'.
-	colonPos := noColon
-
-	srcLen := len(l.src)
-	for scanIdx := l.pos; scanIdx < srcLen; scanIdx++ {
-		if l.src[scanIdx] == '\n' {
-			break
-		}
-
-		if l.src[scanIdx] == ':' {
-			colonPos = scanIdx
-
-			break
-		}
-	}
+	colonPos := l.findColonOnLine()
 
 	if colonPos < 0 {
-		// No colon — the whole rest of line is illegal content.
-		for l.pos < len(l.src) && l.src[l.pos] != '\n' {
-			l.advance()
-		}
-
-		literal := string(l.src[start:l.pos])
-		l.consumeNewline()
-
-		return Token{
-			Kind:    TokenIllegal,
-			Literal: literal,
-			Line:    keyLine,
-			Column:  keyCol,
-		}
+		return l.scanIllegalLineFrom(start, keyLine, keyCol)
 	}
 
 	// Consume up to (but not including) the colon.
@@ -565,6 +572,43 @@ func (l *lexer) scanMetaEntry(indentTok Token) Token {
 	return indentTok
 }
 
+// findColonOnLine scans forward from the current position to find the first
+// ':' character before the end of the current line. It returns the byte
+// index of the colon, or noColon (-1) when none is found.
+func (l *lexer) findColonOnLine() int {
+	srcLen := len(l.src)
+
+	for scanIdx := l.pos; scanIdx < srcLen; scanIdx++ {
+		if l.src[scanIdx] == '\n' {
+			break
+		}
+
+		if l.src[scanIdx] == ':' {
+			return scanIdx
+		}
+	}
+
+	return noColon
+}
+
+// scanIllegalLineFrom consumes the rest of the current line starting from
+// start and returns a TokenIllegal.
+func (l *lexer) scanIllegalLineFrom(start, line, col int) Token {
+	for l.pos < len(l.src) && l.src[l.pos] != '\n' {
+		l.advance()
+	}
+
+	literal := string(l.src[start:l.pos])
+	l.consumeNewline()
+
+	return Token{
+		Kind:    TokenIllegal,
+		Literal: literal,
+		Line:    line,
+		Column:  col,
+	}
+}
+
 // scanSectionLine handles an unindented line. It tries to match one of
 // the section-level keywords. After the keyword it may find a colon and
 // trailing text (Scenario lines). Unknown content produces TokenIllegal.
@@ -601,41 +645,47 @@ func (l *lexer) scanSectionLine() Token {
 			Column:  kwCol,
 		}
 
-		// If the rest of the line begins with ':', emit Colon and
-		// optionally a text token (used for "Scenario: title").
-		if l.pos < len(l.src) && l.src[l.pos] == ':' {
-			colonLine, colonCol := l.line, l.col
-			l.advance() // consume ':'
-
-			colonTok := Token{
-				Kind:    TokenColon,
-				Literal: ":",
-				Line:    colonLine,
-				Column:  colonCol,
-			}
-
-			// Skip optional space after colon.
-			if l.pos < len(l.src) && l.src[l.pos] == ' ' {
-				l.advance()
-			}
-
-			textTok := l.scanToEOLasText()
-			l.enqueue(colonTok, textTok)
-		} else {
-			// No colon — consume the rest of the line silently
-			// (e.g. "Meta\n", "Background\n").
-			for l.pos < len(l.src) && l.src[l.pos] != '\n' {
-				l.advance()
-			}
-
-			l.consumeNewline()
-		}
+		l.consumeSectionLineRemainder()
 
 		return kwTok
 	}
 
 	// Unknown unindented content.
 	return l.scanIllegalToEOL(kwLine, kwCol)
+}
+
+// consumeSectionLineRemainder handles the rest of an unindented section-
+// keyword line. If the next byte is ':' it emits TokenColon and TokenText;
+// otherwise it silently consumes up to the newline.
+func (l *lexer) consumeSectionLineRemainder() {
+	if l.pos >= len(l.src) || l.src[l.pos] != ':' {
+		// No colon — consume the rest of the line silently.
+		for l.pos < len(l.src) && l.src[l.pos] != '\n' {
+			l.advance()
+		}
+
+		l.consumeNewline()
+
+		return
+	}
+
+	colonLine, colonCol := l.line, l.col
+	l.advance() // consume ':'
+
+	colonTok := Token{
+		Kind:    TokenColon,
+		Literal: ":",
+		Line:    colonLine,
+		Column:  colonCol,
+	}
+
+	// Skip optional space after colon.
+	if l.pos < len(l.src) && l.src[l.pos] == ' ' {
+		l.advance()
+	}
+
+	textTok := l.scanToEOLasText()
+	l.enqueue(colonTok, textTok)
 }
 
 // scanToEOLasText reads from the current position to the end of the line,

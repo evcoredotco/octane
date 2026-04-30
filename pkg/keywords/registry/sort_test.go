@@ -14,7 +14,7 @@ import (
 	"github.com/evcoreco/octane/pkg/keywords/api"
 )
 
-// ── constants ─────────────────────────────────────────────────────────────────
+// ── constants ────────────────────────────────────────────────────────────────
 
 const (
 	// sortTestSeed is the fixed RNG seed that makes the registration
@@ -25,15 +25,32 @@ const (
 	// determinism test. Fifty covers all (Layer × OCPPVersion) buckets
 	// multiple times and exercises the within-bucket lexicographic sort.
 	keywordCount = 50
+
+	// shuffleStart is the starting index for the Fisher-Yates shuffle
+	// upper bound: shuffle begins from keywordCount-1 and stops when
+	// idx > shuffleStop.
+	shuffleStop = 0
+
+	// shuffleIncrement is the step added to idx when selecting the
+	// random swap partner (idx+shuffleIncrement).
+	shuffleIncrement = 1
+
+	// sortStartIdx is the first index checked by isSortedByLayerVersionPattern;
+	// pairs are checked starting at [1] vs [0].
+	sortStartIdx = 1
 )
 
-// layerValues enumerates the two legal Layer values in ascending order.
-var layerValues = []api.Layer{api.LayerPrimitive, api.LayerDomain}
+// layerValues returns the two legal Layer values in ascending order.
+func layerValues() []api.Layer {
+	return []api.Layer{api.LayerPrimitive, api.LayerDomain}
+}
 
-// versionValues enumerates the supported OCPPVersion values.
-var versionValues = []api.OCPPVersion{api.OCPP16}
+// versionValues returns the supported OCPPVersion values.
+func versionValues() []api.OCPPVersion {
+	return []api.OCPPVersion{api.OCPP16}
+}
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// ── helpers ──────────────────────────────────────────────────────────────────
 
 // buildShuffledKeywords returns a slice of keywordCount unique api.Keyword
 // values in a pseudo-random order determined by rng. Every keyword has a
@@ -41,44 +58,47 @@ var versionValues = []api.OCPPVersion{api.OCPP16}
 func buildShuffledKeywords(rng rand.Rand) []api.Keyword {
 	keywords := make([]api.Keyword, keywordCount)
 
+	lv := layerValues()
+	vv := versionValues()
+
 	for idx := range keywords {
 		keywords[idx] = api.Keyword{ //nolint:exhaustruct // Func nil for sort
-			Layer:       layerValues[idx%len(layerValues)],
-			OCPPVersion: versionValues[idx%len(versionValues)],
+			Layer:       lv[idx%len(lv)],
+			OCPPVersion: vv[idx%len(vv)],
 			Pattern:     fmt.Sprintf("step number %04d executes action", idx),
 		}
 	}
 
 	// Fisher-Yates shuffle using the injected RNG so the order is
 	// deterministic for a fixed seed yet differs from the sorted order.
-	for idx := keywordCount - 1; idx > 0; idx-- {
-		jdx := rng.Intn(idx + 1)
+	for idx := keywordCount - 1; idx > shuffleStop; idx-- {
+		jdx := rng.Intn(idx + shuffleIncrement)
 		keywords[idx], keywords[jdx] = keywords[jdx], keywords[idx]
 	}
 
 	return keywords
 }
 
+// isPairOutOfOrder reports whether prev should come after curr
+// in (Layer asc, OCPPVersion asc, Pattern lex asc) order.
+func isPairOutOfOrder(prev, curr api.Keyword) bool {
+	if prev.Layer != curr.Layer {
+		return prev.Layer > curr.Layer
+	}
+
+	if prev.OCPPVersion != curr.OCPPVersion {
+		return prev.OCPPVersion > curr.OCPPVersion
+	}
+
+	return prev.Pattern > curr.Pattern
+}
+
 // isSortedByLayerVersionPattern reports whether slice is ordered by
 // (Layer asc, OCPPVersion asc, Pattern lex asc), the canonical order
 // required by constitution principle IV and AC1.
 func isSortedByLayerVersionPattern(keywords []api.Keyword) bool {
-	for idx := 1; idx < len(keywords); idx++ {
-		prev := keywords[idx-1]
-		curr := keywords[idx]
-
-		if prev.Layer > curr.Layer {
-			return false
-		}
-
-		if prev.Layer == curr.Layer && prev.OCPPVersion > curr.OCPPVersion {
-			return false
-		}
-
-		sameLayerAndVersion := prev.Layer == curr.Layer &&
-			prev.OCPPVersion == curr.OCPPVersion
-
-		if sameLayerAndVersion && prev.Pattern > curr.Pattern {
+	for idx := sortStartIdx; idx < len(keywords); idx++ {
+		if isPairOutOfOrder(keywords[idx-sortStartIdx], keywords[idx]) {
 			return false
 		}
 	}
@@ -86,7 +106,55 @@ func isSortedByLayerVersionPattern(keywords []api.Keyword) bool {
 	return true
 }
 
-// ── tests ─────────────────────────────────────────────────────────────────────
+// ── tests ────────────────────────────────────────────────────────────────────
+
+// assertIdempotentSort verifies that two slices from successive All() calls
+// contain identical entries in the same order.
+func assertIdempotentSort(t *testing.T, first, second []api.Keyword) {
+	t.Helper()
+
+	for idx := range first {
+		fKw := first[idx]
+		sKw := second[idx]
+
+		if fKw.Layer == sKw.Layer &&
+			fKw.OCPPVersion == sKw.OCPPVersion &&
+			fKw.Pattern == sKw.Pattern {
+			continue
+		}
+
+		t.Errorf(
+			"All()[%d] diverges between calls: "+
+				"first={%v %v %q} second={%v %v %q}",
+			idx,
+			fKw.Layer, fKw.OCPPVersion, fKw.Pattern,
+			sKw.Layer, sKw.OCPPVersion, sKw.Pattern,
+		)
+	}
+}
+
+// assertSortOrder verifies that the slice is sorted by
+// (Layer asc, OCPPVersion asc, Pattern lex asc) and logs
+// the full slice on failure.
+func assertSortOrder(t *testing.T, keywords []api.Keyword) {
+	t.Helper()
+
+	if isSortedByLayerVersionPattern(keywords) {
+		return
+	}
+
+	t.Error("All() result is not sorted by (Layer, OCPPVersion, Pattern)")
+
+	for idx, keyword := range keywords {
+		t.Logf(
+			"  [%02d] layer=%v ocpp=%v pattern=%q",
+			idx,
+			keyword.Layer,
+			keyword.OCPPVersion,
+			keyword.Pattern,
+		)
+	}
+}
 
 // Test_registry_All_stableSortAfterRandomRegistrations verifies that
 // All() returns keywords in (Layer asc, OCPPVersion asc, Pattern lex asc)
@@ -118,36 +186,6 @@ func Test_registry_All_stableSortAfterRandomRegistrations(t *testing.T) {
 		)
 	}
 
-	// Invariant: the two results must be identical (idempotent sort).
-	for idx := range firstCall {
-		firstKw := firstCall[idx]
-		secondKw := secondCall[idx]
-
-		if firstKw.Layer != secondKw.Layer ||
-			firstKw.OCPPVersion != secondKw.OCPPVersion ||
-			firstKw.Pattern != secondKw.Pattern {
-			t.Errorf(
-				"All()[%d] diverges between calls: "+
-					"first={%v %v %q} second={%v %v %q}",
-				idx,
-				firstKw.Layer, firstKw.OCPPVersion, firstKw.Pattern,
-				secondKw.Layer, secondKw.OCPPVersion, secondKw.Pattern,
-			)
-		}
-	}
-
-	// Invariant: the result must be sorted by (Layer, OCPPVersion, Pattern).
-	if !isSortedByLayerVersionPattern(firstCall) {
-		t.Error("All() result is not sorted by (Layer, OCPPVersion, Pattern)")
-
-		for idx, keyword := range firstCall {
-			t.Logf(
-				"  [%02d] layer=%v ocpp=%v pattern=%q",
-				idx,
-				keyword.Layer,
-				keyword.OCPPVersion,
-				keyword.Pattern,
-			)
-		}
-	}
+	assertIdempotentSort(t, firstCall, secondCall)
+	assertSortOrder(t, firstCall)
 }

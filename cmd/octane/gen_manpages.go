@@ -22,55 +22,61 @@ const (
 	outDirPerm = 0o755
 )
 
-// genManPagesFlags holds the parsed flag values for the gen-manpages
-// hidden subcommand.
-var genManPagesFlags struct {
-	section int
-	outDir  string
-}
-
+// newGenManPagesCmd constructs and returns the hidden "gen-manpages"
+// subcommand. root is the root cobra command passed to doc.GenManTree
+// so that man pages are generated for the full command tree.
+//
 //nolint:exhaustruct // cobra.Command has many optional fields
-var genManPagesCmd = &cobra.Command{
-	Use:    "gen-manpages",
-	Short:  "Generate roff man pages from cobra command tree (hidden)",
-	Hidden: true,
-	RunE:   runGenManPages,
-}
+func newGenManPagesCmd(root *cobra.Command) *cobra.Command {
+	var section int
 
-func init() {
-	flags := genManPagesCmd.Flags()
+	var outDir string
+
+	cmd := &cobra.Command{
+		Use:    "gen-manpages",
+		Short:  "Generate roff man pages from cobra command tree (hidden)",
+		Hidden: true,
+		RunE: func(c *cobra.Command, args []string) error {
+			return runGenManPages(c, args, root, outDir, section)
+		},
+	}
+
+	flags := cmd.Flags()
 
 	flags.IntVar(
-		&genManPagesFlags.section,
+		&section,
 		"section",
 		defaultManSection,
 		"man section number (currently only section 1 is generated from cobra)",
 	)
 
 	flags.StringVar(
-		&genManPagesFlags.outDir,
+		&outDir,
 		"out",
-		"",
+		emptyFlagValue,
 		"output directory; created if it does not exist (required)",
 	)
 
-	err := genManPagesCmd.MarkFlagRequired("out")
+	err := cmd.MarkFlagRequired("out")
 	if err != nil {
 		// MarkFlagRequired only errors when the flag name is unknown,
-		// which would be a programming error caught at init time.
+		// which would be a programming error caught at construction time.
 		panic(err)
 	}
 
-	rootCmd.AddCommand(genManPagesCmd)
+	return cmd
 }
 
 // runGenManPages is the RunE function for the hidden gen-manpages
 // subcommand. It creates the output directory and delegates to
 // cobra/doc.GenManTree.
-func runGenManPages(_ *cobra.Command, _ []string) error {
-	outDir := genManPagesFlags.outDir
-	section := genManPagesFlags.section
-
+func runGenManPages(
+	_ *cobra.Command,
+	_ []string,
+	root *cobra.Command,
+	outDir string,
+	section int,
+) error {
 	err := os.MkdirAll(outDir, outDirPerm)
 	if err != nil {
 		dieErrf(
@@ -87,7 +93,7 @@ func runGenManPages(_ *cobra.Command, _ []string) error {
 	header.Title = "OCTANE"
 	header.Section = strconv.Itoa(section)
 
-	err = doc.GenManTree(rootCmd, header, outDir)
+	err = doc.GenManTree(root, header, outDir)
 	if err != nil {
 		dieErrf(exitcode.ToolError, "octane: gen-manpages: %v\n", err)
 	}

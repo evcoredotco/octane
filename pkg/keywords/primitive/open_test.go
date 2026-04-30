@@ -22,7 +22,7 @@ import (
 	"github.com/evcoreco/octane/pkg/keywords/registry"
 )
 
-// ── Named constants ───────────────────────────────────────────────────────────
+// ── Named constants ──────────────────────────────────────────────────────────
 
 const (
 	// handleStation is the station handle name used across open tests.
@@ -42,7 +42,7 @@ const (
 	msgOpenUnexpectedErr = "open keyword Func: unexpected error: %v"
 )
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// ── helpers ──────────────────────────────────────────────────────────────────
 
 // newEchoServer starts a local httptest WebSocket server that accepts any
 // connection with no subprotocol preference.  It returns the server and its
@@ -111,7 +111,7 @@ func resolveFunc(t *testing.T, pattern string) api.Func {
 	return nil
 }
 
-// ── tests ─────────────────────────────────────────────────────────────────────
+// ── tests ────────────────────────────────────────────────────────────────────
 
 // Test_primitive_openWebSocket verifies that calling the open keyword's Func
 // registers a station in MockState under the given handle name (AC1).

@@ -95,6 +95,9 @@ const (
 	tokenIdx1    = 1
 	tokenIdx3    = 3
 	tokenIdx5    = 5
+
+	// fmtExpectedOneToken is logged when Parse returns a token count != 1.
+	fmtExpectedOneToken = "expected 1 token, got %d"
 )
 
 // ── Parse tests ────────────────────────────────────────────────────────
@@ -110,7 +113,7 @@ func Test_pattern_Parse_literalOnly(t *testing.T) {
 	}
 
 	if len(tokens) != wantOneToken {
-		t.Fatalf("expected 1 token, got %d", len(tokens))
+		t.Fatalf(fmtExpectedOneToken, len(tokens))
 	}
 
 	tok := tokens[0]
@@ -139,7 +142,7 @@ func Test_pattern_Parse_placeholderOnly(t *testing.T) {
 	}
 
 	if len(tokens) != wantOneToken {
-		t.Fatalf("expected 1 token, got %d", len(tokens))
+		t.Fatalf(fmtExpectedOneToken, len(tokens))
 	}
 
 	tok := tokens[0]
@@ -153,6 +156,36 @@ func Test_pattern_Parse_placeholderOnly(t *testing.T) {
 
 	if tok.Type != pattern.TypeInt {
 		t.Errorf("token Type: want %q, got %q", pattern.TypeInt, tok.Type)
+	}
+}
+
+// assertPlaceholderToken verifies that tokens[idx] is a KindPlaceholder
+// with the given name and type.
+func assertPlaceholderToken(
+	t *testing.T,
+	tokens []pattern.Token,
+	idx int,
+	wantName string,
+	wantType pattern.PlaceholderType,
+) {
+	t.Helper()
+
+	if tokens[idx].Name != wantName {
+		t.Errorf(
+			"token[%d].Name: want %q, got %q",
+			idx,
+			wantName,
+			tokens[idx].Name,
+		)
+	}
+
+	if tokens[idx].Type != wantType {
+		t.Errorf(
+			"token[%d].Type: want %q, got %q",
+			idx,
+			wantType,
+			tokens[idx].Type,
+		)
 	}
 }
 
@@ -200,52 +233,37 @@ func Test_pattern_Parse_mixed(t *testing.T) {
 		}
 	}
 
-	if tokens[tokenIdx1].Name != captureKeyCount {
-		t.Errorf(
-			"token[1].Name: want %q, got %q",
-			captureKeyCount,
-			tokens[tokenIdx1].Name,
-		)
+	assertPlaceholderToken(
+		t, tokens, tokenIdx1, captureKeyCount, pattern.TypeInt,
+	)
+	assertPlaceholderToken(
+		t, tokens, tokenIdx3, captureKeyTarget, pattern.TypeStation,
+	)
+	assertPlaceholderToken(
+		t, tokens, tokenIdx5, captureKeyTimeo, pattern.TypeDuration,
+	)
+}
+
+// assertSinglePlaceholderType parses placeholder and verifies that the
+// single token has the expected PlaceholderType.
+func assertSinglePlaceholderType(
+	t *testing.T,
+	placeholder string,
+	wantType pattern.PlaceholderType,
+) {
+	t.Helper()
+
+	tokens, err := pattern.Parse(placeholder)
+	if err != nil {
+		t.Fatalf(fmtParseUnexpectedErr, placeholder, err)
 	}
 
-	if tokens[tokenIdx1].Type != pattern.TypeInt {
-		t.Errorf(
-			"token[1].Type: want %q, got %q",
-			pattern.TypeInt,
-			tokens[tokenIdx1].Type,
-		)
+	if len(tokens) != wantOneToken {
+		t.Fatalf(fmtExpectedOneToken, len(tokens))
 	}
 
-	if tokens[tokenIdx3].Name != captureKeyTarget {
-		t.Errorf(
-			"token[3].Name: want %q, got %q",
-			captureKeyTarget,
-			tokens[tokenIdx3].Name,
-		)
-	}
-
-	if tokens[tokenIdx3].Type != pattern.TypeStation {
-		t.Errorf(
-			"token[3].Type: want %q, got %q",
-			pattern.TypeStation,
-			tokens[tokenIdx3].Type,
-		)
-	}
-
-	if tokens[tokenIdx5].Name != captureKeyTimeo {
-		t.Errorf(
-			"token[5].Name: want %q, got %q",
-			captureKeyTimeo,
-			tokens[tokenIdx5].Name,
-		)
-	}
-
-	if tokens[tokenIdx5].Type != pattern.TypeDuration {
-		t.Errorf(
-			"token[5].Type: want %q, got %q",
-			pattern.TypeDuration,
-			tokens[tokenIdx5].Type,
-		)
+	if tokens[0].Type != wantType {
+		t.Errorf("Type: want %q, got %q", wantType, tokens[0].Type)
 	}
 }
 
@@ -287,27 +305,9 @@ func Test_pattern_Parse_allSupportedTypes(t *testing.T) {
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-
-			tokens, err := pattern.Parse(testCase.placeholder)
-			if err != nil {
-				t.Fatalf(
-					fmtParseUnexpectedErr,
-					testCase.placeholder,
-					err,
-				)
-			}
-
-			if len(tokens) != wantOneToken {
-				t.Fatalf("expected 1 token, got %d", len(tokens))
-			}
-
-			if tokens[0].Type != testCase.wantType {
-				t.Errorf(
-					"Type: want %q, got %q",
-					testCase.wantType,
-					tokens[0].Type,
-				)
-			}
+			assertSinglePlaceholderType(
+				t, testCase.placeholder, testCase.wantType,
+			)
 		})
 	}
 }
@@ -764,6 +764,66 @@ func Test_pattern_Coerce_floatTypeFailure(t *testing.T) {
 	}
 }
 
+// assertBoolCoercedTrue parses patVBool, coerces input, and verifies
+// the resulting bool value is true.
+func assertBoolCoercedTrue(t *testing.T, input string) {
+	t.Helper()
+
+	tokens, err := pattern.Parse(patVBool)
+	if err != nil {
+		t.Fatalf(fmtParseErr, err)
+	}
+
+	result, err := pattern.Coerce(
+		map[string]string{argNameV: input}, tokens,
+	)
+	if err != nil {
+		t.Fatalf("Coerce(%q): unexpected error: %v", input, err)
+	}
+
+	got, typeOk := result[argNameV].(bool)
+	if !typeOk {
+		t.Fatalf(
+			"coerced value type: want bool, got %T",
+			result[argNameV],
+		)
+	}
+
+	if !got {
+		t.Error("coerced value: want true, got false")
+	}
+}
+
+// assertBoolCoercedFalse parses patVBool, coerces input, and verifies
+// the resulting bool value is false.
+func assertBoolCoercedFalse(t *testing.T, input string) {
+	t.Helper()
+
+	tokens, err := pattern.Parse(patVBool)
+	if err != nil {
+		t.Fatalf(fmtParseErr, err)
+	}
+
+	result, err := pattern.Coerce(
+		map[string]string{argNameV: input}, tokens,
+	)
+	if err != nil {
+		t.Fatalf("Coerce(%q): unexpected error: %v", input, err)
+	}
+
+	got, typeOk := result[argNameV].(bool)
+	if !typeOk {
+		t.Fatalf(
+			"coerced value type: want bool, got %T",
+			result[argNameV],
+		)
+	}
+
+	if got {
+		t.Error("coerced value: want false, got true")
+	}
+}
+
 // Test_pattern_Coerce_boolTypeSuccess verifies that "true", "false",
 // and mixed-case variants are all coerced to Go bool values.
 func Test_pattern_Coerce_boolTypeSuccess(t *testing.T) {
@@ -783,32 +843,10 @@ func Test_pattern_Coerce_boolTypeSuccess(t *testing.T) {
 		t.Run(testCase.input, func(t *testing.T) {
 			t.Parallel()
 
-			tokens, err := pattern.Parse(patVBool)
-			if err != nil {
-				t.Fatalf(fmtParseErr, err)
-			}
-
-			captures := map[string]string{argNameV: testCase.input}
-
-			result, err := pattern.Coerce(captures, tokens)
-			if err != nil {
-				t.Fatalf(
-					"Coerce(%q): unexpected error: %v",
-					testCase.input,
-					err,
-				)
-			}
-
-			got, typeOk := result[argNameV].(bool)
-			if !typeOk {
-				t.Fatalf(
-					"coerced value type: want bool, got %T",
-					result[argNameV],
-				)
-			}
-
-			if got != testCase.want {
-				t.Errorf("coerced value: want %v, got %v", testCase.want, got)
+			if testCase.want {
+				assertBoolCoercedTrue(t, testCase.input)
+			} else {
+				assertBoolCoercedFalse(t, testCase.input)
 			}
 		})
 	}
@@ -982,6 +1020,62 @@ func Test_pattern_Coerce_CoercionErrorMessage(t *testing.T) {
 	}
 }
 
+// assertCoercedInt verifies that result[key] is an int equal to want.
+func assertCoercedInt(
+	t *testing.T,
+	result map[string]any,
+	key string,
+	want int,
+) {
+	t.Helper()
+
+	got, ok := result[key].(int)
+	if !ok {
+		t.Fatalf("%s type: want int, got %T", key, result[key])
+	}
+
+	if got != want {
+		t.Errorf("%s: want %d, got %d", key, want, got)
+	}
+}
+
+// assertCoercedString verifies that result[key] is a string equal to want.
+func assertCoercedString(
+	t *testing.T,
+	result map[string]any,
+	key, want string,
+) {
+	t.Helper()
+
+	got, ok := result[key].(string)
+	if !ok {
+		t.Fatalf("%s type: want string, got %T", key, result[key])
+	}
+
+	if got != want {
+		t.Errorf("%s: want %q, got %q", key, want, got)
+	}
+}
+
+// assertCoercedDuration verifies result[key] is a time.Duration equal to want.
+func assertCoercedDuration(
+	t *testing.T,
+	result map[string]any,
+	key string,
+	want time.Duration,
+) {
+	t.Helper()
+
+	got, ok := result[key].(time.Duration)
+	if !ok {
+		t.Fatalf("%s type: want time.Duration, got %T", key, result[key])
+	}
+
+	if got != want {
+		t.Errorf("%s: want %v, got %v", key, want, got)
+	}
+}
+
 // Test_pattern_Coerce_multipleTokensRoundTrip verifies the full
 // pipeline: Parse -> Match -> Coerce against a multi-placeholder
 // pattern drawn from AC3 of the spec.
@@ -1010,59 +1104,18 @@ func Test_pattern_Coerce_multipleTokensRoundTrip(t *testing.T) {
 		t.Fatalf(fmtCoerceUnexpectedErr, err)
 	}
 
-	// connectorId=1 (int)
-	connectorID, typeOk := result["connectorId"].(int)
-	if !typeOk {
-		t.Fatalf(
-			"connectorId type: want int, got %T",
-			result["connectorId"],
-		)
-	}
+	const (
+		wantConnectorID = 1
+		wantTimeout     = 30 * time.Second
+	)
 
-	const wantConnectorID = 1
+	assertCoercedInt(t, result, "connectorId", wantConnectorID)
 
-	if connectorID != wantConnectorID {
-		t.Errorf(
-			"connectorId: want %d, got %d",
-			wantConnectorID,
-			connectorID,
-		)
-	}
+	assertCoercedString(t, result, "idTag", "X")
 
-	// idTag="X" (string)
-	idTag, typeOk := result["idTag"].(string)
-	if !typeOk {
-		t.Fatalf("idTag type: want string, got %T", result["idTag"])
-	}
+	assertCoercedString(t, result, "station", valueValidStation)
 
-	if idTag != "X" {
-		t.Errorf("idTag: want %q, got %q", "X", idTag)
-	}
-
-	// station="CP01" (station stored as string)
-	station, typeOk := result["station"].(string)
-	if !typeOk {
-		t.Fatalf("station type: want string, got %T", result["station"])
-	}
-
-	if station != valueValidStation {
-		t.Errorf("station: want %q, got %q", valueValidStation, station)
-	}
-
-	// timeout=30s (duration)
-	timeout, typeOk := result[captureKeyTimeo].(time.Duration)
-	if !typeOk {
-		t.Fatalf(
-			"timeout type: want time.Duration, got %T",
-			result[captureKeyTimeo],
-		)
-	}
-
-	const wantTimeout = 30 * time.Second
-
-	if timeout != wantTimeout {
-		t.Errorf("timeout: want %v, got %v", wantTimeout, timeout)
-	}
+	assertCoercedDuration(t, result, captureKeyTimeo, wantTimeout)
 }
 
 // ── helpers ────────────────────────────────────────────────────────────

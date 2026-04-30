@@ -51,26 +51,42 @@ func Distance(src, tgt string) int {
 	src = strings.ToLower(src)
 	tgt = strings.ToLower(tgt)
 
-	// Handle the degenerate cases first to avoid allocating a
-	// matrix when one or both strings are empty.
-	if src == tgt {
-		return zeroDistance
+	if d, ok := degenerateDistance(src, tgt); ok {
+		return d
 	}
 
-	if len(src) == zeroLen {
-		return len(tgt)
-	}
-
-	if len(tgt) == zeroLen {
-		return len(src)
-	}
-
-	// Build the full rows×cols matrix where rows = len(src)+1 and
-	// cols = len(tgt)+1. matrix[row][col] holds the edit distance
-	// between src[:row] and tgt[:col].
 	rows := len(src) + matrixOffset
 	cols := len(tgt) + matrixOffset
 
+	matrix := buildMatrix(rows, cols)
+
+	fillMatrix(matrix, src, tgt, rows, cols)
+
+	return matrix[rows-prevOffset][cols-prevOffset]
+}
+
+// degenerateDistance handles the degenerate cases for Distance: equal
+// strings, or one of the strings being empty. It returns (distance, true)
+// when a degenerate case applies, and (0, false) otherwise.
+func degenerateDistance(src, tgt string) (int, bool) {
+	if src == tgt {
+		return zeroDistance, true
+	}
+
+	if len(src) == zeroLen {
+		return len(tgt), true
+	}
+
+	if len(tgt) == zeroLen {
+		return len(src), true
+	}
+
+	return zeroDistance, false
+}
+
+// buildMatrix allocates and initialises the base-case rows and columns
+// of the Levenshtein DP matrix.
+func buildMatrix(rows, cols int) [][]int {
 	matrix := make([][]int, rows)
 	for row := range matrix {
 		matrix[row] = make([]int, cols)
@@ -86,6 +102,12 @@ func Distance(src, tgt string) int {
 		matrix[zeroRow][col] = col
 	}
 
+	return matrix
+}
+
+// fillMatrix populates the inner cells of the DP matrix using the
+// standard Levenshtein recurrence.
+func fillMatrix(matrix [][]int, src, tgt string, rows, cols int) {
 	for row := startIndex; row < rows; row++ {
 		for col := startIndex; col < cols; col++ {
 			if src[row-prevOffset] == tgt[col-prevOffset] {
@@ -99,8 +121,6 @@ func Distance(src, tgt string) int {
 			}
 		}
 	}
-
-	return matrix[rows-prevOffset][cols-prevOffset]
 }
 
 // Closest returns the element of candidates whose Levenshtein

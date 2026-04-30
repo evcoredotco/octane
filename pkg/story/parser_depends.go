@@ -1,5 +1,3 @@
-// Package story — see parse.go for package documentation.
-
 package story
 
 import (
@@ -53,6 +51,29 @@ func (de *dependsEntry) toDependency() ast.Dependency {
 	}
 }
 
+// dependsLineResult carries the updated state after processing one
+// sub-indented line in a Depends block.
+type dependsLineResult struct {
+	cur        *dependsEntry
+	deps       []ast.Dependency
+	entryIndex int
+	done       bool
+}
+
+// startBulletResult carries the updated state after starting a new Depends
+// bullet.
+type startBulletResult struct {
+	cur        *dependsEntry
+	deps       []ast.Dependency
+	entryIndex int
+}
+
+// colonValueResult carries the two tokens produced by consumeColonValue.
+type colonValueResult struct {
+	colonTok lex.Token
+	valTok   lex.Token
+}
+
 // parseDepends parses the indented YAML-style Depends block that follows a
 // "Depends:" meta key. The lexer has already consumed the "Depends:" key,
 // colon, and (empty) value tokens. This function reads subsequent indented
@@ -75,73 +96,18 @@ func (p *parser) parseDepends() ([]ast.Dependency, error) {
 	entryIndex = noEntryIdx
 
 	for isSubIndent(p.lex.Peek()) {
-		_ = p.lex.Next() // consume the sub-indent token
-
-		keyTok := p.lex.Peek()
-		if keyTok.Kind != lex.TokenMetaKey {
-			break // end of Depends block
-		}
-
-		_ = p.lex.Next() // consume key
-
-		colonTok, valTok, err := p.consumeColonValue(keyTok, entryIndex)
+		res, err := p.parseDependsLine(cur, entryIndex, deps)
 		if err != nil {
 			return nil, err
 		}
 
-		_ = colonTok
-
-		keyLit := strings.TrimSpace(keyTok.Literal)
-		valLit := strings.TrimSpace(valTok.Literal)
-
-		if strings.HasPrefix(keyLit, "-") {
-			flushed, ok, flushErr := flushEntry(p.file, cur, entryIndex)
-			if flushErr != nil {
-				return nil, flushErr
-			}
-
-			if ok {
-				deps = append(deps, flushed)
-			}
-
-			entryIndex++
-
-			cur = &dependsEntry{
-				id:    emptyStr,
-				scope: ast.ScopePerStation,
-				pos: ast.Position{
-					Line:   keyTok.Line,
-					Column: keyTok.Column,
-				},
-				idSet:    false,
-				scopeSet: false,
-			}
-
-			subKey := strings.TrimSpace(strings.TrimPrefix(keyLit, "-"))
-
-			applyErr := applySubKey(
-				cur,
-				subKey,
-				valLit,
-				valTok,
-				p.file,
-				entryIndex,
-			)
-			if applyErr != nil {
-				return nil, applyErr
-			}
-
-			continue
+		if res.done {
+			break
 		}
 
-		if cur == nil {
-			continue // ignore lines before the first bullet
-		}
-
-		applyErr := applySubKey(cur, keyLit, valLit, valTok, p.file, entryIndex)
-		if applyErr != nil {
-			return nil, applyErr
-		}
+		cur = res.cur
+		entryIndex = res.entryIndex
+		deps = res.deps
 	}
 
 	flushed, ok, err := flushEntry(p.file, cur, entryIndex)
@@ -156,26 +122,142 @@ func (p *parser) parseDepends() ([]ast.Dependency, error) {
 	return deps, nil
 }
 
+// parseDependsLine processes one sub-indented line inside a Depends block.
+// The done field in the result is true when the line is not a MetaKey and
+// the block ends. On a new bullet it flushes the current entry, increments
+// the index, and creates a fresh dependsEntry.
+func (p *parser) parseDependsLine(
+	cur *dependsEntry,
+	entryIndex int,
+	deps []ast.Dependency,
+) (dependsLineResult, error) {
+	_ = p.lex.Next() // consume the sub-indent token
+
+	keyTok := p.lex.Peek()
+	if keyTok.Kind != lex.TokenMetaKey {
+		return dependsLineResult{
+			cur: cur, entryIndex: entryIndex, deps: deps, done: true,
+		}, nil
+	}
+
+	_ = p.lex.Next() // consume key
+
+	cv, colonErr := p.consumeColonValue(keyTok, entryIndex)
+	if colonErr != nil {
+		return dependsLineResult{
+			cur: cur, entryIndex: entryIndex, deps: deps, done: false,
+		}, colonErr
+	}
+
+	keyLit := strings.TrimSpace(keyTok.Literal)
+	valLit := strings.TrimSpace(cv.valTok.Literal)
+
+	if !strings.HasPrefix(keyLit, "-") {
+		applyErr := applyNonBulletKey(
+			cur, keyLit, valLit, cv.valTok, p.file, entryIndex,
+		)
+
+		return dependsLineResult{
+			cur: cur, entryIndex: entryIndex, deps: deps, done: false,
+		}, applyErr
+	}
+
+	br, err := p.startNewBullet(cur, entryIndex, deps, keyTok, valLit, cv.valTok)
+
+	return dependsLineResult{
+		cur: br.cur, entryIndex: br.entryIndex, deps: br.deps, done: false,
+	}, err
+}
+
+// applyNonBulletKey applies a sub-key line that does not start a new bullet
+// (i.e. keyLit does not begin with "-"). It is a no-op when cur is nil.
+func applyNonBulletKey(
+	cur *dependsEntry,
+	keyLit string,
+	valLit string,
+	valTok lex.Token,
+	file string,
+	entryIndex int,
+) error {
+	if cur == nil {
+		return nil
+	}
+
+	return applySubKey(cur, keyLit, valLit, valTok, file, entryIndex)
+}
+
+// startNewBullet flushes the current entry, increments the index, creates a
+// fresh dependsEntry, and applies the sub-key from the new bullet line.
+func (p *parser) startNewBullet(
+	cur *dependsEntry,
+	entryIndex int,
+	deps []ast.Dependency,
+	keyTok lex.Token,
+	valLit string,
+	valTok lex.Token,
+) (startBulletResult, error) {
+	flushed, ok, flushErr := flushEntry(p.file, cur, entryIndex)
+	if flushErr != nil {
+		return startBulletResult{
+			cur: cur, entryIndex: entryIndex, deps: deps,
+		}, flushErr
+	}
+
+	if ok {
+		deps = append(deps, flushed)
+	}
+
+	entryIndex++
+
+	newCur := &dependsEntry{
+		id:    emptyStr,
+		scope: ast.ScopePerStation,
+		pos: ast.Position{
+			Line:   keyTok.Line,
+			Column: keyTok.Column,
+		},
+		idSet:    false,
+		scopeSet: false,
+	}
+
+	keyLit := strings.TrimSpace(keyTok.Literal)
+	subKey := strings.TrimSpace(strings.TrimPrefix(keyLit, "-"))
+
+	applyErr := applySubKey(newCur, subKey, valLit, valTok, p.file, entryIndex)
+	if applyErr != nil {
+		return startBulletResult{
+			cur: newCur, entryIndex: entryIndex, deps: deps,
+		}, applyErr
+	}
+
+	return startBulletResult{cur: newCur, entryIndex: entryIndex, deps: deps}, nil
+}
+
 // consumeColonValue consumes a TokenColon and then a TokenValue from the
-// stream and returns both tokens. It returns a typed error on any mismatch.
-// The first return is the colon token, the second is the value token.
+// stream and returns a colonValueResult. It returns a typed error on any
+// mismatch.
 func (p *parser) consumeColonValue(
 	keyTok lex.Token,
 	entryIndex int,
-) (lex.Token, lex.Token, error) {
+) (colonValueResult, error) {
+	illegalZero := lex.Token{
+		Kind:    lex.TokenIllegal,
+		Literal: emptyStr,
+		Line:    0,
+		Column:  0,
+	}
+
 	colonTok := p.lex.Peek()
 	if colonTok.Kind != lex.TokenColon {
-		return lex.Token{
-				Kind:    lex.TokenIllegal,
-				Literal: emptyStr,
-				Line:    colonTok.Line,
-				Column:  colonTok.Column,
-			}, lex.Token{
-				Kind:    lex.TokenIllegal,
-				Literal: emptyStr,
-				Line:    0,
-				Column:  0,
-			}, &diag.MalformedDependsError{
+		illegalColon := lex.Token{
+			Kind:    lex.TokenIllegal,
+			Literal: emptyStr,
+			Line:    colonTok.Line,
+			Column:  colonTok.Column,
+		}
+
+		return colonValueResult{colonTok: illegalColon, valTok: illegalZero},
+			&diag.MalformedDependsError{
 				File:       p.file,
 				Line:       keyTok.Line,
 				Column:     keyTok.Column,
@@ -189,12 +271,15 @@ func (p *parser) consumeColonValue(
 
 	valTok := p.lex.Next()
 	if valTok.Kind != lex.TokenValue {
-		return colonTok, lex.Token{
-				Kind:    lex.TokenIllegal,
-				Literal: emptyStr,
-				Line:    valTok.Line,
-				Column:  valTok.Column,
-			}, &diag.MalformedDependsError{
+		illegalVal := lex.Token{
+			Kind:    lex.TokenIllegal,
+			Literal: emptyStr,
+			Line:    valTok.Line,
+			Column:  valTok.Column,
+		}
+
+		return colonValueResult{colonTok: colonTok, valTok: illegalVal},
+			&diag.MalformedDependsError{
 				File:       p.file,
 				Line:       colonTok.Line,
 				Column:     colonTok.Column,
@@ -204,7 +289,7 @@ func (p *parser) consumeColonValue(
 			}
 	}
 
-	return colonTok, valTok, nil
+	return colonValueResult{colonTok: colonTok, valTok: valTok}, nil
 }
 
 // applySubKey sets the id or scope field on cur based on subKey and val.

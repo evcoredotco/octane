@@ -16,18 +16,44 @@ import (
 	"github.com/evcoreco/octane/pkg/cache"
 )
 
+// fmtOpen is the Fatalf format for Open failures in tests.
+const fmtOpen = "Open: %v"
+
+// fmtPut is the Fatalf format for Put failures in tests.
+const fmtPut = "Put: %v"
+
+// testDirMode is the permission bits for test entry directories (rwxr-x---).
+const testDirMode = 0o750
+
+// testFileMode is the permission bits for test data files (rw-------).
+const testFileMode = 0o600
+
+// shaEndpoint is a 64-char hex placeholder for CSMSEndpointSHA in tests.
+const shaEndpoint = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
+	"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+// shaStoryContent is a 64-char hex placeholder for StoryContentSHA in tests.
+const shaStoryContent = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" +
+	"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+
+// shaParameter is a 64-char hex placeholder for ParameterSHA in tests.
+const shaParameter = "cccccccccccccccccccccccccccccccc" +
+	"cccccccccccccccccccccccccccccccc"
+
+// cacheZeroTTL is the zero TTL value used for non-expiring cache entries.
+const cacheZeroTTL = 0
+
 // testKey returns a fully-populated Key whose Hash is deterministic
 // for the given testID. All non-ID fields are fixed synthetic values.
 func testKey(testID string) cache.Key {
 	return cache.Key{
-		TestID:   testID,
-		ScopeKey: "test-scope",
-		// 64-character hex strings (valid SHA-256 placeholders).
-		CSMSEndpointSHA: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		TestID:          testID,
+		ScopeKey:        "test-scope",
+		CSMSEndpointSHA: shaEndpoint,
 		OctaneVersion:   "v0.0.0-test",
 		OCPPVersion:     "1.6",
-		StoryContentSHA: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-		ParameterSHA:    "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+		StoryContentSHA: shaStoryContent,
+		ParameterSHA:    shaParameter,
 	}
 }
 
@@ -42,7 +68,7 @@ func Test_cache_RoundTrip(t *testing.T) {
 
 	cch, err := cache.Open(t.TempDir())
 	if err != nil {
-		t.Fatalf("Open: %v", err)
+		t.Fatalf(fmtOpen, err)
 	}
 
 	ctx := context.Background()
@@ -52,12 +78,12 @@ func Test_cache_RoundTrip(t *testing.T) {
 		Result:    []byte(valueResult),
 		Trace:     nil,
 		WrittenAt: time.Now().UTC(),
-		TTL:       0,
+		TTL:       cacheZeroTTL,
 	}
 
 	err = cch.Put(ctx, key, entry)
 	if err != nil {
-		t.Fatalf("Put: %v", err)
+		t.Fatalf(fmtPut, err)
 	}
 
 	got, err := cch.Get(ctx, key)
@@ -89,7 +115,7 @@ func Test_cache_TornWriteRejected(t *testing.T) {
 
 	cch, err := cache.Open(tmpDir)
 	if err != nil {
-		t.Fatalf("Open: %v", err)
+		t.Fatalf(fmtOpen, err)
 	}
 
 	ctx := context.Background()
@@ -99,7 +125,7 @@ func Test_cache_TornWriteRejected(t *testing.T) {
 	// Build the path that FileCache uses: <dir>/results/<hash[:2]>/<hash>/
 	entryDir := filepath.Join(tmpDir, "results", hash[:2], hash)
 
-	err = os.MkdirAll(entryDir, 0o750)
+	err = os.MkdirAll(entryDir, testDirMode)
 	if err != nil {
 		t.Fatalf("create entry dir: %v", err)
 	}
@@ -107,7 +133,7 @@ func Test_cache_TornWriteRejected(t *testing.T) {
 	// Drop the intermediate temp file; the atomic rename never happens.
 	tmpPath := filepath.Join(entryDir, "result.json.tmp")
 
-	err = os.WriteFile(tmpPath, []byte(`{"schema_version":1}`), 0o600)
+	err = os.WriteFile(tmpPath, []byte(`{"schema_version":1}`), testFileMode)
 	if err != nil {
 		t.Fatalf("write .tmp artefact: %v", err)
 	}
@@ -143,7 +169,7 @@ func Test_cache_TTLExpiry(t *testing.T) {
 
 	cch, err := cache.Open(t.TempDir())
 	if err != nil {
-		t.Fatalf("Open: %v", err)
+		t.Fatalf(fmtOpen, err)
 	}
 
 	ctx := context.Background()
@@ -159,7 +185,7 @@ func Test_cache_TTLExpiry(t *testing.T) {
 
 	err = cch.Put(ctx, key, entry)
 	if err != nil {
-		t.Fatalf("Put: %v", err)
+		t.Fatalf(fmtPut, err)
 	}
 
 	_, err = cch.Get(ctx, key)
@@ -187,7 +213,7 @@ func Test_cache_PruneRemovesOldEntries(t *testing.T) {
 
 	cch, err := cache.Open(t.TempDir())
 	if err != nil {
-		t.Fatalf("Open: %v", err)
+		t.Fatalf(fmtOpen, err)
 	}
 
 	ctx := context.Background()
@@ -197,12 +223,12 @@ func Test_cache_PruneRemovesOldEntries(t *testing.T) {
 		Result:    []byte(`{"status":"passed"}`),
 		Trace:     nil,
 		WrittenAt: time.Now().UTC().Add(-valueAgeOffset),
-		TTL:       0,
+		TTL:       cacheZeroTTL,
 	}
 
 	err = cch.Put(ctx, key, entry)
 	if err != nil {
-		t.Fatalf("Put: %v", err)
+		t.Fatalf(fmtPut, err)
 	}
 
 	// Sanity-check: entry is reachable before pruning.
@@ -222,6 +248,42 @@ func Test_cache_PruneRemovesOldEntries(t *testing.T) {
 	}
 }
 
+// concurrentPut runs Put for key+entry on cch in a goroutine, reports its
+// error via *putErr, and signals the WaitGroup on completion.
+func concurrentPut(
+	ctx context.Context,
+	cch cache.Cache,
+	key cache.Key,
+	entry cache.Entry,
+	putErr *error,
+	group *sync.WaitGroup,
+) {
+	defer group.Done()
+
+	*putErr = cch.Put(ctx, key, entry)
+}
+
+// assertGetResult retrieves key from cch and fails the test if Get
+// errors or the result bytes do not match want.
+func assertGetResult(
+	ctx context.Context,
+	t *testing.T,
+	cch cache.Cache,
+	key cache.Key,
+	label, want string,
+) {
+	t.Helper()
+
+	got, err := cch.Get(ctx, key)
+	if err != nil {
+		t.Fatalf("Get %s: %v", label, err)
+	}
+
+	if string(got.Result) != want {
+		t.Errorf("%s mismatch: got %q, want %q", label, got.Result, want)
+	}
+}
+
 // Test_cache_ConcurrentPutDifferentKeys verifies that two goroutines
 // writing disjoint cache keys simultaneously produce no data races and
 // that both entries are independently retrievable afterwards.
@@ -233,14 +295,15 @@ func Test_cache_ConcurrentPutDifferentKeys(t *testing.T) {
 
 	cch, err := cache.Open(t.TempDir())
 	if err != nil {
-		t.Fatalf("Open: %v", err)
+		t.Fatalf(fmtOpen, err)
 	}
 
 	ctx := context.Background()
 
 	const (
-		valueResultA = `{"status":"passed","id":"key-a"}`
-		valueResultB = `{"status":"passed","id":"key-b"}`
+		valueResultA    = `{"status":"passed","id":"key-a"}`
+		valueResultB    = `{"status":"passed","id":"key-b"}`
+		valueConcurrent = 2
 	)
 
 	keyA := testKey("concurrent-put-key-a")
@@ -250,39 +313,27 @@ func Test_cache_ConcurrentPutDifferentKeys(t *testing.T) {
 		Result:    []byte(valueResultA),
 		Trace:     nil,
 		WrittenAt: time.Now().UTC(),
-		TTL:       0,
+		TTL:       cacheZeroTTL,
 	}
 
 	entryB := cache.Entry{
 		Result:    []byte(valueResultB),
 		Trace:     nil,
 		WrittenAt: time.Now().UTC(),
-		TTL:       0,
+		TTL:       cacheZeroTTL,
 	}
 
 	var (
-		waitGroup sync.WaitGroup
-		errA      error
-		errB      error
+		group      sync.WaitGroup
+		errA, errB error
 	)
 
-	const valueConcurrency = 2
+	group.Add(valueConcurrent)
 
-	waitGroup.Add(valueConcurrency)
+	go concurrentPut(ctx, cch, keyA, entryA, &errA, &group)
+	go concurrentPut(ctx, cch, keyB, entryB, &errB, &group)
 
-	go func() {
-		defer waitGroup.Done()
-
-		errA = cch.Put(ctx, keyA, entryA)
-	}()
-
-	go func() {
-		defer waitGroup.Done()
-
-		errB = cch.Put(ctx, keyB, entryB)
-	}()
-
-	waitGroup.Wait()
+	group.Wait()
 
 	if errA != nil {
 		t.Fatalf("Put keyA: %v", errA)
@@ -292,29 +343,6 @@ func Test_cache_ConcurrentPutDifferentKeys(t *testing.T) {
 		t.Fatalf("Put keyB: %v", errB)
 	}
 
-	gotA, err := cch.Get(ctx, keyA)
-	if err != nil {
-		t.Fatalf("Get keyA: %v", err)
-	}
-
-	if string(gotA.Result) != valueResultA {
-		t.Errorf(
-			"keyA mismatch: got %q, want %q",
-			gotA.Result,
-			valueResultA,
-		)
-	}
-
-	gotB, err := cch.Get(ctx, keyB)
-	if err != nil {
-		t.Fatalf("Get keyB: %v", err)
-	}
-
-	if string(gotB.Result) != valueResultB {
-		t.Errorf(
-			"keyB mismatch: got %q, want %q",
-			gotB.Result,
-			valueResultB,
-		)
-	}
+	assertGetResult(ctx, t, cch, keyA, "keyA", valueResultA)
+	assertGetResult(ctx, t, cch, keyB, "keyB", valueResultB)
 }

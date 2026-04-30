@@ -230,7 +230,7 @@ func ParseResult(frame []any) (Result, error) {
 	}, nil
 }
 
-// ParseError decodes a pre-decoded OCPP-J CALLERROR frame into a WireError.
+// ParseError decodes a pre-decoded OCPP-J CALLERROR frame into an Error.
 //
 // A valid CALLERROR frame has the shape:
 //
@@ -244,11 +244,11 @@ func ParseResult(frame []any) (Result, error) {
 //
 // On any shape violation it returns a *FrameShapeError with a precise Reason
 // and the first 256 bytes of the re-marshalled raw frame.
-func ParseError(frame []any) (WireError, error) {
+func ParseError(frame []any) (Error, error) {
 	const wantLen = 5
 
 	if len(frame) != wantLen {
-		return WireError{}, frameShape(
+		return Error{}, frameShape(
 			frame,
 			fmt.Sprintf(fmtWrongLen, wantLen, len(frame)),
 		)
@@ -256,7 +256,7 @@ func ParseError(frame []any) (WireError, error) {
 
 	typeCode, ok := frame[msgTypeIDElem].(float64)
 	if !ok || typeCode != MessageTypeError {
-		return WireError{}, frameShape(
+		return Error{}, frameShape(
 			frame,
 			fmt.Sprintf(fmtWrongMsgType, MessageTypeError),
 		)
@@ -264,25 +264,25 @@ func ParseError(frame []any) (WireError, error) {
 
 	uniqueID, fsErr := stringAt(frame, uniqueIDElem, fieldUniqueID)
 	if fsErr != nil {
-		return WireError{}, fsErr
+		return Error{}, fsErr
 	}
 
 	errorCode, fsErr := stringAt(frame, errCodeElem, "errorCode")
 	if fsErr != nil {
-		return WireError{}, fsErr
+		return Error{}, fsErr
 	}
 
 	errorDesc, fsErr := stringAt(frame, errDescElem, "errorDescription")
 	if fsErr != nil {
-		return WireError{}, fsErr
+		return Error{}, fsErr
 	}
 
 	details, fsErr := mapAt(frame, errDetailsElem, "details")
 	if fsErr != nil {
-		return WireError{}, fsErr
+		return Error{}, fsErr
 	}
 
-	return WireError{
+	return Error{
 		UniqueID:         uniqueID,
 		ErrorCode:        errorCode,
 		ErrorDescription: errorDesc,

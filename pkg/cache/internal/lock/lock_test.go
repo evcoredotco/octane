@@ -1,9 +1,10 @@
 // Package lock_test contains cross-platform black-box tests for the
 // double-checked lock acquire pattern (T-005-32, T-005-33).
 //
-// These tests exercise [lock.Acquire] as an external caller would:
-// via the exported sentinel errors and the returned [io.Closer].
-// The tests run on Linux, macOS, and Windows (CI matrix per AC7).
+// These tests exercise [lock.Acquire] and [lock.TryAcquire] as an
+// external caller would: via the exported sentinel errors and the
+// returned [io.Closer]. The tests run on Linux, macOS, and Windows
+// (CI matrix per AC7).
 package lock_test
 
 import (
@@ -19,6 +20,9 @@ import (
 
 // fmtHolderAcquire is the format string for holder Acquire failures.
 const fmtHolderAcquire = "holder Acquire: %v"
+
+// noTimeout passes zero to Acquire, meaning "use only the context deadline".
+const noTimeout = 0
 
 // lockPath returns a per-test temp-file path suitable for use as a
 // lock file. Using a unique path per test avoids cross-test interference
@@ -39,7 +43,7 @@ func Test_lock_AcquireAndRelease(t *testing.T) {
 
 	ctx := context.Background()
 
-	closer, err := lock.Acquire(ctx, path, 0, false)
+	closer, err := lock.Acquire(ctx, path, noTimeout)
 	if err != nil {
 		t.Fatalf("first Acquire: %v", err)
 	}
@@ -50,7 +54,7 @@ func Test_lock_AcquireAndRelease(t *testing.T) {
 	}
 
 	// The lock should now be free; a second Acquire must succeed.
-	closer2, err := lock.Acquire(ctx, path, 0, false)
+	closer2, err := lock.Acquire(ctx, path, noTimeout)
 	if err != nil {
 		t.Fatalf("second Acquire after Close: %v", err)
 	}
@@ -61,8 +65,8 @@ func Test_lock_AcquireAndRelease(t *testing.T) {
 	}
 }
 
-// Test_lock_NoWaitReturnsBusy verifies that when noWait is true and
-// the lock is held by another goroutine, Acquire returns ErrLockTimeout
+// Test_lock_NoWaitReturnsBusy verifies that when TryAcquire is used
+// and the lock is held by another goroutine, it returns ErrLockTimeout
 // immediately without sleeping.
 func Test_lock_NoWaitReturnsBusy(t *testing.T) {
 	t.Parallel()
@@ -72,7 +76,7 @@ func Test_lock_NoWaitReturnsBusy(t *testing.T) {
 	ctx := context.Background()
 
 	// Goroutine 1: hold the lock for the duration of the test.
-	holder, err := lock.Acquire(ctx, path, 0, false)
+	holder, err := lock.Acquire(ctx, path, noTimeout)
 	if err != nil {
 		t.Fatalf(fmtHolderAcquire, err)
 	}
@@ -84,13 +88,11 @@ func Test_lock_NoWaitReturnsBusy(t *testing.T) {
 		}
 	}()
 
-	// Goroutine 2: attempt with noWait=true; must fail immediately.
-	const noWait = true
-
-	_, err = lock.Acquire(ctx, path, 0, noWait)
+	// Non-blocking attempt via TryAcquire; must fail immediately.
+	_, err = lock.TryAcquire(ctx, path)
 	if !errors.Is(err, lock.ErrLockTimeout) {
 		t.Errorf(
-			"noWait Acquire: got %v, want ErrLockTimeout",
+			"TryAcquire: got %v, want ErrLockTimeout",
 			err,
 		)
 	}
@@ -107,7 +109,7 @@ func Test_lock_TimeoutExpires(t *testing.T) {
 	ctx := context.Background()
 
 	// Goroutine 1: hold the lock throughout.
-	holder, err := lock.Acquire(ctx, path, 0, false)
+	holder, err := lock.Acquire(ctx, path, noTimeout)
 	if err != nil {
 		t.Fatalf(fmtHolderAcquire, err)
 	}
@@ -123,7 +125,7 @@ func Test_lock_TimeoutExpires(t *testing.T) {
 
 	started := time.Now()
 
-	_, err = lock.Acquire(ctx, path, lockTimeout, false)
+	_, err = lock.Acquire(ctx, path, lockTimeout)
 
 	elapsed := time.Since(started)
 
@@ -165,7 +167,9 @@ func Test_lock_ContextCancel(t *testing.T) {
 	path := lockPath(t)
 
 	// Goroutine 1: hold the lock throughout.
-	holder, err := lock.Acquire(context.Background(), path, 0, false)
+	holder, err := lock.Acquire(
+		context.Background(), path, noTimeout,
+	)
 	if err != nil {
 		t.Fatalf(fmtHolderAcquire, err)
 	}
@@ -186,7 +190,7 @@ func Test_lock_ContextCancel(t *testing.T) {
 
 	waitGroup.Go(func() {
 		// No timeout; rely solely on context cancellation.
-		_, acquireErr = lock.Acquire(cancelCtx, path, 0, false)
+		_, acquireErr = lock.Acquire(cancelCtx, path, noTimeout)
 	})
 
 	// Give the goroutine a moment to enter the retry loop before

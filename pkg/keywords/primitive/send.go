@@ -8,28 +8,10 @@ import (
 	"fmt"
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
-	"github.com/evcoreco/octane/pkg/keywords/registry"
 )
 
 // errFrameNotSlice is returned when the frame argument is not a JSON array.
 var errFrameNotSlice = errors.New("frame must be []any")
-
-func init() {
-	registry.Register(api.Keyword{
-		Pattern:     "send raw frame {frame:any} on station {station:string}",
-		Layer:       api.LayerPrimitive,
-		OCPPVersion: 0,
-		Func:        sendRawFrame,
-	})
-
-	registry.Register(api.Keyword{
-		Pattern: "send raw bytes {bytes:string}" +
-			" on station {station:string}",
-		Layer:       api.LayerPrimitive,
-		OCPPVersion: 0,
-		Func:        sendRawBytes,
-	})
-}
 
 // sendRawFrame implements the primitive keyword:
 //

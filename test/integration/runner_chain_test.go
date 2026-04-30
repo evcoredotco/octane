@@ -13,8 +13,30 @@ import (
 	"slices"
 	"testing"
 
-	_ "github.com/evcoreco/octane/pkg/keywords/primitive" // registers primitive keywords
+	// registers primitive keywords
+	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
 	"github.com/evcoreco/octane/pkg/runner"
+)
+
+const (
+	// chainIDB is the story ID for the second node in the 4-deep chain.
+	chainIDB = "chain_b"
+	// chainIDC is the story ID for the third node in the 4-deep chain.
+	chainIDC = "chain_c"
+	// writeFilePerm is the file permission used by the writeFile helper.
+	writeFilePerm = 0o600
+	// emptyCacheDir is the zero-value cache directory (caching disabled).
+	emptyCacheDir = ""
+	// emptyOCPPVersion is the zero-value OCPP version string.
+	emptyOCPPVersion = ""
+	// zeroMaxParallel means unlimited parallelism (runner chooses).
+	zeroMaxParallel = 0
+	// zeroLockTimeout means no lock timeout.
+	zeroLockTimeout = 0
+	// zeroShardIndex is the default (no sharding).
+	zeroShardIndex = 0
+	// zeroShardTotal is the default (no sharding).
+	zeroShardTotal = 0
 )
 
 // storyChainA is the root of a 4-deep chain: no dependencies.
@@ -75,7 +97,8 @@ Scenario: D passes
 `
 
 // Test_runner_RunChain asserts that a 4-deep dependency chain executes in
-// topological order, all stories pass, and all cache statuses are CacheBypassed.
+// topological order, all stories pass, and all cache statuses are
+// CacheBypassed.
 func Test_runner_RunChain(t *testing.T) {
 	t.Parallel()
 
@@ -87,19 +110,7 @@ func Test_runner_RunChain(t *testing.T) {
 	writeFile(t, filepath.Join(dir, "chain_c.story"), storyChainC)
 	writeFile(t, filepath.Join(dir, "chain_d.story"), storyChainD)
 
-	cfg := runner.Config{
-		StoryPaths:         []string{dir},
-		MaxParallel:        0,
-		LockTimeout:        0,
-		NoWait:             false,
-		ShardIndex:         0,
-		ShardTotal:         0,
-		CacheDir:           "",
-		NoCache:            true,
-		NoTraceOnPass:      false,
-		OCPPVersion:        "",
-		InsecureSkipVerify: false,
-	}
+	cfg := noopCfg(dir)
 
 	result, err := runner.Run(context.Background(), cfg)
 	if err != nil {
@@ -116,48 +127,86 @@ func Test_runner_RunChain(t *testing.T) {
 		)
 	}
 
-	// Invariant: all stories must have passed with cache bypassed.
-	for _, storyResult := range result.Stories {
-		if storyResult.Status != runner.StatusPassed {
+	assertAllPassedBypassed(t, result.Stories)
+	assertChainOrder(t, result.Stories)
+}
+
+// assertAllPassedBypassed verifies every story passed with a bypassed cache.
+func assertAllPassedBypassed(t *testing.T, stories []runner.StoryResult) {
+	t.Helper()
+
+	for _, story := range stories {
+		if story.Status != runner.StatusPassed {
 			t.Errorf(
 				"story %q: want StatusPassed, got %s",
-				storyResult.TestID,
-				storyResult.Status,
+				story.TestID,
+				story.Status,
 			)
 		}
 
-		if storyResult.CacheStatus != runner.CacheBypassed {
+		if story.CacheStatus != runner.CacheBypassed {
 			t.Errorf(
 				"story %q: want CacheBypassed, got %s",
-				storyResult.TestID,
-				storyResult.CacheStatus,
+				story.TestID,
+				story.CacheStatus,
 			)
 		}
 	}
+}
 
-	// Build a map of testID → Order to verify topological ordering.
-	orderByID := make(map[string]int, len(result.Stories))
-	for _, storyResult := range result.Stories {
-		orderByID[storyResult.TestID] = storyResult.Order
+// assertChainOrder verifies that the four chain stories appear in topological
+// order and that the result slice is sorted by Order.
+func assertChainOrder(t *testing.T, stories []runner.StoryResult) {
+	t.Helper()
+
+	orderByID := buildOrderMap(stories)
+
+	requiredIDs := []string{"chain_a", chainIDB, chainIDC, "chain_d"}
+
+	checkRequiredPresent(t, orderByID, requiredIDs)
+	checkTopoOrder(t, orderByID)
+	checkStoriesSorted(t, stories)
+}
+
+// buildOrderMap builds a testID → Order map from a stories slice.
+func buildOrderMap(stories []runner.StoryResult) map[string]int {
+	orderByID := make(map[string]int, len(stories))
+
+	for _, story := range stories {
+		orderByID[story.TestID] = story.Order
 	}
 
-	requiredIDs := []string{"chain_a", "chain_b", "chain_c", "chain_d"}
-	for _, id := range requiredIDs {
+	return orderByID
+}
+
+// checkRequiredPresent asserts that all ids are present in orderByID.
+func checkRequiredPresent(
+	t *testing.T,
+	orderByID map[string]int,
+	ids []string,
+) {
+	t.Helper()
+
+	for _, id := range ids {
 		if _, ok := orderByID[id]; !ok {
 			t.Errorf("story %q missing from results", id)
 		}
 	}
+}
 
-	// Invariant: topological order must hold: a < b < c < d.
+// checkTopoOrder asserts chain_a < chain_b < chain_c < chain_d by Order.
+func checkTopoOrder(t *testing.T, orderByID map[string]int) {
+	t.Helper()
+
 	type orderCheck struct {
 		before string
 		after  string
 	}
 
 	checks := []orderCheck{
-		{before: "chain_a", after: "chain_b"},
-		{before: "chain_b", after: "chain_c"},
-		{before: "chain_c", after: "chain_d"},
+		{before: "chain_a", after: chainIDB},
+		{before: chainIDB, after: chainIDC},
+		{before: chainIDC, after: "chain_d"},
 	}
 
 	for _, chk := range checks {
@@ -169,20 +218,26 @@ func Test_runner_RunChain(t *testing.T) {
 			)
 		}
 	}
+}
 
-	// Invariant: result.Stories must be sorted by Order.
-	if !slices.IsSortedFunc(result.Stories, func(a, b runner.StoryResult) int {
+// checkStoriesSorted asserts that stories is sorted ascending by Order field.
+func checkStoriesSorted(t *testing.T, stories []runner.StoryResult) {
+	t.Helper()
+
+	byOrder := func(a, b runner.StoryResult) int {
 		return cmp.Compare(a.Order, b.Order)
-	}) {
+	}
+
+	if !slices.IsSortedFunc(stories, byOrder) {
 		t.Error("result.Stories is not sorted by Order field")
 	}
 }
 
-// writeFile is a test helper that writes content to path, failing the test on error.
+// writeFile is a test helper that writes content to path, failing on error.
 func writeFile(t *testing.T, path, content string) {
 	t.Helper()
 
-	err := os.WriteFile(path, []byte(content), 0o600)
+	err := os.WriteFile(path, []byte(content), writeFilePerm)
 	if err != nil {
 		t.Fatalf("writeFile(%q): %v", path, err)
 	}
@@ -193,15 +248,15 @@ func writeFile(t *testing.T, path, content string) {
 func noopCfg(storyDir string) runner.Config {
 	return runner.Config{
 		StoryPaths:         []string{storyDir},
-		MaxParallel:        0,
-		LockTimeout:        0,
+		MaxParallel:        zeroMaxParallel,
+		LockTimeout:        zeroLockTimeout,
 		NoWait:             false,
-		ShardIndex:         0,
-		ShardTotal:         0,
-		CacheDir:           "",
+		ShardIndex:         zeroShardIndex,
+		ShardTotal:         zeroShardTotal,
+		CacheDir:           emptyCacheDir,
 		NoCache:            true,
 		NoTraceOnPass:      false,
-		OCPPVersion:        "",
+		OCPPVersion:        emptyOCPPVersion,
 		InsecureSkipVerify: false,
 	}
 }
@@ -211,15 +266,15 @@ func noopCfg(storyDir string) runner.Config {
 func cachedCfg(storyDir, cacheDir string) runner.Config {
 	return runner.Config{
 		StoryPaths:         []string{storyDir},
-		MaxParallel:        0,
-		LockTimeout:        0,
+		MaxParallel:        zeroMaxParallel,
+		LockTimeout:        zeroLockTimeout,
 		NoWait:             false,
-		ShardIndex:         0,
-		ShardTotal:         0,
+		ShardIndex:         zeroShardIndex,
+		ShardTotal:         zeroShardTotal,
 		CacheDir:           cacheDir,
 		NoCache:            false,
 		NoTraceOnPass:      false,
-		OCPPVersion:        "",
+		OCPPVersion:        emptyOCPPVersion,
 		InsecureSkipVerify: false,
 	}
 }

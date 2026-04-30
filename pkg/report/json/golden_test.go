@@ -1,6 +1,6 @@
-// Package json_test contains tests for the JSON emitter.
+// Package reportjson_test contains tests for the JSON emitter.
 // Task: T-007-23.
-package json_test
+package reportjson_test
 
 import (
 	"bytes"
@@ -16,6 +16,9 @@ import (
 )
 
 // updateFlag controls whether the golden file is regenerated.
+//
+//nolint:gochecknoglobals // flag must be package-level for flag.Bool
+// registration
 var updateFlag = flag.Bool("update", false, "update golden files")
 
 // goldenFilePath is the path to the golden JSON file, relative to this
@@ -29,8 +32,20 @@ const (
 	// goldenBaseYear is the year used in fixedTime for golden test fixtures.
 	goldenBaseYear = 2024
 
+	// goldenBaseMonth is the month (January) used in fixedTime.
+	goldenBaseMonth = 1
+
+	// goldenBaseDay is the day-of-month used in fixedTime.
+	goldenBaseDay = 15
+
+	// goldenBaseHour is the hour used in fixedTime.
+	goldenBaseHour = 10
+
 	// totalStories is the total number of stories in the golden result.
 	totalStories = 3
+
+	// orderFirst is the Order index for the first story (zero-based index 1).
+	orderFirst = 1
 
 	// orderSecond is the Order index for the second story.
 	orderSecond = 2
@@ -55,11 +70,22 @@ const (
 
 	// filePerms is the file permission bits used when writing golden files.
 	filePerms = 0o600
+
+	// countOne is used for result counts that equal one (1 passed, 1 failed,
+	// 1 skipped, 1 cache hit) in the golden test fixture.
+	countOne = 1
 )
 
 // fixedTime returns a deterministic time for test fixtures.
 func fixedTime(offsetSeconds int) time.Time {
-	base := time.Date(goldenBaseYear, 1, 15, 10, 0, 0, 0, time.UTC)
+	base := time.Date(
+		goldenBaseYear,
+		goldenBaseMonth,
+		goldenBaseDay,
+		goldenBaseHour,
+		0, 0, 0,
+		time.UTC,
+	)
 
 	return base.Add(time.Duration(offsetSeconds) * time.Second)
 }
@@ -93,7 +119,7 @@ func goldenPassedStory() runner.StoryResult {
 // goldenFailedStory returns the failed Heartbeat story fixture.
 func goldenFailedStory() runner.StoryResult {
 	return runner.StoryResult{
-		Order:       1,
+		Order:       orderFirst,
 		TestID:      "tc_heartbeat",
 		ScopeKey:    scopeKeyCP01,
 		OCPPVersion: ocppVersion16,
@@ -145,10 +171,10 @@ func buildGoldenResult() *runner.RunResult {
 		FinishedAt: fixedTime(finishedAtSec),
 		Summary: runner.Summary{
 			Total:     totalStories,
-			Passed:    1,
-			Failed:    1,
-			Skipped:   1,
-			CacheHits: 1,
+			Passed:    countOne,
+			Failed:    countOne,
+			Skipped:   countOne,
+			CacheHits: countOne,
 		},
 		Stories: []runner.StoryResult{
 			goldenPassedStory(),

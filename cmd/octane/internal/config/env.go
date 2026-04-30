@@ -35,40 +35,81 @@ const skipVerifyOne = "1"
 // invalid value. Strict validation of the final [Config] is the
 // caller's responsibility after all layers have been applied.
 func ApplyEnv(cfg Config) Config {
-	if cacheDir := os.Getenv("OCTANE_CACHE_DIR"); cacheDir != emptyEnv {
-		cfg.CacheDir = cacheDir
+	cfg = applyEnvStrings(cfg)
+	cfg = applyEnvNumerics(cfg)
+	cfg = applyEnvSkipVerify(cfg)
+
+	return cfg
+}
+
+// applyEnvStrings applies string-typed environment variables to cfg.
+func applyEnvStrings(cfg Config) Config {
+	if v := os.Getenv("OCTANE_CACHE_DIR"); v != emptyEnv {
+		cfg.CacheDir = v
 	}
 
-	maxParallel := os.Getenv("OCTANE_MAX_PARALLEL")
-	if maxParallel != emptyEnv {
-		parsed, err := strconv.Atoi(maxParallel)
-		if err == nil {
-			cfg.MaxParallel = parsed
-		}
+	if v := os.Getenv("OCTANE_OCPP_VERSION"); v != emptyEnv {
+		cfg.OCPPVersion = v
 	}
 
-	ocppVersion := os.Getenv("OCTANE_OCPP_VERSION")
-	if ocppVersion != emptyEnv {
-		cfg.OCPPVersion = ocppVersion
+	if v := os.Getenv("OCTANE_FAIL_ON"); v != emptyEnv {
+		cfg.FailOn = v
 	}
 
-	lockTimeout := os.Getenv("OCTANE_LOCK_TIMEOUT")
-	if lockTimeout != emptyEnv {
-		parsed, lockParseErr := time.ParseDuration(lockTimeout)
-		if lockParseErr == nil {
-			cfg.LockTimeout = parsed
-		}
+	return cfg
+}
+
+// applyEnvNumerics applies numeric and duration environment variables to cfg.
+func applyEnvNumerics(cfg Config) Config {
+	cfg = applyEnvMaxParallel(cfg)
+	cfg = applyEnvLockTimeout(cfg)
+
+	return cfg
+}
+
+// applyEnvMaxParallel applies OCTANE_MAX_PARALLEL to cfg when the variable
+// is set and contains a valid integer.
+func applyEnvMaxParallel(cfg Config) Config {
+	v := os.Getenv("OCTANE_MAX_PARALLEL")
+	if v == emptyEnv {
+		return cfg
 	}
 
-	if failOn := os.Getenv("OCTANE_FAIL_ON"); failOn != emptyEnv {
-		cfg.FailOn = failOn
+	parsed, err := strconv.Atoi(v)
+	if err != nil {
+		return cfg
 	}
 
-	// OCTANE_INSECURE_SKIP_VERIFY is intentionally supported via env var
-	// (needed for headless CI environments that cannot pass CLI flags).
-	// A warning banner is always emitted by the CLI when this is active.
-	skipVerify := os.Getenv("OCTANE_INSECURE_SKIP_VERIFY")
-	if skipVerify == skipVerifyTrue || skipVerify == skipVerifyOne {
+	cfg.MaxParallel = parsed
+
+	return cfg
+}
+
+// applyEnvLockTimeout applies OCTANE_LOCK_TIMEOUT to cfg when the variable
+// is set and contains a valid duration string.
+func applyEnvLockTimeout(cfg Config) Config {
+	v := os.Getenv("OCTANE_LOCK_TIMEOUT")
+	if v == emptyEnv {
+		return cfg
+	}
+
+	parsed, err := time.ParseDuration(v)
+	if err != nil {
+		return cfg
+	}
+
+	cfg.LockTimeout = parsed
+
+	return cfg
+}
+
+// applyEnvSkipVerify applies OCTANE_INSECURE_SKIP_VERIFY to cfg.
+// OCTANE_INSECURE_SKIP_VERIFY is intentionally supported via env var
+// (needed for headless CI environments that cannot pass CLI flags).
+// A warning banner is always emitted by the CLI when this is active.
+func applyEnvSkipVerify(cfg Config) Config {
+	v := os.Getenv("OCTANE_INSECURE_SKIP_VERIFY")
+	if v == skipVerifyTrue || v == skipVerifyOne {
 		cfg.InsecureSkipVerify = true
 	}
 

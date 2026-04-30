@@ -1,13 +1,3 @@
-// Package runner orchestrates the execution of .story files by
-// walking the test dependency graph (ADR 0015), consulting the
-// content-addressed cache (ADR 0016), and returning structured
-// results that the report emitter (spec 007) consumes.
-//
-// This file defines the public data types: runner configuration,
-// per-story and aggregate results, execution status, and cache
-// status. It contains no implementation logic and imports only
-// the standard library.
-
 package runner
 
 import "time"

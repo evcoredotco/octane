@@ -1,5 +1,3 @@
-// Package lock is documented in errors.go.
-
 package lock
 
 import (
@@ -11,18 +9,24 @@ import (
 	"time"
 )
 
-// ErrLockTimeout is returned by [Acquire] when the caller has been
-// unable to obtain the exclusive flock within the configured timeout,
-// or immediately when [noWait] is true and the lock is already held.
+// ErrLockTimeout is returned by [Acquire] or [TryAcquire] when the
+// caller has been unable to obtain the exclusive flock within the
+// configured timeout, or immediately when [TryAcquire] finds the
+// lock already held.
 //
 // Callers should use [errors.Is] to distinguish this sentinel from
 // transient I/O errors:
 //
-//	closer, err := lock.Acquire(ctx, path, timeout, noWait)
+//	closer, err := lock.Acquire(ctx, path, timeout)
 //	if errors.Is(err, lock.ErrLockTimeout) {
 //	    // another process holds the lock; propagate or skip
 //	}
 var ErrLockTimeout = errors.New("lock: timed out waiting for lock")
+
+// errRetry is an internal sentinel used by [tryAcquireOnce] to
+// signal that the lock was busy and the caller should loop again.
+// It is never returned to external callers.
+var errRetry = errors.New("lock: busy, retry")
 
 // lockCloser wraps an *os.File returned by lockFile and implements
 // io.Closer by calling unlockFile on Close.
@@ -73,21 +77,18 @@ func (bs *backoffState) next() time.Duration {
 // closed.
 //
 // The retry loop uses exponential backoff starting at 1 ms and
-// capped at 100 ms. Two early-exit conditions override the loop:
-//
-//   - If noWait is true and the first [lockFile] attempt returns
-//     [ErrLockBusy], Acquire returns [ErrLockTimeout] immediately
-//     without sleeping.
-//   - If timeout elapses or ctx is cancelled, Acquire returns
-//     [ErrLockTimeout] (for timeout) or ctx.Err() (for cancellation).
+// capped at 100 ms. If timeout elapses or ctx is cancelled,
+// Acquire returns [ErrLockTimeout] (for timeout) or ctx.Err()
+// (for cancellation).
 //
 // A zero timeout means "use only the context deadline"; a negative
 // timeout behaves the same.
+//
+// To fail immediately when the lock is already held, use [TryAcquire].
 func Acquire(
 	ctx context.Context,
 	lockPath string,
 	timeout time.Duration,
-	noWait bool,
 ) (io.Closer, error) {
 	deadline, cancelFn := buildDeadlineContext(ctx, timeout)
 	defer cancelFn()
@@ -98,27 +99,72 @@ func Acquire(
 	}
 
 	for {
-		fileHandle, err := lockFile(lockPath)
-		if err == nil {
-			return &lockCloser{file: fileHandle}, nil
-		}
-
-		if !errors.Is(err, ErrLockBusy) {
-			return nil, fmt.Errorf("lock: Acquire: %w", err)
-		}
-
-		// Lock is busy. Apply no-wait or backoff logic.
-		if noWait {
-			return nil, ErrLockTimeout
-		}
-
-		sleepDuration := backoff.next()
-
-		err = sleepOrCancel(deadline, sleepDuration)
-		if err != nil {
+		closer, err := tryAcquireOnce(deadline, lockPath, backoff)
+		if err != nil && !errors.Is(err, errRetry) {
 			return nil, err
 		}
+
+		if closer != nil {
+			return closer, nil
+		}
 	}
+}
+
+// TryAcquire attempts a single non-blocking flock on the file at
+// lockPath. If the lock is already held by another process,
+// [ErrLockTimeout] is returned immediately without sleeping.
+//
+// A cancelled ctx is checked before the flock attempt; callers may
+// use this to abort before any filesystem syscall.
+//
+// TryAcquire is the non-blocking counterpart of [Acquire].
+func TryAcquire(
+	ctx context.Context,
+	lockPath string,
+) (io.Closer, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf(
+			"lock: TryAcquire: context done: %w", err,
+		)
+	}
+
+	fileHandle, err := lockFile(lockPath)
+	if err == nil {
+		return &lockCloser{file: fileHandle}, nil
+	}
+
+	if errors.Is(err, ErrLockBusy) {
+		return nil, ErrLockTimeout
+	}
+
+	return nil, fmt.Errorf("lock: TryAcquire: %w", err)
+}
+
+// tryAcquireOnce performs a single attempt to lock lockPath.
+// It returns a non-nil [io.Closer] on success, [errRetry] when the
+// lock is busy and the caller should sleep-and-retry, or a terminal
+// error when the attempt must be abandoned (non-busy I/O error or
+// timeout).
+func tryAcquireOnce(
+	deadline context.Context,
+	lockPath string,
+	backoff *backoffState,
+) (io.Closer, error) {
+	fileHandle, err := lockFile(lockPath)
+	if err == nil {
+		return &lockCloser{file: fileHandle}, nil
+	}
+
+	if !errors.Is(err, ErrLockBusy) {
+		return nil, fmt.Errorf("lock: Acquire: %w", err)
+	}
+
+	sleepErr := sleepOrCancel(deadline, backoff.next())
+	if sleepErr != nil {
+		return nil, sleepErr
+	}
+
+	return nil, errRetry
 }
 
 // buildDeadlineContext returns a child context that expires at the

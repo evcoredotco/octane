@@ -43,71 +43,91 @@ func TopologicalOrder(grph *Graph) ([]Node, error) {
 	// Seed the ready queue with all nodes whose in-degree is zero,
 	// then sort for a stable start state.
 	ready := collectZeroInDegree(grph.nodes, inDeg)
-	slices.SortFunc(ready, func(a, b Node) int {
-		return cmp.Compare(a.ID, b.ID)
-	})
+	sortByID(ready)
 
 	result := make([]Node, emptyInitialLen, len(grph.nodes))
 
 	for len(ready) > zeroInDegree {
-		// Pop the lexicographically smallest node.
-		current := ready[firstElem]
-		ready = ready[dropFirst:]
+		var current Node
 
+		current, ready = popFirst(ready)
 		result = append(result, current)
 
-		// Reduce in-degree for every dependent of current.
-		adjacentLen := len(grph.adjacency[current.ID])
-		newReady := make([]Node, emptyInitialLen, adjacentLen)
-
-		for _, neighborID := range grph.adjacency[current.ID] {
-			inDeg[neighborID]--
-
-			if inDeg[neighborID] == zeroInDegree {
-				idx := grph.nodeIndex[neighborID]
-				newReady = append(newReady, grph.nodes[idx])
-			}
-		}
-
-		// Sort newly eligible nodes before merging so that the
-		// overall ordering is stable without a full re-sort.
-		slices.SortFunc(newReady, func(a, b Node) int {
-			return cmp.Compare(a.ID, b.ID)
-		})
-
-		ready = append(ready, newReady...)
-
-		// Re-sort the combined ready queue so that lexicographic
-		// tie-breaking is global across all currently eligible nodes,
-		// not just newly added ones.
-		slices.SortFunc(ready, func(a, b Node) int {
-			return cmp.Compare(a.ID, b.ID)
-		})
+		ready = processNeighbors(grph, inDeg, current, ready)
 	}
 
-	// If some nodes were not processed, the graph contains a cycle.
-	// Report the edges that are still "active" (both endpoints remain
-	// unprocessed, i.e. still have non-zero in-degree or were never
-	// reached).
-	if len(result) < len(grph.nodes) {
-		processed := make(map[string]bool, len(result))
-
-		for _, node := range result {
-			processed[node.ID] = true
-		}
-
-		var cycleEdges []Edge
-
-		for _, edge := range grph.edges {
-			if !processed[edge.From] || !processed[edge.To] {
-				cycleEdges = append(cycleEdges, edge)
-			}
-		}
-
-		return nil, &CycleError{Edges: cycleEdges}
+	err := detectCycle(grph, result)
+	if err != nil {
+		return nil, err
 	}
 
 	return result, nil
+}
+
+// sortByID sorts a slice of Nodes lexicographically by their ID field.
+func sortByID(nodes []Node) {
+	slices.SortFunc(nodes, func(a, b Node) int {
+		return cmp.Compare(a.ID, b.ID)
+	})
+}
+
+// popFirst removes and returns the first element of the slice.
+func popFirst(nodes []Node) (Node, []Node) {
+	return nodes[firstElem], nodes[dropFirst:]
+}
+
+// processNeighbors decrements in-degree for every neighbor of current,
+// collects newly zero-in-degree nodes into ready, and re-sorts for stable
+// ordering.
+func processNeighbors(
+	grph *Graph,
+	inDeg map[string]int,
+	current Node,
+	ready []Node,
+) []Node {
+	adjacentLen := len(grph.adjacency[current.ID])
+	newReady := make([]Node, emptyInitialLen, adjacentLen)
+
+	for _, neighborID := range grph.adjacency[current.ID] {
+		inDeg[neighborID]--
+
+		if inDeg[neighborID] == zeroInDegree {
+			idx := grph.nodeIndex[neighborID]
+			newReady = append(newReady, grph.nodes[idx])
+		}
+	}
+
+	sortByID(newReady)
+
+	ready = append(ready, newReady...)
+
+	sortByID(ready)
+
+	return ready
+}
+
+// detectCycle returns *CycleError when the result slice is shorter than the
+// graph's node count, indicating that one or more nodes form a cycle.
+func detectCycle(grph *Graph, result []Node) error {
+	if len(result) >= len(grph.nodes) {
+		return nil
+	}
+
+	processed := make(map[string]bool, len(result))
+
+	for _, node := range result {
+		processed[node.ID] = true
+	}
+
+	var cycleEdges []Edge
+
+	for _, edge := range grph.edges {
+		if !processed[edge.From] || !processed[edge.To] {
+			cycleEdges = append(cycleEdges, edge)
+		}
+	}
+
+	return &CycleError{Edges: cycleEdges}
 }
 
 // collectZeroInDegree returns the subset of nodes whose in-degree is

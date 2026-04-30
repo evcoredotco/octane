@@ -63,15 +63,12 @@ type Result struct {
 	Payload json.RawMessage
 }
 
-// WireError represents a decoded OCPP-J CALLERROR frame.
+// Error represents a decoded OCPP-J CALLERROR frame.
 //
 // Wire shape:
 //
 //	[4, "<uniqueId>", "<errorCode>", "<errorDescription>", { ...details... }]
-//
-// The type is named WireError rather than Error to avoid shadowing the
-// built-in error interface. The wire.WireError stutter is intentional.
-type WireError struct {
+type Error struct {
 	// UniqueID matches the UniqueID from the originating Call frame.
 	UniqueID string
 	// ErrorCode is the OCPP-J error code string, e.g. "NotImplemented"

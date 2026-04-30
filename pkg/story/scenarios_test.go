@@ -17,16 +17,29 @@ import (
 	"github.com/evcoreco/octane/pkg/story"
 )
 
-// update is set by passing -update on the test command line. When true,
-// TestScenariosGolden regenerates golden fixture files instead of comparing.
-var update = flag.Bool("update", false, "regenerate golden fixture files")
-
 const (
 	scenariosDir  = "scenarios"
 	parentDir     = ".."
 	noFiles       = 0
 	goldenDirPerm = 0o750
+	storyFileMode = 0o600
 )
+
+// shouldUpdateGoldens reports whether the -update flag was passed. It reads
+// the flag value at call time so that no package-level variable is needed.
+func shouldUpdateGoldens() bool {
+	f := flag.Lookup("update")
+	if f == nil {
+		return false
+	}
+
+	return f.Value.String() == "true"
+}
+
+func TestMain(m *testing.M) {
+	flag.Bool("update", false, "regenerate golden fixture files")
+	m.Run()
+}
 
 // TestScenariosParseClean asserts that every .story file under scenarios/
 // parses without error (AC8). Failures here are blockers: they indicate
@@ -42,17 +55,23 @@ func TestScenariosParseClean(t *testing.T) {
 	for _, path := range paths {
 		t.Run(filepath.ToSlash(path), func(t *testing.T) {
 			t.Parallel()
-
-			src, err := os.ReadFile(filepath.Clean(path))
-			if err != nil {
-				t.Fatalf("read %s: %v", path, err)
-			}
-
-			_, parseErr := story.Parse(path, src)
-			if parseErr != nil {
-				t.Errorf("parse %s: %v", path, parseErr)
-			}
+			assertParsesClean(t, path)
 		})
+	}
+}
+
+// assertParsesClean reads and parses a single .story file, failing the test
+// on any error.
+func assertParsesClean(t *testing.T, path string) {
+	t.Helper()
+
+	src, err := os.ReadFile(filepath.Clean(path))
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+
+	if _, parseErr := story.Parse(path, src); parseErr != nil {
+		t.Errorf("parse %s: %v", path, parseErr)
 	}
 }
 
@@ -89,6 +108,22 @@ func runGoldenCheck(
 ) {
 	t.Helper()
 
+	got := parseAndMarshal(t, path)
+
+	rel, err := filepath.Rel(scenariosRoot, path)
+	if err != nil {
+		t.Fatalf("rel path for %s: %v", path, err)
+	}
+
+	goldenPath := filepath.Join(goldenRoot, rel+".golden.json")
+
+	compareWithGolden(t, path, goldenPath, got)
+}
+
+// parseAndMarshal parses path and marshals the AST to indented JSON.
+func parseAndMarshal(t *testing.T, path string) []byte {
+	t.Helper()
+
 	src, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		t.Fatalf("read %s: %v", path, err)
@@ -104,14 +139,20 @@ func runGoldenCheck(
 		t.Fatalf("marshal %s: %v", path, err)
 	}
 
-	rel, err := filepath.Rel(scenariosRoot, path)
-	if err != nil {
-		t.Fatalf("rel path for %s: %v", path, err)
-	}
+	return got
+}
 
-	goldenPath := filepath.Join(goldenRoot, rel+".golden.json")
+// compareWithGolden compares got against the golden file. It writes or
+// regenerates the golden when requested or when the file does not yet exist.
+func compareWithGolden(
+	t *testing.T,
+	path string,
+	goldenPath string,
+	got []byte,
+) {
+	t.Helper()
 
-	if *update {
+	if shouldUpdateGoldens() {
 		writeGolden(t, goldenPath, got)
 
 		return
@@ -119,7 +160,6 @@ func runGoldenCheck(
 
 	existing, readErr := os.ReadFile(filepath.Clean(goldenPath))
 	if os.IsNotExist(readErr) {
-		// First-run bootstrap: write the golden file.
 		writeGolden(t, goldenPath, got)
 
 		return
@@ -182,7 +222,7 @@ func writeGolden(t *testing.T, path string, data []byte) {
 		t.Fatalf("mkdir %s: %v", filepath.Dir(path), err)
 	}
 
-	err = os.WriteFile(filepath.Clean(path), data, 0o600)
+	err = os.WriteFile(filepath.Clean(path), data, storyFileMode)
 	if err != nil {
 		t.Fatalf("write golden %s: %v", path, err)
 	}

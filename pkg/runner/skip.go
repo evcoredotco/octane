@@ -1,9 +1,3 @@
-// Package runner — T-005-43: failure propagation (skipped dependents).
-//
-// This file contains the logic for cancelling an in-flight run when
-// context cancellation arrives. The per-story failure propagation is
-// handled in traversal.go (schedulerState.propagateFailures).
-
 package runner
 
 import "context"

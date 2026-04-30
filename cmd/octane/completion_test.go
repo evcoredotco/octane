@@ -72,10 +72,12 @@ func runCompletionSyntaxCheck(t *testing.T, tcase completionCase) {
 func Test_octane_CompletionBashSyntax(t *testing.T) {
 	t.Parallel()
 
+	root := newRootCmd()
+
 	runCompletionSyntaxCheck(t, completionCase{
 		shell:    "bash",
 		ext:      ".bash",
-		generate: rootCmd.GenBashCompletion,
+		generate: root.GenBashCompletion,
 	})
 }
 
@@ -85,9 +87,11 @@ func Test_octane_CompletionBashSyntax(t *testing.T) {
 func Test_octane_CompletionZshSyntax(t *testing.T) {
 	t.Parallel()
 
+	root := newRootCmd()
+
 	runCompletionSyntaxCheck(t, completionCase{
 		shell:    "zsh",
 		ext:      ".zsh",
-		generate: rootCmd.GenZshCompletion,
+		generate: root.GenZshCompletion,
 	})
 }

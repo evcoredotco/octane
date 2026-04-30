@@ -17,9 +17,15 @@ import (
 	"github.com/evcoreco/octane/pkg/runner"
 )
 
-// goroutineCount is the number of parallel writers exercised by the
-// concurrent write test (AC10: each run uses a distinct run-id).
-const goroutineCount = 10
+const (
+	// goroutineCount is the number of parallel writers exercised by the
+	// concurrent write test (AC10: each run uses a distinct run-id).
+	goroutineCount = 10
+
+	// concurrentTestYear is the year component of the fixed timestamp used
+	// in concurrent write test fixtures.
+	concurrentTestYear = 2024
+)
 
 // validateRunIDEntry checks that a single directory entry in the shared output
 // dir contains a valid octane.json with a matching run_id and records the
@@ -81,7 +87,7 @@ func validateRunIDEntry(
 // writeTestReport builds a minimal RunResult and calls reportjson.WriteJSON
 // for a single goroutine in the concurrent test. Errors are sent to errs.
 func writeTestReport(goroutineIdx int, sharedDir string, errs chan<- error) {
-	fixedTime := time.Date(2024, 1, 15, 10, 0, 0, 0, time.UTC)
+	fixedTime := time.Date(concurrentTestYear, 1, 15, 10, 0, 0, 0, time.UTC)
 	result := &runner.RunResult{
 		RunID:      fmt.Sprintf("run-%02d", goroutineIdx),
 		StartedAt:  fixedTime,
@@ -92,7 +98,8 @@ func writeTestReport(goroutineIdx int, sharedDir string, errs chan<- error) {
 
 	outDir := filepath.Join(sharedDir, result.RunID)
 
-	opts := report.JSONOptions{ //nolint:exhaustruct // NoTraceOnPass zero value is correct
+	// NoTraceOnPass zero value is correct for this fixture.
+	opts := report.JSONOptions{ //nolint:exhaustruct
 		OctaneVersion: "test",
 	}
 

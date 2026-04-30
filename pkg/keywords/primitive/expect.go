@@ -6,26 +6,7 @@ import (
 	"time"
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
-	"github.com/evcoreco/octane/pkg/keywords/registry"
 )
-
-func init() {
-	registry.Register(api.Keyword{
-		Pattern: "expect any frame on station" +
-			" {station:string} within {timeout:duration}",
-		Layer:       api.LayerPrimitive,
-		OCPPVersion: 0,
-		Func:        expectAnyFrame,
-	})
-
-	registry.Register(api.Keyword{
-		Pattern: "expect a frame of type {messageType:int} on station" +
-			" {station:string} within {timeout:duration}",
-		Layer:       api.LayerPrimitive,
-		OCPPVersion: 0,
-		Func:        expectFrameOfType,
-	})
-}
 
 // TimeoutError is returned by the expect keywords when no matching frame
 // arrives within the specified timeout. It carries the station handle, the
@@ -125,6 +106,74 @@ func expectAnyFrame(
 	return nil
 }
 
+// frameMessageType returns the OCPP-J message-type code from the first
+// element of frame, and reports whether the extraction succeeded. A
+// frame with zero elements or a non-float64 first element yields ok=false.
+func frameMessageType(frame []any) (int, bool) {
+	if len(frame) == 0 {
+		return 0, false
+	}
+
+	msgTypeVal, ok := frame[0].(float64)
+	if !ok {
+		return 0, false
+	}
+
+	return int(msgTypeVal), true
+}
+
+// receiveTypedFrame reads from sta under dctx until a frame whose
+// message-type code equals wantType is found, then returns it.
+// It returns an error wrapping dctx timeout or a station error.
+func receiveTypedFrame(
+	dctx context.Context,
+	sta api.Station,
+	wantType int,
+	handle string,
+	deadline time.Time,
+	timeout time.Duration,
+) ([]any, error) {
+	for {
+		frame, err := sta.Expect(dctx)
+		if err != nil {
+			return nil, wrapExpectError(
+				dctx, err, wantType, handle, deadline, timeout,
+			)
+		}
+
+		msgType, ok := frameMessageType(frame)
+		if ok && msgType == wantType {
+			return frame, nil
+		}
+	}
+}
+
+// wrapExpectError maps a station Expect error to either a TimeoutError
+// (when the context deadline was reached) or a wrapped fmt error.
+func wrapExpectError(
+	dctx context.Context,
+	err error,
+	messageType int,
+	handle string,
+	deadline time.Time,
+	timeout time.Duration,
+) error {
+	if dctx.Err() != nil {
+		return &TimeoutError{
+			Station:  handle,
+			Timeout:  timeout,
+			Deadline: deadline,
+		}
+	}
+
+	return fmt.Errorf(
+		"primitive: expect frame of type %d on station %q: %w",
+		messageType,
+		handle,
+		err,
+	)
+}
+
 // expectFrameOfType implements the primitive keyword:
 //
 //	expect a frame of type {messageType:int} on station {station:string}
@@ -162,43 +211,19 @@ func expectFrameOfType(
 
 	defer cancel()
 
-	for {
-		frame, expectErr := sta.Expect(dctx)
-		if expectErr != nil {
-			if dctx.Err() != nil {
-				return &TimeoutError{
-					Station:  handle,
-					Timeout:  timeout,
-					Deadline: deadline,
-				}
-			}
-
-			return fmt.Errorf(
-				"primitive: expect frame of type %d on station %q: %w",
-				messageType,
-				handle,
-				expectErr,
-			)
-		}
-
-		if len(frame) == 0 {
-			continue
-		}
-
-		msgTypeVal, ok := frame[0].(float64)
-		if !ok {
-			continue
-		}
-
-		if int(msgTypeVal) == messageType {
-			state.Logf(
-				"station %q: received frame of type %d (%d elements)",
-				handle,
-				messageType,
-				len(frame),
-			)
-
-			return nil
-		}
+	frame, err := receiveTypedFrame(
+		dctx, sta, messageType, handle, deadline, timeout,
+	)
+	if err != nil {
+		return err
 	}
+
+	state.Logf(
+		"station %q: received frame of type %d (%d elements)",
+		handle,
+		messageType,
+		len(frame),
+	)
+
+	return nil
 }

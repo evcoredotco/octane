@@ -5,17 +5,7 @@ import (
 	"fmt"
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
-	"github.com/evcoreco/octane/pkg/keywords/registry"
 )
-
-func init() {
-	registry.Register(api.Keyword{
-		Pattern:     "wait {duration:duration}",
-		Layer:       api.LayerPrimitive,
-		OCPPVersion: 0,
-		Func:        waitDuration,
-	})
-}
 
 // waitDuration implements the primitive keyword:
 //

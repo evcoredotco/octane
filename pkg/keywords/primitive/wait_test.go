@@ -41,8 +41,17 @@ const (
 	// chanBufOne is the buffer size for single-result goroutine channels.
 	chanBufOne = 1
 
-	// realTimeLimitSec is the real-time ceiling (seconds) for determinism tests.
+	// realTimeLimitSec is the real-time ceiling (seconds) for
+	// determinism tests.
 	realTimeLimitSec = 2
+
+	// clockMonthJanuary is the month component (January) for
+	// deterministic clock seed values in wait tests.
+	clockMonthJanuary = 1
+
+	// clockDayFirst is the day component (1st) for deterministic clock
+	// seed values in wait tests.
+	clockDayFirst = 1
 )
 
 // ── tests ────────────────────────────────────────────────────────────────────
@@ -52,7 +61,10 @@ const (
 func Test_primitive_wait_ReturnsNil(t *testing.T) {
 	t.Parallel()
 
-	clk := clock.Deterministic(time.Date(testYear, 1, 1, 0, 0, 0, 0, time.UTC))
+	clk := clock.Deterministic(time.Date(
+		testYear, clockMonthJanuary, clockDayFirst,
+		0, 0, 0, 0, time.UTC,
+	))
 
 	state := mock.NewMockState()
 	state.SetClock(clk)
@@ -95,7 +107,10 @@ func Test_primitive_wait_ReturnsNil(t *testing.T) {
 func Test_primitive_wait_NoDeterministicClockRealTimeElapsed(t *testing.T) {
 	t.Parallel()
 
-	clk := clock.Deterministic(time.Date(testYear, 1, 1, 0, 0, 0, 0, time.UTC))
+	clk := clock.Deterministic(time.Date(
+		testYear, clockMonthJanuary, clockDayFirst,
+		0, 0, 0, 0, time.UTC,
+	))
 
 	state := mock.NewMockState()
 	state.SetClock(clk)
@@ -148,7 +163,10 @@ func Test_primitive_wait_ContextCancelled(t *testing.T) {
 
 	// Use a deterministic clock that we deliberately never advance.
 	// The keyword should unblock via context cancellation instead.
-	clk := clock.Deterministic(time.Date(testYear, 1, 1, 0, 0, 0, 0, time.UTC))
+	clk := clock.Deterministic(time.Date(
+		testYear, clockMonthJanuary, clockDayFirst,
+		0, 0, 0, 0, time.UTC,
+	))
 
 	state := mock.NewMockState()
 	state.SetClock(clk)

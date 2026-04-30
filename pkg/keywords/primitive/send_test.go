@@ -24,7 +24,7 @@ import (
 // errSendStub is the sentinel returned by the mock station during error tests.
 var errSendStub = errors.New("stub: send failed")
 
-// ── Named constants ───────────────────────────────────────────────────────────
+// ── Named constants ──────────────────────────────────────────────────────────
 
 const (
 	// handleSend is the station handle name used across send tests.
@@ -57,7 +57,7 @@ const (
 	noSentFrames = 0
 )
 
-// ── sendRawFrame tests ────────────────────────────────────────────────────────
+// ── sendRawFrame tests ───────────────────────────────────────────────────────
 
 // Test_primitive_sendRawFrame_HappyPath verifies that the keyword delivers the
 // frame to SentFrames() exactly once and with the correct contents (AC2).
@@ -165,7 +165,7 @@ func Test_primitive_sendRawFrame_SendError(t *testing.T) {
 	}
 }
 
-// ── sendRawBytes tests ────────────────────────────────────────────────────────
+// ── sendRawBytes tests ───────────────────────────────────────────────────────
 
 // Test_primitive_sendRawBytes_HappyPath verifies that a valid hex string is
 // decoded, parsed as a JSON array, and delivered via Station.Send (AC2).

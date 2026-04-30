@@ -1,14 +1,3 @@
-// Package runner — T-005-42: runner.Run main loop.
-// Package runner — T-005-46: --lock-timeout / --no-wait flag plumbing.
-//
-// Run is the single public entry point for story execution. It
-// builds the dependency DAG, computes the topological order, and
-// drives the scheduler + worker pool until all stories reach a
-// terminal status. The lock timeout and no-wait flag from Config
-// are plumbed through to the cache lock subsystem on every story
-// execution (ADR 0016 §"Lock timeout and fast-fail", ADR 0019
-// §"Lock timeout and fast-fail").
-
 package runner
 
 import (
@@ -16,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -51,8 +41,20 @@ const placeholderSHA = "00000000"
 // errStationNotRegistered is returned when a station handle is not registered.
 var errStationNotRegistered = errors.New("runner: station not registered")
 
+// defaultMaxParallel is the fallback parallelism when Config.MaxParallel
+// is zero or negative (sequential execution mode).
+const defaultMaxParallel = 1
+
+// emptyTestID is the sentinel used when a TestID is not yet populated
+// (for example, a lock-failure StoryResult before executeStory runs).
+const emptyTestID = ""
+
 // ocppVersionEmpty is used when the story does not declare an OCPP version.
 const ocppVersionEmpty = ""
+
+// emptyString is the zero-value sentinel for string-typed guards and
+// return values where a named domain constant does not apply.
+const emptyString = ""
 
 // runnerState implements api.State for use by keyword functions
 // during story execution. It wraps the station registry and the
@@ -95,7 +97,11 @@ func (rs *runnerState) Station(handle string) (api.Station, error) {
 
 	station, ok := rs.stations[handle]
 	if !ok {
-		return nil, fmt.Errorf("runner: station %q: %w", handle, errStationNotRegistered)
+		return nil, fmt.Errorf(
+			"runner: station %q: %w",
+			handle,
+			errStationNotRegistered,
+		)
 	}
 
 	return station, nil
@@ -174,21 +180,11 @@ func (rs *runnerState) Logf(format string, args ...any) {
 func Run(ctx context.Context, cfg Config) (*RunResult, error) {
 	clk := clock.Real()
 	startedAt := clk.Now()
-
 	runID := generateRunID(clk)
 
-	cacheDir, err := resolveCacheDir(cfg.CacheDir)
+	cacheDir, storyCache, err := openRunCache(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("runner: resolve cache dir: %w", err)
-	}
-
-	var storyCache cache.Cache
-
-	if !cfg.NoCache {
-		storyCache, err = cache.Open(cacheDir)
-		if err != nil {
-			return nil, fmt.Errorf("runner: open cache: %w", err)
-		}
+		return nil, err
 	}
 
 	stories, err := discoverStories(cfg)
@@ -197,34 +193,96 @@ func Run(ctx context.Context, cfg Config) (*RunResult, error) {
 	}
 
 	if len(stories) == 0 {
-		return &RunResult{
-			RunID:      runID,
-			StartedAt:  startedAt,
-			FinishedAt: clk.Now(),
-			Stories:    nil,
-			Summary: Summary{
-				Total:     0,
-				Passed:    0,
-				Failed:    0,
-				Skipped:   0,
-				CacheHits: 0,
-			},
-		}, nil
+		return emptyRunResult(runID, startedAt, clk.Now()), nil
 	}
 
-	dagResult, err := buildDAG(stories, runID, 0)
+	dagResult, topoOrder, err := buildDAGAndSort(stories, runID)
 	if err != nil {
 		return nil, err
+	}
+
+	lockTimeout := resolveLockTimeout(cfg)
+	lockDir := filepath.Join(cacheDir, "locks")
+	schedState := newSchedulerState(dagResult, topoOrder)
+
+	results := runScheduler(ctx, runSchedulerArgs{
+		cfg:         cfg,
+		schedState:  schedState,
+		dagResult:   dagResult,
+		storyCache:  storyCache,
+		lockDir:     lockDir,
+		lockTimeout: lockTimeout,
+		clk:         clk,
+		runID:       runID,
+	})
+
+	return buildRunResult(runID, startedAt, clk.Now(), topoOrder, results), nil
+}
+
+// openRunCache resolves the cache directory and opens the cache when enabled.
+// It returns the cache dir and the open cache (nil when cfg.NoCache is set).
+func openRunCache(cfg Config) (string, cache.Cache, error) {
+	cacheDir, err := resolveCacheDir(cfg.CacheDir)
+	if err != nil {
+		return emptyString, nil, fmt.Errorf(
+			"runner: resolve cache dir: %w", err,
+		)
+	}
+
+	if cfg.NoCache {
+		return cacheDir, nil, nil
+	}
+
+	storyCache, err := cache.Open(cacheDir)
+	if err != nil {
+		return emptyString, nil, fmt.Errorf(
+			"runner: open cache: %w", err,
+		)
+	}
+
+	return cacheDir, storyCache, nil
+}
+
+// emptyRunResult returns a RunResult with no stories executed.
+func emptyRunResult(
+	runID string,
+	startedAt,
+	finishedAt time.Time,
+) *RunResult {
+	return &RunResult{
+		RunID:      runID,
+		StartedAt:  startedAt,
+		FinishedAt: finishedAt,
+		Stories:    nil,
+		Summary: Summary{
+			Total:     0,
+			Passed:    0,
+			Failed:    0,
+			Skipped:   0,
+			CacheHits: 0,
+		},
+	}
+}
+
+// buildDAGAndSort builds the dependency DAG from stories and returns the
+// buildDAGResult plus the stable topological node order.
+func buildDAGAndSort(
+	stories []*ast.Story,
+	runID string,
+) (*buildDAGResult, []string, error) {
+	dagResult, err := buildDAG(stories, runID, 0)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	topoNodes, err := dag.TopologicalOrder(dagResult.graph)
 	if err != nil {
 		var errCycle *dag.CycleError
 		if errors.As(err, &errCycle) {
-			return nil, fmt.Errorf("%w: %w", ErrCycle, errCycle)
+			return nil, nil, fmt.Errorf("%w: %w", ErrCycle, errCycle)
 		}
 
-		return nil, fmt.Errorf("runner: topological order: %w", err)
+		return nil, nil, fmt.Errorf("runner: topological order: %w", err)
 	}
 
 	topoOrder := make([]string, len(topoNodes))
@@ -233,238 +291,321 @@ func Run(ctx context.Context, cfg Config) (*RunResult, error) {
 		topoOrder[idx] = topoNode.ID
 	}
 
-	schedState := newSchedulerState(dagResult, topoOrder)
+	return dagResult, topoOrder, nil
+}
 
-	lockTimeout := cfg.LockTimeout
-	if lockTimeout == 0 && !cfg.NoWait {
-		lockTimeout = defaultLockTimeout
+// resolveLockTimeout returns the effective lock timeout from cfg. When
+// LockTimeout is zero and NoWait is false it defaults to defaultLockTimeout.
+func resolveLockTimeout(cfg Config) time.Duration {
+	if cfg.LockTimeout != 0 || cfg.NoWait {
+		return cfg.LockTimeout
 	}
 
-	lockDir := filepath.Join(cacheDir, "locks")
+	return defaultLockTimeout
+}
 
-	results := runScheduler(
-		ctx,
-		cfg,
-		schedState,
-		dagResult,
-		storyCache,
-		lockDir,
-		lockTimeout,
-		clk,
-		runID,
-	)
+// schedRunner groups the shared state for one runScheduler invocation so that
+// dispatchBatch and the completion loop can be extracted as methods instead of
+// capturing closures.
+type schedRunner struct {
+	cfg         Config
+	schedState  *schedulerState
+	dagResult   *buildDAGResult
+	storyCache  cache.Cache
+	lockDir     string
+	lockTimeout time.Duration
+	clk         clock.Clock
+	runID       string
+	maxParallel int
+	pool        *workerPool
+	inProcess   sync.Map
+}
 
-	finishedAt := clk.Now()
-
-	return buildRunResult(
-		runID,
-		startedAt,
-		finishedAt,
-		topoOrder,
-		results,
-	), nil
+// runSchedulerArgs bundles the arguments for [runScheduler] that
+// would otherwise exceed the 8-parameter limit.
+type runSchedulerArgs struct {
+	cfg         Config
+	schedState  *schedulerState
+	dagResult   *buildDAGResult
+	storyCache  cache.Cache
+	lockDir     string
+	lockTimeout time.Duration
+	clk         clock.Clock
+	runID       string
 }
 
 // runScheduler drives the scheduler + worker pool until all nodes
 // are in nodeDone. It returns a map of nodeID → StoryResult.
 func runScheduler(
 	ctx context.Context,
-	cfg Config,
-	schedState *schedulerState,
-	dagResult *buildDAGResult,
-	storyCache cache.Cache,
-	lockDir string,
-	lockTimeout time.Duration,
-	clk clock.Clock,
-	runID string,
+	args runSchedulerArgs,
 ) map[string]StoryResult {
-	maxParallel := cfg.MaxParallel
+	maxParallel := args.cfg.MaxParallel
 	if maxParallel <= 0 {
-		maxParallel = 1
+		maxParallel = defaultMaxParallel
 	}
 
-	pool := newWorkerPool(ctx, maxParallel)
-
-	// inProcess is an in-process sync.Map[nodeID → *sync.Once]
-	// that provides the fast-path double-check before the filesystem
-	// lock is consulted (ADR 0019 §"Interaction with cache lock").
-	var inProcess sync.Map
-
-	// dispatchBatch sends all currently eligible nodes to the pool
-	// up to the pool's remaining capacity.
-	dispatchBatch := func() {
-		eligible := schedState.eligibleNodes()
-		capacity := maxParallel - schedState.running
-
-		for _, nodeID := range eligible {
-			if capacity <= 0 {
-				break
-			}
-
-			// Guard against double-dispatch (defensive).
-			if schedState.status[nodeID] != nodePending {
-				continue
-			}
-
-			sn := dagResult.nodes[dagResult.index[nodeID]]
-
-			execFn := makeExecFunc(
-				nodeID,
-				sn,
-				cfg,
-				storyCache,
-				lockDir,
-				lockTimeout,
-				clk,
-				runID,
-				&inProcess,
-			)
-
-			item := workItem{
-				nodeID:  nodeID,
-				execute: execFn,
-			}
-
-			if !pool.submit(ctx, item) {
-				break
-			}
-
-			schedState.status[nodeID] = nodeRunning
-			schedState.running++
-			capacity--
-		}
+	sched := &schedRunner{
+		cfg:         args.cfg,
+		schedState:  args.schedState,
+		dagResult:   args.dagResult,
+		storyCache:  args.storyCache,
+		lockDir:     args.lockDir,
+		lockTimeout: args.lockTimeout,
+		clk:         args.clk,
+		runID:       args.runID,
+		maxParallel: maxParallel,
+		pool:        newWorkerPool(ctx, maxParallel),
+		inProcess:   sync.Map{},
 	}
 
-	// completionLoop drains completion events and drives the
-	// scheduler until no nodes remain pending or running. It runs
-	// in a goroutine so that pool.close() can be deferred safely.
-	completionLoop := func() {
-		defer pool.close()
-
-		dispatchBatch()
-
-		for schedState.pendingCount() > 0 {
-			select {
-			case <-ctx.Done():
-				cancelPendingNodes(ctx, schedState)
-
-				return
-
-			case done, ok := <-pool.completionCh:
-				if !ok {
-					return
-				}
-
-				schedState.status[done.nodeID] = nodeDone
-				schedState.result[done.nodeID] = done.result
-				schedState.running--
-
-				if done.result.Status == StatusFailed {
-					schedState.propagateFailures(
-						done.nodeID,
-						done.result,
-					)
-				}
-
-				dispatchBatch()
-			}
-		}
-	}
-
-	// Run completionLoop in a goroutine and block until it finishes.
-	// completionLoop owns pool.completionCh exclusively; the main
-	// goroutine must NOT read from completionCh while completionLoop is
-	// running (doing so races and steals completion items, causing the
-	// scheduler to block forever). A sync.WaitGroup is the simplest
-	// correct synchronization here.
 	var workGroup sync.WaitGroup
 
 	workGroup.Go(func() {
-		completionLoop()
+		sched.completionLoop(ctx)
 	})
 
 	workGroup.Wait()
 
-	return schedState.result
+	return args.schedState.result
+}
+
+// dispatchBatch sends all currently eligible nodes to the pool up to the
+// pool's remaining capacity.
+func (sr *schedRunner) dispatchBatch(ctx context.Context) {
+	eligible := sr.schedState.eligibleNodes()
+	capacity := sr.maxParallel - sr.schedState.running
+
+	for _, nodeID := range eligible {
+		if capacity <= 0 {
+			break
+		}
+
+		if sr.schedState.status[nodeID] != nodePending {
+			continue
+		}
+
+		if !sr.submitNode(ctx, nodeID, capacity) {
+			break
+		}
+
+		capacity--
+	}
+}
+
+// submitNode builds the exec function for nodeID and submits it to the pool.
+// It returns false when the pool rejected the item (pool is full or closed).
+func (sr *schedRunner) submitNode(
+	ctx context.Context,
+	nodeID string,
+	_ int,
+) bool {
+	sn := sr.dagResult.nodes[sr.dagResult.index[nodeID]]
+
+	execFn := makeExecFunc(execParams{
+		nodeID:      nodeID,
+		storyNode:   sn,
+		cfg:         sr.cfg,
+		storyCache:  sr.storyCache,
+		lockDir:     sr.lockDir,
+		lockTimeout: sr.lockTimeout,
+		clk:         sr.clk,
+		runID:       sr.runID,
+		inProcess:   &sr.inProcess,
+	})
+
+	item := workItem{nodeID: nodeID, execute: execFn}
+
+	if !sr.pool.submit(ctx, item) {
+		return false
+	}
+
+	sr.schedState.status[nodeID] = nodeRunning
+	sr.schedState.running++
+
+	return true
+}
+
+// completionLoop drains completion events and drives the scheduler until no
+// nodes remain pending or running. pool.close() is deferred here so that
+// the channel is closed after the last result is delivered.
+func (sr *schedRunner) completionLoop(ctx context.Context) {
+	defer sr.pool.close()
+
+	sr.dispatchBatch(ctx)
+
+	for sr.schedState.pendingCount() > 0 {
+		if done := sr.drainOneCompletion(ctx); done {
+			return
+		}
+	}
+}
+
+// drainOneCompletion blocks until one completion event arrives or the context
+// is cancelled. It returns true when the loop should terminate.
+func (sr *schedRunner) drainOneCompletion(ctx context.Context) bool {
+	select {
+	case <-ctx.Done():
+		cancelPendingNodes(ctx, sr.schedState)
+
+		return true
+
+	case done, ok := <-sr.pool.completionCh:
+		if !ok {
+			return true
+		}
+
+		sr.schedState.status[done.nodeID] = nodeDone
+		sr.schedState.result[done.nodeID] = done.result
+		sr.schedState.running--
+
+		if done.result.Status == StatusFailed {
+			sr.schedState.propagateFailures(done.nodeID, done.result)
+		}
+
+		sr.dispatchBatch(ctx)
+	}
+
+	return false
+}
+
+// execParams bundles the parameters needed to execute a single story node.
+// The struct is used to avoid exceeding the 8-argument function limit.
+type execParams struct {
+	nodeID      string
+	storyNode   storyNode
+	cfg         Config
+	storyCache  cache.Cache
+	lockDir     string
+	lockTimeout time.Duration
+	clk         clock.Clock
+	runID       string
+	inProcess   *sync.Map
 }
 
 // makeExecFunc constructs the execution function for a single story
 // node. The returned function follows the double-checked acquire
 // pattern from ADR 0016 §"Acquire pattern".
-func makeExecFunc(
-	nodeID string,
-	storyNodeVal storyNode,
-	cfg Config,
-	storyCache cache.Cache,
-	lockDir string,
-	lockTimeout time.Duration,
-	clk clock.Clock,
-	runID string,
-	inProcess *sync.Map,
-) func(ctx context.Context) StoryResult {
+func makeExecFunc(params execParams) func(ctx context.Context) StoryResult {
 	return func(ctx context.Context) StoryResult {
-		startedAt := clk.Now()
+		return execStoryNode(ctx, params)
+	}
+}
 
-		cacheKey := buildCacheKey(storyNodeVal, cfg, runID)
+// execStoryNode implements the execution logic for one story node following
+// the double-checked acquire pattern from ADR 0016.
+func execStoryNode(ctx context.Context, params execParams) StoryResult {
+	startedAt := params.clk.Now()
 
-		// Step 1: fast path — check cache without lock.
-		if !cfg.NoCache {
-			entry, entryErr := storyCache.Get(ctx, cacheKey)
-			if entryErr == nil {
-				return cacheHitResult(storyNodeVal, entry, startedAt, clk)
-			}
-		}
+	cacheKey := buildCacheKey(params.storyNode, params.cfg, params.runID)
 
-		if cfg.NoCache {
-			result := executeStory(ctx, storyNodeVal, cfg, clk)
-			result.StartedAt = startedAt
-			result.FinishedAt = clk.Now()
-			result.CacheStatus = CacheBypassed
+	if params.cfg.NoCache {
+		result := executeStory(ctx, params.storyNode, params.cfg, params.clk)
+		result.StartedAt = startedAt
+		result.FinishedAt = params.clk.Now()
+		result.CacheStatus = CacheBypassed
 
-			return result
-		}
+		return result
+	}
 
-		// In-process deduplication via sync.Once (ADR 0019 fast path).
-		rawOnce, _ := inProcess.LoadOrStore(nodeID, &sync.Once{})
-		once, ok := rawOnce.(*sync.Once)
+	// Step 1: fast path — check cache without lock.
+	if entry, entryErr := params.storyCache.Get(ctx, cacheKey); entryErr == nil {
+		return cacheHitResult(params.storyNode, entry, startedAt, params.clk)
+	}
 
-		if !ok {
-			panic("internal: inProcess value is not *sync.Once")
-		}
+	return execWithDedup(ctx, params, cacheKey, startedAt)
+}
 
-		var lockedResult StoryResult
+// execWithDedup performs in-process deduplication via sync.Once and then
+// the double-checked flock acquire.
+func execWithDedup(
+	ctx context.Context,
+	params execParams,
+	cacheKey cache.Key,
+	startedAt time.Time,
+) StoryResult {
+	rawOnce, _ := params.inProcess.LoadOrStore(params.nodeID, &sync.Once{})
+	once, ok := rawOnce.(*sync.Once)
 
-		once.Do(func() {
-			lockedResult = executeWithLock(
-				ctx,
-				nodeID,
-				storyNodeVal,
-				cfg,
-				storyCache,
-				cacheKey,
-				lockDir,
-				lockTimeout,
-				clk,
-				startedAt,
-			)
-		})
+	if !ok {
+		panic("internal: inProcess value is not *sync.Once")
+	}
 
-		// If another goroutine ran the Once, re-read from cache.
-		if lockedResult.TestID == "" {
-			entry, entryErr := storyCache.Get(ctx, cacheKey)
-			if entryErr == nil {
-				return cacheHitResult(storyNodeVal, entry, startedAt, clk)
-			}
+	var lockedResult StoryResult
 
-			// Cache miss even after the Once: execute fresh.
-			result := executeStory(ctx, storyNodeVal, cfg, clk)
-			result.StartedAt = startedAt
-			result.FinishedAt = clk.Now()
+	once.Do(func() {
+		lockedResult = executeWithLock(ctx, params, cacheKey, startedAt)
+	})
 
-			return result
-		}
-
+	if lockedResult.TestID != emptyTestID {
 		return lockedResult
+	}
+
+	// Another goroutine ran the Once — re-read from cache.
+	if entry, entryErr := params.storyCache.Get(ctx, cacheKey); entryErr == nil {
+		return cacheHitResult(params.storyNode, entry, startedAt, params.clk)
+	}
+
+	// Cache miss even after the Once: execute fresh.
+	result := executeStory(ctx, params.storyNode, params.cfg, params.clk)
+	result.StartedAt = startedAt
+	result.FinishedAt = params.clk.Now()
+
+	return result
+}
+
+// openLock acquires the cache lock for the given lockPath, choosing
+// between blocking ([cache.AcquireLock]) and non-blocking
+// ([cache.TryLock]) based on cfg.NoWait.
+func openLock(
+	ctx context.Context,
+	lockPath string,
+	lockTimeout time.Duration,
+	cfg Config,
+) (io.Closer, error) {
+	if cfg.NoWait {
+		closer, err := cache.TryLock(ctx, lockPath)
+		if err != nil {
+			return nil, fmt.Errorf("runner: try lock: %w", err)
+		}
+
+		return closer, nil
+	}
+
+	closer, err := cache.AcquireLock(ctx, lockPath, lockTimeout)
+	if err != nil {
+		return nil, fmt.Errorf("runner: acquire lock: %w", err)
+	}
+
+	return closer, nil
+}
+
+// lockFailureResult builds the StoryResult returned when lock
+// acquisition fails. It is extracted to keep executeWithLock under
+// the funlen limit.
+func lockFailureResult(
+	params execParams,
+	startedAt time.Time,
+	lockErr error,
+) StoryResult {
+	return StoryResult{
+		Order:       0,
+		TestID:      params.storyNode.story.Meta.ID,
+		ScopeKey:    params.storyNode.scopeKey,
+		OCPPVersion: ocppVersionEmpty,
+		Status:      StatusFailed,
+		CacheStatus: CacheMiss,
+		StartedAt:   startedAt,
+		FinishedAt:  params.clk.Now(),
+		Findings: []Finding{
+			{
+				Message:  "lock acquisition failed: " + lockErr.Error(),
+				Severity: "error",
+			},
+		},
+		Trace:      nil,
+		Cause:      emptyCause,
+		CauseChain: nil,
 	}
 }
 
@@ -473,44 +614,19 @@ func makeExecFunc(
 // release flock.
 func executeWithLock(
 	ctx context.Context,
-	_ string,
-	storyNodeVal storyNode,
-	cfg Config,
-	storyCache cache.Cache,
+	params execParams,
 	cacheKey cache.Key,
-	lockDir string,
-	lockTimeout time.Duration,
-	clk clock.Clock,
 	startedAt time.Time,
 ) StoryResult {
-	lockPath := filepath.Join(lockDir, cacheKey.Hash()+".lock")
+	lockPath := filepath.Join(
+		params.lockDir, cacheKey.Hash()+".lock",
+	)
 
-	lockCloser, lockErr := cache.AcquireLock(
-		ctx,
-		lockPath,
-		lockTimeout,
-		cfg.NoWait,
+	lockCloser, lockErr := openLock(
+		ctx, lockPath, params.lockTimeout, params.cfg,
 	)
 	if lockErr != nil {
-		return StoryResult{
-			Order:       0,
-			TestID:      storyNodeVal.story.Meta.ID,
-			ScopeKey:    storyNodeVal.scopeKey,
-			OCPPVersion: ocppVersionEmpty,
-			Status:      StatusFailed,
-			CacheStatus: CacheMiss,
-			StartedAt:   startedAt,
-			FinishedAt:  clk.Now(),
-			Findings: []Finding{
-				{
-					Message:  "lock acquisition failed: " + lockErr.Error(),
-					Severity: "error",
-				},
-			},
-			Trace:      nil,
-			Cause:      emptyCause,
-			CauseChain: nil,
-		}
+		return lockFailureResult(params, startedAt, lockErr)
 	}
 
 	defer func() {
@@ -518,24 +634,28 @@ func executeWithLock(
 	}()
 
 	// Step 3: re-read after acquiring lock (double-checked locking).
-	entry, entryErr := storyCache.Get(ctx, cacheKey)
+	entry, entryErr := params.storyCache.Get(ctx, cacheKey)
 	if entryErr == nil {
-		return cacheHitResult(storyNodeVal, entry, startedAt, clk)
+		return cacheHitResult(
+			params.storyNode, entry, startedAt, params.clk,
+		)
 	}
 
 	// Step 4: execute the story.
-	result := executeStory(ctx, storyNodeVal, cfg, clk)
+	result := executeStory(
+		ctx, params.storyNode, params.cfg, params.clk,
+	)
 	result.StartedAt = startedAt
-	result.FinishedAt = clk.Now()
+	result.FinishedAt = params.clk.Now()
 
 	// Steps 5–6: write result and trace to the cache.
 	if result.Status == StatusPassed || result.Status == StatusFailed {
 		writeToCache(
 			ctx,
-			storyCache,
+			params.storyCache,
 			cacheKey,
 			result,
-			storyNodeVal.story.Meta.CacheTTL,
+			params.storyNode.story.Meta.CacheTTL,
 		)
 	}
 
@@ -573,7 +693,7 @@ func cacheHitResult(
 		Order:       0,
 		TestID:      storyNodeVal.story.Meta.ID,
 		ScopeKey:    storyNodeVal.scopeKey,
-		OCPPVersion: "",
+		OCPPVersion: ocppVersionEmpty,
 		Status:      resultStatus,
 		CacheStatus: cacheStatus,
 		StartedAt:   startedAt,
@@ -659,9 +779,9 @@ func executeAllSections(
 
 	return StoryResult{
 		Order:       0,
-		TestID:      "",
-		ScopeKey:    "",
-		OCPPVersion: "",
+		TestID:      emptyCause,
+		ScopeKey:    emptyCause,
+		OCPPVersion: ocppVersionEmpty,
 		Status:      resultStatus,
 		CacheStatus: CacheMiss,
 		StartedAt:   time.Time{},
@@ -786,14 +906,14 @@ func buildCacheKey(
 		}
 
 		if dep.Scope == ast.ScopeGlobal {
-			scopeKey = ""
+			scopeKey = emptyCause
 
 			break
 		}
 	}
 
 	ocppVer := cfg.OCPPVersion
-	if ocppVer == "" {
+	if ocppVer == ocppVersionEmpty {
 		ocppVer = statusUnknown
 	}
 
@@ -829,46 +949,9 @@ func buildRunResult(
 	}
 
 	for orderIdx, nodeID := range topoOrder {
-		result, ok := results[nodeID]
-		if !ok {
-			// Node never executed; mark as skipped.
-			storyID, scopeKey := splitNodeID(nodeID)
-			result = StoryResult{
-				Order:       orderIdx,
-				TestID:      storyID,
-				ScopeKey:    scopeKey,
-				OCPPVersion: ocppVersionEmpty,
-				Status:      StatusSkipped,
-				CacheStatus: CacheMiss,
-				StartedAt:   time.Time{},
-				FinishedAt:  time.Time{},
-				Findings: []Finding{
-					{Message: "not executed", Severity: "info"},
-				},
-				Trace:      nil,
-				Cause:      emptyCause,
-				CauseChain: nil,
-			}
-		}
-
-		result.Order = orderIdx
+		result := resolveNodeResult(nodeID, orderIdx, results)
 		stories = append(stories, result)
-
-		switch result.Status {
-		case StatusPassed:
-			summary.Passed++
-		case StatusFailed:
-			summary.Failed++
-		case StatusSkipped:
-			summary.Skipped++
-		default:
-			// no-op: unrecognised status does not affect summary counts
-		}
-
-		if result.CacheStatus == CacheHitPass ||
-			result.CacheStatus == CacheHitSkip {
-			summary.CacheHits++
-		}
+		accumulateSummary(&summary, result)
 	}
 
 	slices.SortFunc(stories, func(a, b StoryResult) int {
@@ -881,6 +964,59 @@ func buildRunResult(
 		FinishedAt: finishedAt,
 		Stories:    stories,
 		Summary:    summary,
+	}
+}
+
+// resolveNodeResult returns the recorded result for nodeID, or a synthetic
+// skipped result when the node never executed.
+func resolveNodeResult(
+	nodeID string,
+	orderIdx int,
+	results map[string]StoryResult,
+) StoryResult {
+	result, ok := results[nodeID]
+	if !ok {
+		storyID, scopeKey := splitNodeID(nodeID)
+		result = StoryResult{
+			Order:       orderIdx,
+			TestID:      storyID,
+			ScopeKey:    scopeKey,
+			OCPPVersion: ocppVersionEmpty,
+			Status:      StatusSkipped,
+			CacheStatus: CacheMiss,
+			StartedAt:   time.Time{},
+			FinishedAt:  time.Time{},
+			Findings: []Finding{
+				{Message: "not executed", Severity: "info"},
+			},
+			Trace:      nil,
+			Cause:      emptyCause,
+			CauseChain: nil,
+		}
+	}
+
+	result.Order = orderIdx
+
+	return result
+}
+
+// accumulateSummary increments the appropriate counter in summary based on
+// the result's status and cache status.
+func accumulateSummary(summary *Summary, result StoryResult) {
+	switch result.Status {
+	case StatusPassed:
+		summary.Passed++
+	case StatusFailed:
+		summary.Failed++
+	case StatusSkipped:
+		summary.Skipped++
+	default:
+		// no-op: unrecognised status does not affect summary counts
+	}
+
+	if result.CacheStatus == CacheHitPass ||
+		result.CacheStatus == CacheHitSkip {
+		summary.CacheHits++
 	}
 }
 
@@ -909,7 +1045,7 @@ func discoverStories(cfg Config) ([]*ast.Story, error) {
 	filtered := allParsed
 
 	// Apply OCPP version filter.
-	if cfg.OCPPVersion != "" {
+	if cfg.OCPPVersion != ocppVersionEmpty {
 		filtered = filterByOCPPVersion(filtered, cfg.OCPPVersion)
 	}
 
@@ -927,41 +1063,50 @@ func discoverStories(cfg Config) ([]*ast.Story, error) {
 func walkStoryFiles(root string) ([]*ast.Story, error) {
 	var stories []*ast.Story
 
-	err := filepath.WalkDir(
-		root,
-		func(
-			path string,
-			dirEntry fs.DirEntry,
-			walkErr error,
-		) error {
-			if walkErr != nil {
-				return walkErr
-			}
-
-			if dirEntry.IsDir() || filepath.Ext(path) != ".story" {
-				return nil
-			}
-
-			data, readErr := os.ReadFile(path)
-			if readErr != nil {
-				return fmt.Errorf("read %q: %w", path, readErr)
-			}
-
-			storyAST, parseErr := story.Parse(path, data)
-			if parseErr != nil {
-				return fmt.Errorf("parse %q: %w", path, parseErr)
-			}
-
-			stories = append(stories, storyAST)
-
-			return nil
-		},
-	)
+	err := filepath.WalkDir(root, func(
+		path string,
+		dirEntry fs.DirEntry,
+		walkErr error,
+	) error {
+		return visitStoryFile(path, dirEntry, walkErr, &stories)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("runner: walk stories: %w", err)
 	}
 
 	return stories, nil
+}
+
+// visitStoryFile is the WalkDir callback for walkStoryFiles. It parses
+// .story files and appends them to stories; directories and non-.story
+// files are skipped.
+func visitStoryFile(
+	path string,
+	dirEntry fs.DirEntry,
+	walkErr error,
+	stories *[]*ast.Story,
+) error {
+	if walkErr != nil {
+		return walkErr
+	}
+
+	if dirEntry.IsDir() || filepath.Ext(path) != ".story" {
+		return nil
+	}
+
+	data, readErr := os.ReadFile(path)
+	if readErr != nil {
+		return fmt.Errorf("read %q: %w", path, readErr)
+	}
+
+	storyAST, parseErr := story.Parse(path, data)
+	if parseErr != nil {
+		return fmt.Errorf("parse %q: %w", path, parseErr)
+	}
+
+	*stories = append(*stories, storyAST)
+
+	return nil
 }
 
 // filterByOCPPVersion removes stories that do not declare the
@@ -973,12 +1118,8 @@ func filterByOCPPVersion(
 	out := make([]*ast.Story, 0, len(stories))
 
 	for _, storyAST := range stories {
-		for _, tag := range storyAST.Meta.Tags {
-			if tag == "ocpp"+version || tag == version {
-				out = append(out, storyAST)
-
-				break
-			}
+		if storyMatchesVersion(storyAST.Meta.Tags, version) {
+			out = append(out, storyAST)
 		}
 	}
 
@@ -991,6 +1132,18 @@ func filterByOCPPVersion(
 	return out
 }
 
+// storyMatchesVersion reports whether any tag in tags matches the requested
+// OCPP version string.
+func storyMatchesVersion(tags []string, version string) bool {
+	for _, tag := range tags {
+		if tag == "ocpp"+version || tag == version {
+			return true
+		}
+	}
+
+	return false
+}
+
 // resolveOCPPVersion determines the OCPP version string to use for
 // keyword resolution. It checks the story's tags for the ocpp1.6
 // marker and falls back to the config's OCPPVersion.
@@ -1001,7 +1154,7 @@ func resolveOCPPVersion(tags []string, cfgVersion string) string {
 		}
 	}
 
-	if cfgVersion != "" {
+	if cfgVersion != ocppVersionEmpty {
 		return cfgVersion
 	}
 
@@ -1017,21 +1170,21 @@ func parseOCPPVersion(_ string) api.OCPPVersion {
 // resolveCacheDir returns the effective cache directory, applying
 // the XDG_CACHE_HOME / HOME fallback when dir is empty.
 func resolveCacheDir(dir string) (string, error) {
-	if dir != "" {
+	if dir != emptyString {
 		return dir, nil
 	}
 
-	if envDir := os.Getenv("OCTANE_CACHE_DIR"); envDir != "" {
+	if envDir := os.Getenv("OCTANE_CACHE_DIR"); envDir != emptyString {
 		return envDir, nil
 	}
 
-	if xdgHome := os.Getenv("XDG_CACHE_HOME"); xdgHome != "" {
+	if xdgHome := os.Getenv("XDG_CACHE_HOME"); xdgHome != emptyString {
 		return filepath.Join(xdgHome, "octane", "cache"), nil
 	}
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return "", fmt.Errorf("resolve home dir: %w", err)
+		return emptyString, fmt.Errorf("resolve home dir: %w", err)
 	}
 
 	return filepath.Join(homeDir, ".cache", "octane", "cache"), nil
@@ -1057,5 +1210,5 @@ func splitNodeID(nodeID string) (string, string) {
 		return before, after
 	}
 
-	return nodeID, ""
+	return nodeID, emptyCause
 }

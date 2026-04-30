@@ -15,7 +15,8 @@ import (
 	"github.com/evcoreco/octane/pkg/runner"
 )
 
-// parallelLeafStory produces a self-contained passing story for the given index.
+// parallelLeafStory produces a self-contained passing story for the given
+// index.
 func parallelLeafStory(idx int) string {
 	return fmt.Sprintf(`Meta
     Name:      Parallel leaf story %02d
@@ -49,19 +50,8 @@ func Test_runner_RunParallelLeafStories(t *testing.T) {
 		writeFile(t, name, parallelLeafStory(i))
 	}
 
-	cfg := runner.Config{
-		StoryPaths:         []string{storyDir},
-		MaxParallel:        maxParallel,
-		LockTimeout:        0,
-		NoWait:             false,
-		ShardIndex:         0,
-		ShardTotal:         0,
-		CacheDir:           "",
-		NoCache:            true,
-		NoTraceOnPass:      false,
-		OCPPVersion:        "",
-		InsecureSkipVerify: false,
-	}
+	cfg := noopCfg(storyDir)
+	cfg.MaxParallel = maxParallel
 
 	result, err := runner.Run(context.Background(), cfg)
 	if err != nil {
@@ -77,42 +67,29 @@ func Test_runner_RunParallelLeafStories(t *testing.T) {
 		)
 	}
 
-	// Invariant: all stories must have passed.
-	for _, sr := range result.Stories {
-		if sr.Status != runner.StatusPassed {
-			t.Errorf(
-				"story %q: want StatusPassed, got %s",
-				sr.TestID,
-				sr.Status,
-			)
-		}
+	assertAllPassedBypassed(t, result.Stories)
+	assertSummaryAllPassed(t, result.Summary, totalLeaves)
+}
+
+// assertSummaryAllPassed checks that Summary reflects all-passed with no
+// failures or skips.
+func assertSummaryAllPassed(
+	t *testing.T,
+	summary runner.Summary,
+	want int,
+) {
+	t.Helper()
+
+	if summary.Passed != want {
+		t.Errorf("Summary.Passed: want %d, got %d", want, summary.Passed)
 	}
 
-	// Invariant: cache status must be CacheBypassed for all stories.
-	for _, sr := range result.Stories {
-		if sr.CacheStatus != runner.CacheBypassed {
-			t.Errorf(
-				"story %q: want CacheBypassed, got %s",
-				sr.TestID,
-				sr.CacheStatus,
-			)
-		}
+	const wantZero = 0
+	if summary.Failed != wantZero {
+		t.Errorf("Summary.Failed: want 0, got %d", summary.Failed)
 	}
 
-	// Invariant: summary counts must match.
-	if result.Summary.Passed != totalLeaves {
-		t.Errorf(
-			"Summary.Passed: want %d, got %d",
-			totalLeaves,
-			result.Summary.Passed,
-		)
-	}
-
-	if result.Summary.Failed != 0 {
-		t.Errorf("Summary.Failed: want 0, got %d", result.Summary.Failed)
-	}
-
-	if result.Summary.Skipped != 0 {
-		t.Errorf("Summary.Skipped: want 0, got %d", result.Summary.Skipped)
+	if summary.Skipped != wantZero {
+		t.Errorf("Summary.Skipped: want 0, got %d", summary.Skipped)
 	}
 }

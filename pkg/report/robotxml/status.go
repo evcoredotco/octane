@@ -1,10 +1,3 @@
-// Package robotxml implements the Robot Framework output.xml emitter for
-// OCTANE run reports. The public entry point is [WriteRobotXML], which
-// projects a [runner.RunResult] into a byte-deterministic output.xml file
-// that conforms to the Robot Framework 7.x output schema.
-//
-// Task: T-007-31.
-
 package robotxml
 
 import (
