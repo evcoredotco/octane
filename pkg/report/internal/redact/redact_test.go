@@ -8,16 +8,31 @@ import (
 	"github.com/evcoreco/octane/pkg/report/internal/redact"
 )
 
+const (
+	// authKeyToken is the credential key name for bearer tokens.
+	authKeyToken = "token"
+
+	// authKeyPassword is the credential key name for passwords.
+	authKeyPassword = "password"
+
+	// authKeyBasic is the credential key name for Basic auth credentials.
+	authKeyBasic = "basic"
+)
+
 // TestAuthBlock_redactsToken verifies that a token field in an auth
 // block is replaced by the placeholder.
 func TestAuthBlock_redactsToken(t *testing.T) {
 	t.Parallel()
 
-	input := map[string]any{"token": "secret-token-value"}
+	input := map[string]any{authKeyToken: "secret-token-value"}
 	got := redact.AuthBlock(input)
 
-	if got["token"] != redact.Placeholder {
-		t.Errorf("token: got %q, want %q", got["token"], redact.Placeholder)
+	if got[authKeyToken] != redact.Placeholder {
+		t.Errorf(
+			"token: got %q, want %q",
+			got[authKeyToken],
+			redact.Placeholder,
+		)
 	}
 }
 
@@ -26,13 +41,13 @@ func TestAuthBlock_redactsToken(t *testing.T) {
 func TestAuthBlock_redactsPassword(t *testing.T) {
 	t.Parallel()
 
-	input := map[string]any{"password": "s3cr3t"}
+	input := map[string]any{authKeyPassword: "s3cr3t"}
 	got := redact.AuthBlock(input)
 
-	if got["password"] != redact.Placeholder {
+	if got[authKeyPassword] != redact.Placeholder {
 		t.Errorf(
 			"password: got %q, want %q",
-			got["password"],
+			got[authKeyPassword],
 			redact.Placeholder,
 		)
 	}
@@ -43,13 +58,13 @@ func TestAuthBlock_redactsPassword(t *testing.T) {
 func TestAuthBlock_redactsBasic(t *testing.T) {
 	t.Parallel()
 
-	input := map[string]any{"basic": "dXNlcjpwYXNz"}
+	input := map[string]any{authKeyBasic: "dXNlcjpwYXNz"}
 	got := redact.AuthBlock(input)
 
-	if got["basic"] != redact.Placeholder {
+	if got[authKeyBasic] != redact.Placeholder {
 		t.Errorf(
 			"basic: got %q, want %q",
-			got["basic"],
+			got[authKeyBasic],
 			redact.Placeholder,
 		)
 	}
@@ -61,10 +76,10 @@ func TestAuthBlock_redactsAllFields(t *testing.T) {
 	t.Parallel()
 
 	input := map[string]any{
-		"token":    "tok",
-		"password": "pw",
-		"basic":    "b64",
-		"other":    "value",
+		authKeyToken:    "tok",
+		authKeyPassword: "pw",
+		authKeyBasic:    "b64",
+		"other":         "value",
 	}
 	got := redact.AuthBlock(input)
 
@@ -81,12 +96,16 @@ func TestAuthBlock_doesNotMutateInput(t *testing.T) {
 	t.Parallel()
 
 	original := "original-value"
-	input := map[string]any{"token": original}
+	input := map[string]any{authKeyToken: original}
 
 	_ = redact.AuthBlock(input)
 
-	if input["token"] != original {
-		t.Errorf("input mutated: got %q, want %q", input["token"], original)
+	if input[authKeyToken] != original {
+		t.Errorf(
+			"input mutated: got %q, want %q",
+			input[authKeyToken],
+			original,
+		)
 	}
 }
 

@@ -7,96 +7,140 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/spf13/cobra"
-
 	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
 	"github.com/evcoreco/octane/pkg/cache"
+	"github.com/spf13/cobra"
 )
 
+// dirMode is the permission bits for directories created by cache commands.
+const dirMode = 0o750
+
+// defaultMaxAge is the default value for the --max-age flag used by
+// "octane cache prune". Entries older than this are removed by default.
+const defaultMaxAge = 24 * time.Hour
+
+// placeholderSHA is the placeholder hash used by "octane cache key"
+// when the real inputs are not available at the CLI layer.
+const placeholderSHA = "00000000"
+
+// errFmtOctane is the single-argument error format used throughout cache
+// subcommand handlers.
+const errFmtOctane = "octane: %v\n"
+
+// cacheDirName is the directory name component used in XDG cache paths.
+const cacheDirName = "cache"
+
+// newCacheCmd constructs and returns the "octane cache" subcommand group.
+// globalFlags is the parent global-flags struct used to resolve the
+// cache directory.
+//
 //nolint:exhaustruct // cobra.Command has many optional fields
-var cacheCmd = &cobra.Command{
-	Use:   "cache",
-	Short: "Manage the content-addressed result cache",
+func newCacheCmd(globalFlags *globalFlagsT) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "cache",
+		Short: "Manage the content-addressed result cache",
+	}
+
+	cmd.AddCommand(newCacheInfoCmd(globalFlags))
+	cmd.AddCommand(newCachePruneCmd(globalFlags))
+	cmd.AddCommand(newCacheClearCmd(globalFlags))
+	cmd.AddCommand(newCacheKeyCmd())
+
+	return cmd
 }
 
+// newCacheInfoCmd constructs the "octane cache info" subcommand.
+//
 //nolint:exhaustruct // cobra.Command has many optional fields
-var cacheInfoCmd = &cobra.Command{
-	Use:   "info",
-	Short: "Print the cache directory location",
-	RunE:  cacheInfo,
+func newCacheInfoCmd(globalFlags *globalFlagsT) *cobra.Command {
+	return &cobra.Command{
+		Use:   "info",
+		Short: "Print the cache directory location",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cacheInfo(cmd, args, globalFlags)
+		},
+	}
 }
 
-// cachePruneFlags holds the flags for "octane cache prune".
-var cachePruneFlags struct {
-	maxAge time.Duration
-}
-
+// newCachePruneCmd constructs the "octane cache prune" subcommand.
+//
 //nolint:exhaustruct // cobra.Command has many optional fields
-var cachePruneCmd = &cobra.Command{
-	Use:   "prune",
-	Short: "Remove cache entries older than --max-age",
-	Long: `prune removes cache entries whose WrittenAt timestamp plus max-age
-is before now, and entries whose TTL has expired.
+func newCachePruneCmd(globalFlags *globalFlagsT) *cobra.Command {
+	var maxAge time.Duration
+
+	cmd := &cobra.Command{
+		Use:   "prune",
+		Short: "Remove cache entries older than --max-age",
+		Long: `prune removes entries whose WrittenAt plus max-age is before now,
+and entries whose TTL has expired.
 
 Empty fanout directories are removed after pruning.`,
-	RunE: cachePrune,
+		RunE: func(c *cobra.Command, args []string) error {
+			return cachePrune(c, args, globalFlags, maxAge)
+		},
+	}
+
+	cmd.Flags().DurationVar(
+		&maxAge,
+		"max-age",
+		defaultMaxAge,
+		"maximum age of cache entries to keep (e.g. 24h, 7d)",
+	)
+
+	return cmd
 }
 
+// newCacheClearCmd constructs the "octane cache clear" subcommand.
+//
 //nolint:exhaustruct // cobra.Command has many optional fields
-var cacheClearCmd = &cobra.Command{
-	Use:   "clear",
-	Short: "Remove all entries from the result cache",
-	Long: `clear removes the contents of the results/ subdirectory in the
+func newCacheClearCmd(globalFlags *globalFlagsT) *cobra.Command {
+	return &cobra.Command{
+		Use:   "clear",
+		Short: "Remove all entries from the result cache",
+		Long: `clear removes the contents of the results/ subdirectory in the
 cache directory, effectively invalidating all cached test results.
 
 The cache directory structure itself (version.json, locks/) is
 preserved; only result entries are removed.`,
-	RunE: cacheClear,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cacheClear(cmd, args, globalFlags)
+		},
+	}
 }
 
+// newCacheKeyCmd constructs the "octane cache key" subcommand.
+//
 //nolint:exhaustruct // cobra.Command has many optional fields
-var cacheKeyCmd = &cobra.Command{
-	Use:   "key <story-id>",
-	Short: "Print the cache key hash for a story ID",
-	Long: `key prints the SHA-256 hex digest that octane uses as the cache key
+func newCacheKeyCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "key <story-id>",
+		Short: "Print the cache key hash for a story ID",
+		Long: `key prints the SHA-256 hex digest octane uses as the cache key
 for the given story ID with placeholder values for the remaining
 key components (CSMS endpoint, story content, parameters).
 
 This is useful for locating cached entries on the filesystem or
 for debugging cache invalidation behaviour.`,
-	Args: cobra.ExactArgs(1),
-	RunE: cacheKey,
-}
-
-func init() {
-	cachePruneCmd.Flags().DurationVar(
-		&cachePruneFlags.maxAge,
-		"max-age",
-		24*time.Hour,
-		"maximum age of cache entries to keep (e.g. 24h, 7d)",
-	)
-
-	cacheCmd.AddCommand(cacheInfoCmd)
-	cacheCmd.AddCommand(cachePruneCmd)
-	cacheCmd.AddCommand(cacheClearCmd)
-	cacheCmd.AddCommand(cacheKeyCmd)
-	rootCmd.AddCommand(cacheCmd)
+		Args: cobra.ExactArgs(exactlyOneArg),
+		RunE: cacheKey,
+	}
 }
 
 // resolveCacheDirForCLI returns the effective cache directory using
-// the --cache-dir global flag, then $XDG_CACHE_HOME/octane/cache/,
-// then $HOME/.cache/octane/cache/ as fallbacks.
-func resolveCacheDirForCLI() (string, error) {
-	if globalFlags.cacheDir != "" {
+// the --cache-dir global flag, then $OCTANE_CACHE_DIR,
+// then $XDG_CACHE_HOME/octane/cache/, then $HOME/.cache/octane/cache/
+// as fallbacks.
+func resolveCacheDirForCLI(globalFlags *globalFlagsT) (string, error) {
+	if globalFlags.cacheDir != emptyFlagValue {
 		return globalFlags.cacheDir, nil
 	}
 
-	if envDir := os.Getenv("OCTANE_CACHE_DIR"); envDir != "" {
+	if envDir := os.Getenv("OCTANE_CACHE_DIR"); envDir != emptyFlagValue {
 		return envDir, nil
 	}
 
-	if xdgHome := os.Getenv("XDG_CACHE_HOME"); xdgHome != "" {
-		return filepath.Join(xdgHome, "octane", "cache"), nil
+	if xdgHome := os.Getenv("XDG_CACHE_HOME"); xdgHome != emptyFlagValue {
+		return filepath.Join(xdgHome, "octane", cacheDirName), nil
 	}
 
 	homeDir, err := os.UserHomeDir()
@@ -104,14 +148,14 @@ func resolveCacheDirForCLI() (string, error) {
 		return "", fmt.Errorf("resolve home dir: %w", err)
 	}
 
-	return filepath.Join(homeDir, ".cache", "octane", "cache"), nil
+	return filepath.Join(homeDir, ".cache", "octane", cacheDirName), nil
 }
 
 // cacheInfo is the RunE function for "octane cache info".
-func cacheInfo(_ *cobra.Command, _ []string) error {
-	cacheDir, err := resolveCacheDirForCLI()
+func cacheInfo(_ *cobra.Command, _ []string, globalFlags *globalFlagsT) error {
+	cacheDir, err := resolveCacheDirForCLI(globalFlags)
 	if err != nil {
-		dieErr(exitcode.ToolError, "octane: %v\n", err)
+		dieErrf(exitcode.ToolError, errFmtOctane, err)
 
 		return nil
 	}
@@ -122,23 +166,29 @@ func cacheInfo(_ *cobra.Command, _ []string) error {
 }
 
 // cachePrune is the RunE function for "octane cache prune".
-func cachePrune(_ *cobra.Command, _ []string) error {
-	cacheDir, err := resolveCacheDirForCLI()
+func cachePrune(
+	_ *cobra.Command,
+	_ []string,
+	globalFlags *globalFlagsT,
+	maxAge time.Duration,
+) error {
+	cacheDir, err := resolveCacheDirForCLI(globalFlags)
 	if err != nil {
-		dieErr(exitcode.ToolError, "octane: %v\n", err)
+		dieErrf(exitcode.ToolError, errFmtOctane, err)
 
 		return nil
 	}
 
 	cacheStore, err := cache.Open(cacheDir)
 	if err != nil {
-		dieErr(exitcode.ToolError, "octane: open cache: %v\n", err)
+		dieErrf(exitcode.ToolError, "octane: open cache: %v\n", err)
 
 		return nil
 	}
 
-	if err = cacheStore.Prune(context.Background(), cachePruneFlags.maxAge); err != nil {
-		dieErr(exitcode.ToolError, "octane: prune cache: %v\n", err)
+	err = cacheStore.Prune(context.Background(), maxAge)
+	if err != nil {
+		dieErrf(exitcode.ToolError, "octane: prune cache: %v\n", err)
 
 		return nil
 	}
@@ -149,24 +199,26 @@ func cachePrune(_ *cobra.Command, _ []string) error {
 }
 
 // cacheClear is the RunE function for "octane cache clear".
-func cacheClear(_ *cobra.Command, _ []string) error {
-	cacheDir, err := resolveCacheDirForCLI()
+func cacheClear(_ *cobra.Command, _ []string, globalFlags *globalFlagsT) error {
+	cacheDir, err := resolveCacheDirForCLI(globalFlags)
 	if err != nil {
-		dieErr(exitcode.ToolError, "octane: %v\n", err)
+		dieErrf(exitcode.ToolError, errFmtOctane, err)
 
 		return nil
 	}
 
 	resultsDir := filepath.Join(cacheDir, "results")
 
-	if err = os.RemoveAll(resultsDir); err != nil {
-		dieErr(exitcode.ToolError, "octane: remove results dir: %v\n", err)
+	err = os.RemoveAll(resultsDir)
+	if err != nil {
+		dieErrf(exitcode.ToolError, "octane: remove results dir: %v\n", err)
 
 		return nil
 	}
 
-	if err = os.MkdirAll(resultsDir, 0o750); err != nil {
-		dieErr(exitcode.ToolError, "octane: recreate results dir: %v\n", err)
+	err = os.MkdirAll(resultsDir, dirMode)
+	if err != nil {
+		dieErrf(exitcode.ToolError, "octane: recreate results dir: %v\n", err)
 
 		return nil
 	}
@@ -178,7 +230,7 @@ func cacheClear(_ *cobra.Command, _ []string) error {
 
 // cacheKey is the RunE function for "octane cache key".
 func cacheKey(_ *cobra.Command, args []string) error {
-	storyID := args[0]
+	storyID := args[firstArgIndex]
 
 	// Use placeholder SHAs as documented in pkg/runner/run.go
 	// buildCacheKey. The real values require the CSMS endpoint
@@ -186,12 +238,12 @@ func cacheKey(_ *cobra.Command, args []string) error {
 	// hash (spec 003) which are not yet available at the CLI layer.
 	key := cache.Key{
 		TestID:          storyID,
-		ScopeKey:        "",
-		CSMSEndpointSHA: "00000000",
+		ScopeKey:        emptyFlagValue,
+		CSMSEndpointSHA: placeholderSHA,
 		OctaneVersion:   "dev",
 		OCPPVersion:     "unknown",
-		StoryContentSHA: "00000000",
-		ParameterSHA:    "00000000",
+		StoryContentSHA: placeholderSHA,
+		ParameterSHA:    placeholderSHA,
 	}
 
 	_, _ = fmt.Fprintf(os.Stdout, "%s\n", key.Hash())

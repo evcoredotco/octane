@@ -5,26 +5,8 @@ import (
 	"fmt"
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
-	"github.com/evcoreco/octane/pkg/keywords/registry"
 	"github.com/evcoreco/octane/pkg/transport"
 )
-
-func init() {
-	registry.Register(api.Keyword{
-		Pattern:     "open a WebSocket to {url:string} as station {station:string}",
-		Layer:       api.LayerPrimitive,
-		OCPPVersion: 0,
-		Func:        openWebSocket,
-	})
-
-	registry.Register(api.Keyword{
-		Pattern: "open a WebSocket to {url:string} as station" +
-			" {station:string} with subprotocol {subprotocol:string}",
-		Layer:       api.LayerPrimitive,
-		OCPPVersion: 0,
-		Func:        openWebSocketWithSubprotocol,
-	})
-}
 
 // openWebSocket implements the primitive keyword:
 //
@@ -41,14 +23,8 @@ func openWebSocket(
 	rawURL := args.String("url")
 	handle := args.String("station")
 
-	return dial(
-		ctx,
-		state,
-		rawURL,
-		handle,
-		transport.DialOptions{ //nolint:exhaustruct // zero values are correct defaults
-		},
-	)
+	//nolint:exhaustruct // zero values are correct defaults
+	return dial(ctx, state, rawURL, handle, transport.DialOptions{})
 }
 
 // openWebSocketWithSubprotocol implements the primitive keyword:
@@ -68,7 +44,8 @@ func openWebSocketWithSubprotocol(
 	handle := args.String("station")
 	subprotocol := args.String("subprotocol")
 
-	opts := transport.DialOptions{ //nolint:exhaustruct // only subprotocol is non-default
+	//nolint:exhaustruct // only subprotocol is non-default
+	opts := transport.DialOptions{
 		Subprotocols: []string{subprotocol},
 	}
 

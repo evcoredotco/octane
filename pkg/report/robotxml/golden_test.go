@@ -17,7 +17,75 @@ import (
 	"github.com/evcoreco/octane/pkg/runner"
 )
 
+const (
+	// goldenBaseYear is the year used in fixedTime for golden test fixtures.
+	goldenBaseYear = 2024
+
+	// goldenBaseMonth is the month (January) used in fixedTime.
+	goldenBaseMonth = 1
+
+	// goldenBaseDay is the day-of-month used in fixedTime.
+	goldenBaseDay = 15
+
+	// goldenBaseHour is the hour used in fixedTime.
+	goldenBaseHour = 10
+
+	// scopeKeyCP01 is the station scope key used in golden test fixtures.
+	scopeKeyCP01 = "CP01"
+
+	// ocppVersion16 is the OCPP version string for OCPP 1.6.
+	ocppVersion16 = "1.6"
+
+	// finishedAt10 is the story finish offset in seconds for the first story.
+	finishedAt10 = 10
+
+	// startAt10 is the offset in seconds for stories starting at T+10.
+	startAt10 = 10
+
+	// startAt20 is the offset in seconds for stories starting at T+20.
+	startAt20 = 20
+
+	// finishedAt20 is the finish offset in seconds for the second story.
+	finishedAt20 = 20
+
+	// orderFirst is the Order index for the first non-zero story (second
+	// position, one-based).
+	orderFirst = 1
+
+	// orderSkipped is the Order index for the skipped (third) story.
+	orderSkipped = 2
+
+	// finishedAtSec is the run finish offset in seconds from the base time.
+	finishedAtSec = 30
+
+	// totalStories is the total number of stories in the golden result.
+	totalStories = 3
+
+	// countOne is used for result counts that equal one (1 passed, 1 failed,
+	// 1 skipped, 1 cache hit) in the golden test fixture.
+	countOne = 1
+
+	// zeroOffset is the zero time offset used in fixedTime(zeroOffset) calls.
+	zeroOffset = 0
+
+	// zeroTimeField is the zero value for minute, second, and nanosecond
+	// arguments in time.Date calls.
+	zeroTimeField = 0
+
+	// orderZero is the Order index for the first story (position zero).
+	orderZero = 0
+
+	// dirPerms is the directory permission bits used when creating testdata.
+	dirPerms = 0o750
+
+	// filePerms is the file permission bits used when writing golden files.
+	filePerms = 0o600
+)
+
 // updateFlag controls whether the golden file is regenerated.
+// It must be package-level for flag.Bool registration.
+//
+//nolint:gochecknoglobals
 var updateFlag = flag.Bool("update", false, "update golden files")
 
 // goldenFilePath is the path to the golden XML file, relative to this test
@@ -29,87 +97,107 @@ const outputFileName = "output.xml"
 
 // fixedTime returns a deterministic time for test fixtures.
 func fixedTime(offsetSeconds int) time.Time {
-	base := time.Date(2024, 1, 15, 10, 0, 0, 0, time.UTC)
+	base := time.Date(
+		goldenBaseYear, goldenBaseMonth, goldenBaseDay,
+		goldenBaseHour, zeroTimeField, zeroTimeField, zeroTimeField,
+		time.UTC,
+	)
 
 	return base.Add(time.Duration(offsetSeconds) * time.Second)
+}
+
+// xmlPassedStory returns the passed BootNotification story fixture.
+func xmlPassedStory() runner.StoryResult {
+	passedTrace := &runner.Trace{
+		Frames: [][]byte{
+			[]byte(`[2,"abc123","BootNotification",{"reason":"PowerUp"}]`),
+			[]byte(
+				`[3,"abc123",{"currentTime":"2024-01-15T10:00:01Z",` +
+					`"interval":300,"status":"Accepted"}]`,
+			),
+		},
+	}
+
+	return runner.StoryResult{
+		Order:       orderZero,
+		TestID:      "tc_boot_notification",
+		ScopeKey:    scopeKeyCP01,
+		OCPPVersion: ocppVersion16,
+		Status:      runner.StatusPassed,
+		CacheStatus: runner.CacheHitPass,
+		StartedAt:   fixedTime(zeroOffset),
+		FinishedAt:  fixedTime(finishedAt10),
+		Findings:    nil,
+		Trace:       passedTrace,
+		Cause:       "",
+		CauseChain:  nil,
+	}
+}
+
+// xmlFailedStory returns the failed Heartbeat story fixture.
+func xmlFailedStory() runner.StoryResult {
+	return runner.StoryResult{
+		Order:       orderFirst,
+		TestID:      "tc_heartbeat",
+		ScopeKey:    scopeKeyCP01,
+		OCPPVersion: ocppVersion16,
+		Status:      runner.StatusFailed,
+		CacheStatus: runner.CacheMiss,
+		StartedAt:   fixedTime(startAt10),
+		FinishedAt:  fixedTime(finishedAt20),
+		Findings: []runner.Finding{
+			{
+				Message:  "heartbeat interval mismatch: got 600, want 300",
+				Severity: "error",
+			},
+			{
+				Message:  "response took 250ms",
+				Severity: "warning",
+			},
+		},
+		Trace:      nil,
+		Cause:      "",
+		CauseChain: nil,
+	}
+}
+
+// xmlSkippedStory returns the skipped StatusNotification story fixture.
+func xmlSkippedStory() runner.StoryResult {
+	return runner.StoryResult{
+		Order:       orderSkipped,
+		TestID:      "tc_status_notification",
+		ScopeKey:    scopeKeyCP01,
+		OCPPVersion: ocppVersion16,
+		Status:      runner.StatusSkipped,
+		CacheStatus: runner.CacheBypassed,
+		StartedAt:   fixedTime(startAt20),
+		FinishedAt:  fixedTime(startAt20),
+		Findings:    nil,
+		Trace:       nil,
+		Cause:       "tc_heartbeat/CP01",
+		CauseChain:  []string{"tc_heartbeat/CP01"},
+	}
 }
 
 // buildGoldenResult constructs the same canned runner.RunResult used by the
 // JSON golden test: three stories (passed, failed, skipped). The skipped
 // story has a cause chain.
 func buildGoldenResult() *runner.RunResult {
-	passedTrace := &runner.Trace{
-		Frames: [][]byte{
-			[]byte(`[2,"abc123","BootNotification",{"reason":"PowerUp"}]`),
-			[]byte(
-				`[3,"abc123",{"currentTime":"2024-01-15T10:00:01Z","interval":300,"status":"Accepted"}]`,
-			),
-		},
-	}
-
 	return &runner.RunResult{
 		RunID:      "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-		StartedAt:  fixedTime(0),
-		FinishedAt: fixedTime(30),
+		StartedAt:  fixedTime(zeroOffset),
+		FinishedAt: fixedTime(finishedAtSec),
 		Summary: runner.Summary{
-			Total:     3,
-			Passed:    1,
-			Failed:    1,
-			Skipped:   1,
-			CacheHits: 1,
+			Total:     totalStories,
+			Passed:    countOne,
+			Failed:    countOne,
+			Skipped:   countOne,
+			CacheHits: countOne,
 		},
 		Stories: []runner.StoryResult{
-			{
-				Order:       0,
-				TestID:      "tc_boot_notification",
-				ScopeKey:    "CP01",
-				OCPPVersion: "1.6",
-				Status:      runner.StatusPassed,
-				CacheStatus: runner.CacheHitPass,
-				StartedAt:   fixedTime(0),
-				FinishedAt:  fixedTime(10),
-				Findings:    nil,
-				Trace:       passedTrace,
-				Cause:       "",
-				CauseChain:  nil,
-			},
-			{
-				Order:       1,
-				TestID:      "tc_heartbeat",
-				ScopeKey:    "CP01",
-				OCPPVersion: "1.6",
-				Status:      runner.StatusFailed,
-				CacheStatus: runner.CacheMiss,
-				StartedAt:   fixedTime(10),
-				FinishedAt:  fixedTime(20),
-				Findings: []runner.Finding{
-					{
-						Message:  "heartbeat interval mismatch: got 600, want 300",
-						Severity: "error",
-					},
-					{
-						Message:  "response took 250ms",
-						Severity: "warning",
-					},
-				},
-				Trace:      nil,
-				Cause:      "",
-				CauseChain: nil,
-			},
-			{
-				Order:       2,
-				TestID:      "tc_status_notification",
-				ScopeKey:    "CP01",
-				OCPPVersion: "1.6",
-				Status:      runner.StatusSkipped,
-				CacheStatus: runner.CacheBypassed,
-				StartedAt:   fixedTime(20),
-				FinishedAt:  fixedTime(20),
-				Findings:    nil,
-				Trace:       nil,
-				Cause:       "tc_heartbeat/CP01",
-				CauseChain:  []string{"tc_heartbeat/CP01"},
-			},
+			xmlPassedStory(),
+			xmlFailedStory(),
+			xmlSkippedStory(),
 		},
 	}
 }
@@ -129,6 +217,24 @@ func readOutput(t *testing.T, dir string) []byte {
 	return data
 }
 
+// updateGoldenXMLFile rewrites the golden output.xml file with got.
+// Called by Test_robotxml_Golden when the -update flag is set.
+func updateGoldenXMLFile(t *testing.T, got []byte) {
+	t.Helper()
+
+	err := os.MkdirAll("testdata", dirPerms)
+	if err != nil {
+		t.Fatalf("creating testdata: %v", err)
+	}
+
+	err = os.WriteFile(goldenFilePath, got, filePerms)
+	if err != nil {
+		t.Fatalf("updating golden file: %v", err)
+	}
+
+	t.Logf("golden file updated: %s", goldenFilePath)
+}
+
 // Test_robotxml_Golden verifies byte-deterministic Robot XML output. When the
 // -update flag is set, the golden file is regenerated. The test also verifies
 // that the produced XML is well-formed by parsing it back with encoding/xml.
@@ -142,7 +248,8 @@ func Test_robotxml_Golden(t *testing.T) {
 
 	dir1 := t.TempDir()
 
-	if err := robotxml.WriteRobotXML(result, dir1, opts); err != nil {
+	err := robotxml.WriteRobotXML(result, dir1, opts)
+	if err != nil {
 		t.Fatalf("WriteRobotXML dir1: %v", err)
 	}
 
@@ -151,7 +258,8 @@ func Test_robotxml_Golden(t *testing.T) {
 	// Determinism check: write a second time and compare bytes.
 	dir2 := t.TempDir()
 
-	if err := robotxml.WriteRobotXML(result, dir2, opts); err != nil {
+	err = robotxml.WriteRobotXML(result, dir2, opts)
+	if err != nil {
 		t.Fatalf("WriteRobotXML dir2: %v", err)
 	}
 
@@ -162,21 +270,15 @@ func Test_robotxml_Golden(t *testing.T) {
 	}
 
 	// Well-formedness check: parse the output back with encoding/xml.
-	var parsed interface{}
-	if err := xml.Unmarshal(got, &parsed); err != nil {
+	var parsed any
+
+	err = xml.Unmarshal(got, &parsed)
+	if err != nil {
 		t.Errorf("output.xml is not well-formed XML: %v", err)
 	}
 
 	if *updateFlag {
-		if err := os.MkdirAll("testdata", 0o750); err != nil {
-			t.Fatalf("creating testdata: %v", err)
-		}
-
-		if err := os.WriteFile(goldenFilePath, got, 0o600); err != nil {
-			t.Fatalf("updating golden file: %v", err)
-		}
-
-		t.Logf("golden file updated: %s", goldenFilePath)
+		updateGoldenXMLFile(t, got)
 
 		return
 	}
@@ -191,7 +293,8 @@ func Test_robotxml_Golden(t *testing.T) {
 
 	if !bytes.Equal(got, want) {
 		t.Errorf(
-			"output differs from golden file %s\n--- got ---\n%s\n--- want ---\n%s",
+			"output differs from golden file %s\n"+
+				"--- got ---\n%s\n--- want ---\n%s",
 			goldenFilePath,
 			got,
 			want,

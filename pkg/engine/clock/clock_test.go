@@ -3,28 +3,55 @@ package clock_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/evcoreco/octane/pkg/engine/clock"
 )
 
-var seed = time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+// chanBufOne is the buffer size for a single-result channel.
+const chanBufOne = 1
+
+// clockTestYear is the year used in the fixed seed time for clock tests.
+const clockTestYear = 2026
+
+// clockTestMonthJan is the January month index used in the fixed seed time.
+const clockTestMonthJan = 1
+
+// clockTestDayFirst is the day-of-month used in the fixed seed time.
+const clockTestDayFirst = 1
+
+// zeroTimeField is the zero value used for hour/min/sec/nsec parameters
+// in time.Date calls throughout the clock tests.
+const zeroTimeField = 0
+
+// zeroSleepDuration is the zero duration used in the Sleep(0) edge-case test.
+const zeroSleepDuration = 0
+
+// clockSeed returns the fixed test seed time used across clock tests.
+func clockSeed() time.Time {
+	return time.Date(
+		clockTestYear, clockTestMonthJan, clockTestDayFirst,
+		zeroTimeField, zeroTimeField, zeroTimeField, zeroTimeField, time.UTC,
+	)
+}
 
 // TestDeterministicNow verifies that Now returns the seed time before any
 // Advance calls, and the advanced time afterwards.
 func TestDeterministicNow(t *testing.T) {
 	t.Parallel()
 
-	clk := clock.Deterministic(seed)
+	seedTime := clockSeed()
+	clk := clock.Deterministic(seedTime)
 
-	if got := clk.Now(); !got.Equal(seed) {
-		t.Errorf("Now() = %v, want %v", got, seed)
+	if got := clk.Now(); !got.Equal(seedTime) {
+		t.Errorf("Now() = %v, want %v", got, seedTime)
 	}
 
 	clk.Advance(time.Hour)
 
-	want := seed.Add(time.Hour)
+	want := seedTime.Add(time.Hour)
 	if got := clk.Now(); !got.Equal(want) {
 		t.Errorf("After Advance(1h), Now() = %v, want %v", got, want)
 	}
@@ -36,7 +63,8 @@ func TestDeterministicNow(t *testing.T) {
 func TestDeterministicSleepUnblocks(t *testing.T) {
 	t.Parallel()
 
-	clk := clock.Deterministic(seed)
+	seedTime := clockSeed()
+	clk := clock.Deterministic(seedTime)
 
 	// Register the waiter via After (synchronous); then Advance and verify.
 	ch := clk.After(5 * time.Second)
@@ -44,7 +72,7 @@ func TestDeterministicSleepUnblocks(t *testing.T) {
 
 	select {
 	case fired := <-ch:
-		want := seed.Add(10 * time.Second)
+		want := seedTime.Add(10 * time.Second)
 		if !fired.Equal(want) {
 			t.Errorf("After fired with time %v, want %v", fired, want)
 		}
@@ -58,11 +86,11 @@ func TestDeterministicSleepUnblocks(t *testing.T) {
 func TestDeterministicSleepCancelCtx(t *testing.T) {
 	t.Parallel()
 
-	clk := clock.Deterministic(seed)
+	clk := clock.Deterministic(clockSeed())
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	done := make(chan error, 1)
+	done := make(chan error, chanBufOne)
 
 	go func() {
 		done <- clk.Sleep(ctx, time.Hour)
@@ -71,7 +99,7 @@ func TestDeterministicSleepCancelCtx(t *testing.T) {
 	cancel()
 
 	err := <-done
-	if err != context.Canceled {
+	if !errors.Is(err, context.Canceled) {
 		t.Errorf(
 			"Sleep with cancelled ctx: got %v, want %v",
 			err,
@@ -85,7 +113,8 @@ func TestDeterministicSleepCancelCtx(t *testing.T) {
 func TestDeterministicAfterUnblocks(t *testing.T) {
 	t.Parallel()
 
-	clk := clock.Deterministic(seed)
+	seedTime := clockSeed()
+	clk := clock.Deterministic(seedTime)
 
 	ch := clk.After(3 * time.Second)
 
@@ -93,7 +122,7 @@ func TestDeterministicAfterUnblocks(t *testing.T) {
 
 	select {
 	case got := <-ch:
-		want := seed.Add(5 * time.Second)
+		want := seedTime.Add(5 * time.Second)
 		if !got.Equal(want) {
 			t.Errorf("After: received time %v, want %v", got, want)
 		}
@@ -106,9 +135,10 @@ func TestDeterministicAfterUnblocks(t *testing.T) {
 func TestDeterministicSleepZero(t *testing.T) {
 	t.Parallel()
 
-	clk := clock.Deterministic(seed)
+	clk := clock.Deterministic(clockSeed())
 
-	if err := clk.Sleep(context.Background(), 0); err != nil {
+	err := clk.Sleep(context.Background(), zeroSleepDuration)
+	if err != nil {
 		t.Errorf("Sleep(0): got error %v, want nil", err)
 	}
 }
@@ -120,7 +150,7 @@ func TestDeterministicSleepZero(t *testing.T) {
 func TestDeterministicMultipleWaiters(t *testing.T) {
 	t.Parallel()
 
-	clk := clock.Deterministic(seed)
+	clk := clock.Deterministic(clockSeed())
 
 	const n = 10
 
@@ -150,17 +180,17 @@ func TestRealClockNow(t *testing.T) {
 
 	clk := clock.Real()
 
-	t1 := clk.Now()
-	if t1.IsZero() {
+	firstTime := clk.Now()
+	if firstTime.IsZero() {
 		t.Error("Real().Now() returned zero time")
 	}
 
 	// Busy-wait briefly so the second call is later.
-	for clk.Now().Equal(t1) {
+	for clk.Now().Equal(firstTime) {
 	}
 
 	t2 := clk.Now()
-	if !t2.After(t1) {
-		t.Errorf("Real clock did not advance: t1=%v t2=%v", t1, t2)
+	if !t2.After(firstTime) {
+		t.Errorf("Real clock did not advance: t1=%v t2=%v", firstTime, t2)
 	}
 }

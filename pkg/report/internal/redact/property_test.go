@@ -1,4 +1,5 @@
 // Task: T-007-13.
+
 package redact_test
 
 import (
@@ -16,9 +17,42 @@ const propertyIterations = 1000
 // (constitution principle IV).
 const propertySeed uint64 = 0xABCD_1234_5678_EF01
 
-// credentialKeys are the three known credential key names used in
+// propertyBinaryChoice is the modulus for a coin-flip in property tests.
+const propertyBinaryChoice = 2
+
+// coinFlipZero is the zero result of a coin-flip used to decide key inclusion.
+const coinFlipZero = 0
+
+// propertyMaxVariance is the upper bound for random value variance in
+// property tests.
+const propertyMaxVariance = 10000
+
+// credentialKeyNames returns the three known credential key names used in
 // OCTANE connection profiles.
-var credentialKeys = []string{"token", "password", "basic"}
+func credentialKeyNames() []string {
+	return []string{"token", "password", "basic"}
+}
+
+// assertNoCredentialLeaks checks that every credential key in got is
+// redacted to [redact.Placeholder]. Any non-redacted key is reported
+// via t.Errorf.
+func assertNoCredentialLeaks(t *testing.T, got map[string]any, iter int) {
+	t.Helper()
+
+	for _, key := range credentialKeyNames() {
+		val, present := got[key]
+		if !present {
+			continue
+		}
+
+		if val != redact.Placeholder {
+			t.Errorf(
+				"iter %d: key %q not redacted: got %q",
+				iter, key, val,
+			)
+		}
+	}
+}
 
 // Test_redact_AuthBlock_property verifies that no credential key in
 // a randomly generated auth map retains its original value after
@@ -34,19 +68,7 @@ func Test_redact_AuthBlock_property(t *testing.T) {
 		input := buildRandomAuthMap(rng, iter)
 		got := redact.AuthBlock(input)
 
-		for _, key := range credentialKeys {
-			val, present := got[key]
-			if !present {
-				continue
-			}
-
-			if val != redact.Placeholder {
-				t.Errorf(
-					"iter %d: key %q not redacted: got %q",
-					iter, key, val,
-				)
-			}
-		}
+		assertNoCredentialLeaks(t, got, iter)
 	}
 }
 
@@ -54,15 +76,16 @@ func Test_redact_AuthBlock_property(t *testing.T) {
 // of credential keys and randomised string values. The iter parameter
 // is incorporated into values to ensure uniqueness.
 func buildRandomAuthMap(rng *mrand.Rand, iter int) map[string]any {
-	out := make(map[string]any, len(credentialKeys))
+	keys := credentialKeyNames()
+	out := make(map[string]any, len(keys))
 
-	for _, key := range credentialKeys {
-		if rng.IntN(2) == 0 {
+	for _, key := range keys {
+		if rng.IntN(propertyBinaryChoice) == coinFlipZero {
 			out[key] = fmt.Sprintf(
 				"secret-%s-%d-%d",
 				key,
 				iter,
-				rng.IntN(10000),
+				rng.IntN(propertyMaxVariance),
 			)
 		}
 	}

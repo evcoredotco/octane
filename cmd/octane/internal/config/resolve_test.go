@@ -7,12 +7,25 @@ import (
 	"github.com/evcoreco/octane/cmd/octane/internal/config"
 )
 
-// ptr is a generic helper that returns a pointer to the given value.
-// It is used to construct FlagOverrides without intermediate
-// variables throughout this test file.
-func ptr[T any](value T) *T {
-	return &value
-}
+const (
+	// flagCacheDir is the cache directory path set via flag override.
+	flagCacheDir = "/flag/cache"
+
+	// maxParallelEnv is the MaxParallel value simulating an env-var layer.
+	maxParallelEnv = 8
+
+	// ocppVersion16 is the OCPP 1.6 version string used in config tests.
+	ocppVersion16 = "1.6"
+
+	// defaultLockTimeoutSec is the default LockTimeout in seconds.
+	defaultLockTimeoutSec = 60
+
+	// defaultMaxParallel is the default MaxParallel worker count.
+	defaultMaxParallel = 1
+
+	// preservedCacheDir is the CacheDir value tested for nil-flag preservation.
+	preservedCacheDir = "/some/dir"
+)
 
 // TestResolve_FlagWinsOverEnv asserts that a non-nil flag override
 // takes precedence over an environment-variable value.
@@ -22,8 +35,10 @@ func TestResolve_FlagWinsOverEnv(t *testing.T) {
 	base := config.Default()
 	base.CacheDir = "/env/cache" // simulate env-var layer result
 
+	cacheDirFlag := flagCacheDir
+
 	flags := config.FlagOverrides{
-		CacheDir:           ptr("/flag/cache"),
+		CacheDir:           &cacheDirFlag,
 		MaxParallel:        nil,
 		OCPPVersion:        nil,
 		LockTimeout:        nil,
@@ -33,10 +48,10 @@ func TestResolve_FlagWinsOverEnv(t *testing.T) {
 
 	resolved := config.Resolve(base, flags)
 
-	if resolved.CacheDir != "/flag/cache" {
+	if resolved.CacheDir != flagCacheDir {
 		t.Errorf(
 			"expected CacheDir=%q, got %q",
-			"/flag/cache",
+			flagCacheDir,
 			resolved.CacheDir,
 		)
 	}
@@ -49,9 +64,9 @@ func TestResolve_EnvWinsOverYAML(t *testing.T) {
 	t.Parallel()
 
 	// Simulate a config loaded from YAML with MaxParallel=4, then
-	// overridden by the env-var layer to 8.
+	// overridden by the env-var layer to maxParallelEnv.
 	base := config.Default()
-	base.MaxParallel = 8 // env-var layer already applied
+	base.MaxParallel = maxParallelEnv // env-var layer already applied
 
 	// No flag override for MaxParallel.
 	flags := config.FlagOverrides{
@@ -65,9 +80,10 @@ func TestResolve_EnvWinsOverYAML(t *testing.T) {
 
 	resolved := config.Resolve(base, flags)
 
-	if resolved.MaxParallel != 8 {
+	if resolved.MaxParallel != maxParallelEnv {
 		t.Errorf(
-			"expected MaxParallel=8, got %d",
+			"expected MaxParallel=%d, got %d",
+			maxParallelEnv,
 			resolved.MaxParallel,
 		)
 	}
@@ -80,7 +96,7 @@ func TestResolve_YAMLWinsOverDefault(t *testing.T) {
 	t.Parallel()
 
 	base := config.Default()
-	base.OCPPVersion = "1.6" // YAML-sourced value
+	base.OCPPVersion = ocppVersion16 // YAML-sourced value
 
 	// No flag override for OCPPVersion.
 	flags := config.FlagOverrides{
@@ -94,10 +110,10 @@ func TestResolve_YAMLWinsOverDefault(t *testing.T) {
 
 	resolved := config.Resolve(base, flags)
 
-	if resolved.OCPPVersion != "1.6" {
+	if resolved.OCPPVersion != ocppVersion16 {
 		t.Errorf(
 			"expected OCPPVersion=%q, got %q",
-			"1.6",
+			ocppVersion16,
 			resolved.OCPPVersion,
 		)
 	}
@@ -121,10 +137,10 @@ func TestResolve_DefaultUsedWhenNoOverride(t *testing.T) {
 
 	resolved := config.Resolve(base, flags)
 
-	if resolved.LockTimeout != 60*time.Second {
+	if resolved.LockTimeout != defaultLockTimeoutSec*time.Second {
 		t.Errorf(
 			"expected LockTimeout=%v, got %v",
-			60*time.Second,
+			defaultLockTimeoutSec*time.Second,
 			resolved.LockTimeout,
 		)
 	}
@@ -137,9 +153,10 @@ func TestResolve_DefaultUsedWhenNoOverride(t *testing.T) {
 		)
 	}
 
-	if resolved.MaxParallel != 1 {
+	if resolved.MaxParallel != defaultMaxParallel {
 		t.Errorf(
-			"expected MaxParallel=1, got %d",
+			"expected MaxParallel=%d, got %d",
+			defaultMaxParallel,
 			resolved.MaxParallel,
 		)
 	}
@@ -151,7 +168,7 @@ func TestResolve_NilFlagLeavesFieldUnchanged(t *testing.T) {
 	t.Parallel()
 
 	base := config.Default()
-	base.CacheDir = "/some/dir"
+	base.CacheDir = preservedCacheDir
 
 	flags := config.FlagOverrides{
 		CacheDir:           nil, // not provided by operator
@@ -164,10 +181,10 @@ func TestResolve_NilFlagLeavesFieldUnchanged(t *testing.T) {
 
 	resolved := config.Resolve(base, flags)
 
-	if resolved.CacheDir != "/some/dir" {
+	if resolved.CacheDir != preservedCacheDir {
 		t.Errorf(
 			"expected CacheDir=%q, got %q",
-			"/some/dir",
+			preservedCacheDir,
 			resolved.CacheDir,
 		)
 	}

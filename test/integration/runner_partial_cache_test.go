@@ -3,6 +3,7 @@
 // Task: T-005-55
 // AC8: Partial cache: when 8 of 10 cache entries are deleted after a full
 // first run, the third run reports CacheHits >= 8 and re-executes the 2 misses.
+
 package integration_test
 
 import (
@@ -37,9 +38,11 @@ Scenario: Leaf passes
 func Test_runner_RunPartialCache(t *testing.T) {
 	t.Parallel()
 
-	const totalStories = 10
-	const deletedEntries = 2
-	const expectedHits = totalStories - deletedEntries
+	const (
+		totalStories   = 10
+		deletedEntries = 2
+		expectedHits   = totalStories - deletedEntries
+	)
 
 	storyDir := t.TempDir()
 	cacheDir := t.TempDir()
@@ -53,11 +56,7 @@ func Test_runner_RunPartialCache(t *testing.T) {
 		writeFile(t, name, leafStoryTemplate(i))
 	}
 
-	cfg := runner.Config{
-		StoryPaths: []string{storyDir},
-		NoCache:    false,
-		CacheDir:   cacheDir,
-	}
+	cfg := cachedCfg(storyDir, cacheDir)
 
 	// First run: all 10 are cache misses; cache is populated.
 	firstResult, err := runner.Run(context.Background(), cfg)
@@ -87,18 +86,31 @@ func Test_runner_RunPartialCache(t *testing.T) {
 		)
 	}
 
-	// Delete 2 cache entries from the results tree so the third run misses them.
-	if err = deleteNCacheEntries(cacheDir, deletedEntries); err != nil {
+	assertPartialCacheThirdRun(
+		t, cfg, cacheDir, totalStories, deletedEntries, expectedHits,
+	)
+}
+
+// assertPartialCacheThirdRun deletes n entries then re-runs, verifying hit
+// counts and that all stories still pass.
+func assertPartialCacheThirdRun(
+	t *testing.T,
+	cfg runner.Config,
+	cacheDir string,
+	totalStories, deletedEntries, expectedHits int,
+) {
+	t.Helper()
+
+	err := deleteNCacheEntries(cacheDir, deletedEntries)
+	if err != nil {
 		t.Fatalf("deleteNCacheEntries: %v", err)
 	}
 
-	// Third run: expect 8 hits, 2 misses.
-	thirdResult, err := runner.Run(context.Background(), cfg)
-	if err != nil {
-		t.Fatalf("third runner.Run: %v", err)
+	thirdResult, runErr := runner.Run(context.Background(), cfg)
+	if runErr != nil {
+		t.Fatalf("third runner.Run: %v", runErr)
 	}
 
-	// Invariant: at least 8 of 10 stories must be cache hits.
 	if thirdResult.Summary.CacheHits < expectedHits {
 		t.Errorf(
 			"third run: Summary.CacheHits: want >= %d, got %d",
@@ -107,7 +119,6 @@ func Test_runner_RunPartialCache(t *testing.T) {
 		)
 	}
 
-	// Invariant: all 10 stories should still be present and pass.
 	if len(thirdResult.Stories) != totalStories {
 		t.Errorf(
 			"third run: want %d stories, got %d",
@@ -127,10 +138,10 @@ func Test_runner_RunPartialCache(t *testing.T) {
 	}
 }
 
-// deleteNCacheEntries removes up to n leaf entry directories from the cache
-// results tree. Each leaf directory is a <hash>/ folder two levels under
-// <cacheDir>/results/<prefix>/<hash>/result.json.
-func deleteNCacheEntries(cacheDir string, n int) error {
+// deleteNCacheEntries removes up to maxDelete leaf entry directories from the
+// cache results tree. Each leaf directory is a <hash>/ folder two levels
+// under <cacheDir>/results/<prefix>/<hash>/result.json.
+func deleteNCacheEntries(cacheDir string, maxDelete int) error {
 	resultsRoot := filepath.Join(cacheDir, "results")
 
 	prefixEntries, err := os.ReadDir(resultsRoot)
@@ -138,34 +149,56 @@ func deleteNCacheEntries(cacheDir string, n int) error {
 		return fmt.Errorf("read results root: %w", err)
 	}
 
-	deleted := 0
+	const noRemaining = 0
+
+	remaining := maxDelete
 
 	for _, prefix := range prefixEntries {
-		if !prefix.IsDir() || deleted >= n {
-			break
+		if remaining <= noRemaining || !prefix.IsDir() {
+			continue
 		}
 
 		prefixPath := filepath.Join(resultsRoot, prefix.Name())
 
-		hashEntries, readErr := os.ReadDir(prefixPath)
-		if readErr != nil {
-			return fmt.Errorf("read prefix dir: %w", readErr)
+		count, delErr := deleteHashEntries(prefixPath, remaining)
+		if delErr != nil {
+			return delErr
 		}
 
-		for _, hash := range hashEntries {
-			if !hash.IsDir() || deleted >= n {
-				break
-			}
-
-			hashPath := filepath.Join(prefixPath, hash.Name())
-
-			if err = os.RemoveAll(hashPath); err != nil {
-				return fmt.Errorf("remove entry dir %q: %w", hashPath, err)
-			}
-
-			deleted++
-		}
+		remaining -= count
 	}
 
 	return nil
+}
+
+// deleteHashEntries removes up to maxDelete hash subdirectories inside
+// prefixPath. It returns the number of directories removed.
+func deleteHashEntries(prefixPath string, maxDelete int) (int, error) {
+	const noneDeleted = 0
+
+	hashEntries, err := os.ReadDir(prefixPath)
+	if err != nil {
+		return noneDeleted, fmt.Errorf("read prefix dir: %w", err)
+	}
+
+	deleted := noneDeleted
+
+	for _, hash := range hashEntries {
+		if deleted >= maxDelete || !hash.IsDir() {
+			continue
+		}
+
+		hashPath := filepath.Join(prefixPath, hash.Name())
+
+		rmErr := os.RemoveAll(hashPath)
+		if rmErr != nil {
+			return deleted, fmt.Errorf(
+				"remove entry dir %q: %w", hashPath, rmErr,
+			)
+		}
+
+		deleted++
+	}
+
+	return deleted, nil
 }

@@ -22,24 +22,24 @@ for identical inputs (constitutional principle IV).
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|-------|----------|---------|-------------|
-| `csms` | yes | — | Target CSMS WSS endpoint. |
-| `ocpp-version` | yes | `1.6` | One of `1.6`, `1.6`, `2.1`. |
-| `scenario` | yes | `all` | Scenario id, comma-list, or `all`. |
-| `config` | no | `""` | Path to a YAML config file in the workspace. |
-| `seed` | no | `0` | Deterministic seed for reproducible runs. |
-| `insecure` | no | `false` | Disable TLS verification (banner added to report). |
-| `report-path` | no | `report.json` | Output path inside `$GITHUB_WORKSPACE`. |
-| `fail-on` | no | `major` | Severity threshold: `block`, `major`, `minor`, `never`. |
+| Input          | Required | Default       | Description                                             |
+|----------------|----------|---------------|---------------------------------------------------------|
+| `csms`         | yes      | —             | Target CSMS WSS endpoint.                               |
+| `ocpp-version` | yes      | `1.6`         | One of `1.6`, `1.6`, `2.1`.                             |
+| `scenario`     | yes      | `all`         | Scenario id, comma-list, or `all`.                      |
+| `config`       | no       | `""`          | Path to a YAML config file in the workspace.            |
+| `seed`         | no       | `0`           | Deterministic seed for reproducible runs.               |
+| `insecure`     | no       | `false`       | Disable TLS verification (banner added to report).      |
+| `report-path`  | no       | `report.json` | Output path inside `$GITHUB_WORKSPACE`.                 |
+| `fail-on`      | no       | `major`       | Severity threshold: `block`, `major`, `minor`, `never`. |
 
 ## Outputs
 
-| Output | Description |
-|--------|-------------|
-| `report-path` | Path to the produced JSON report. |
-| `passed` | `true` if findings did not exceed `fail-on`. |
-| `summary` | One-line summary suitable for `$GITHUB_STEP_SUMMARY`. |
+| Output        | Description                                           |
+|---------------|-------------------------------------------------------|
+| `report-path` | Path to the produced JSON report.                     |
+| `passed`      | `true` if findings did not exceed `fail-on`.          |
+| `summary`     | One-line summary suitable for `$GITHUB_STEP_SUMMARY`. |
 
 ## Pinning
 
@@ -55,11 +55,11 @@ Both forms are signed and attested via SLSA provenance.
 Credentials are sourced exclusively from environment variables. Never
 embed them in the workflow inputs. Supported variables:
 
-| Env var | Purpose |
-|---------|---------|
-| `OCTANE_BASIC_AUTH_USER` / `OCTANE_BASIC_AUTH_PASS` | OCPP-J Basic auth |
-| `OCTANE_MTLS_CERT` / `OCTANE_MTLS_KEY` | mTLS client cert/key (PEM) |
-| `OCTANE_BEARER_TOKEN` | OAuth2 / JWT bearer token |
+| Env var                                             | Purpose                    |
+|-----------------------------------------------------|----------------------------|
+| `OCTANE_BASIC_AUTH_USER` / `OCTANE_BASIC_AUTH_PASS` | OCPP-J Basic auth          |
+| `OCTANE_MTLS_CERT` / `OCTANE_MTLS_KEY`              | mTLS client cert/key (PEM) |
+| `OCTANE_BEARER_TOKEN`                               | OAuth2 / JWT bearer token  |
 
 All credential material is redacted from the report.
 

@@ -4,6 +4,18 @@ import (
 	"strings"
 )
 
+const (
+	// startPos is the initial position index used when scanning tokens.
+	startPos = 0
+
+	// noMatch is the sentinel returned by consumeLiteral on failure.
+	noMatch = -1
+
+	// oneWord is the number of step words consumed by a single
+	// KindPlaceholder token.
+	oneWord = 1
+)
+
 // Match attempts to match a parsed keyword pattern (expressed as a
 // slice of [Token] values produced by [Parse]) against a step text
 // string. It returns the raw captured strings keyed by placeholder
@@ -31,31 +43,20 @@ func Match(
 	step string,
 ) (map[string]string, bool) {
 	stepWords := splitWords(step)
-	if len(stepWords) == 0 {
+	if len(stepWords) == startPos {
 		return nil, false
 	}
 
 	captures := make(map[string]string)
-	pos := 0
+	pos := startPos
 
 	for idx := range tokens {
-		tok := tokens[idx]
-
-		switch tok.Kind {
-		case KindLiteral:
-			pos = consumeLiteral(tok.Text, stepWords, pos)
-			if pos < 0 {
-				return nil, false
-			}
-
-		case KindPlaceholder:
-			if pos >= len(stepWords) {
-				return nil, false
-			}
-
-			captures[tok.Name] = stepWords[pos]
-			pos++
+		newPos, ok := consumeToken(tokens[idx], stepWords, pos, captures)
+		if !ok {
+			return nil, false
 		}
+
+		pos = newPos
 	}
 
 	if pos != len(stepWords) {
@@ -63,6 +64,40 @@ func Match(
 	}
 
 	return captures, true
+}
+
+// consumeToken processes a single token against the step words at position
+// pos, updating captures for placeholders. It returns the new position and
+// whether the token was consumed successfully.
+func consumeToken(
+	tok Token,
+	stepWords []string,
+	pos int,
+	captures map[string]string,
+) (int, bool) {
+	switch tok.Kind {
+	case KindLiteral:
+		newPos := consumeLiteral(tok.Text, stepWords, pos)
+		if newPos == noMatch {
+			return startPos, false
+		}
+
+		return newPos, true
+
+	case KindPlaceholder:
+		if pos >= len(stepWords) {
+			return startPos, false
+		}
+
+		captures[tok.Name] = stepWords[pos]
+
+		return pos + oneWord, true
+
+	default:
+		// Unknown token kinds are silently skipped; new token
+		// kinds added in future must be handled explicitly above.
+		return pos, true
+	}
 }
 
 // splitWords splits s on any run of Unicode whitespace and returns
@@ -84,17 +119,17 @@ func consumeLiteral(
 ) int {
 	litWords := strings.Fields(literalText)
 
-	if len(litWords) == 0 {
+	if len(litWords) == startPos {
 		return pos
 	}
 
 	if pos+len(litWords) > len(stepWords) {
-		return -1
+		return noMatch
 	}
 
 	for offset, word := range litWords {
 		if !strings.EqualFold(word, stepWords[pos+offset]) {
-			return -1
+			return noMatch
 		}
 	}
 

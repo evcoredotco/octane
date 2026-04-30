@@ -5,6 +5,7 @@
 // Task: T-004-05
 // AC1: A registered Station handle appears in mock.State after the open
 // keyword's Func executes successfully.
+
 package primitive_test
 
 import (
@@ -15,15 +16,12 @@ import (
 	"testing"
 
 	"github.com/coder/websocket"
-
 	"github.com/evcoreco/octane/pkg/keywords/api"
 	"github.com/evcoreco/octane/pkg/keywords/api/mock"
-	// Blank import registers all primitive keywords at init() time.
-	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
 	"github.com/evcoreco/octane/pkg/keywords/registry"
 )
 
-// ── Named constants ───────────────────────────────────────────────────────────
+// ── Named constants ──────────────────────────────────────────────────────────
 
 const (
 	// handleStation is the station handle name used across open tests.
@@ -38,9 +36,12 @@ const (
 	// patternOpenWithSubprotocol is the step text for the subprotocol variant.
 	patternOpenWithSubprotocol = "open a WebSocket to {url:string} as station" +
 		" {station:string} with subprotocol {subprotocol:string}"
+
+	// msgOpenUnexpectedErr is the format string for unexpected open errors.
+	msgOpenUnexpectedErr = "open keyword Func: unexpected error: %v"
 )
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// ── helpers ──────────────────────────────────────────────────────────────────
 
 // newEchoServer starts a local httptest WebSocket server that accepts any
 // connection with no subprotocol preference.  It returns the server and its
@@ -77,7 +78,8 @@ func newSubprotocolServer(
 			_, err := websocket.Accept(
 				w,
 				r,
-				&websocket.AcceptOptions{ //nolint:exhaustruct // only Subprotocols is relevant for test servers
+				//nolint:exhaustruct // only Subprotocols is relevant
+				&websocket.AcceptOptions{
 					Subprotocols: []string{subprotocol},
 				},
 			)
@@ -108,7 +110,7 @@ func resolveFunc(t *testing.T, pattern string) api.Func {
 	return nil
 }
 
-// ── tests ─────────────────────────────────────────────────────────────────────
+// ── tests ────────────────────────────────────────────────────────────────────
 
 // Test_primitive_openWebSocket verifies that calling the open keyword's Func
 // registers a station in MockState under the given handle name (AC1).
@@ -129,7 +131,7 @@ func Test_primitive_openWebSocket(t *testing.T) {
 
 	err := keywordFunc(context.Background(), state, args)
 	if err != nil {
-		t.Fatalf("open keyword Func: unexpected error: %v", err)
+		t.Fatalf(msgOpenUnexpectedErr, err)
 	}
 
 	// Invariant: a station must be registered under the given handle.
@@ -139,13 +141,6 @@ func Test_primitive_openWebSocket(t *testing.T) {
 			"state.Station(%q) after open: unexpected error: %v",
 			handleStation,
 			lookupErr,
-		)
-	}
-
-	if sta == nil {
-		t.Errorf(
-			"state.Station(%q) after open: want non-nil Station, got nil",
-			handleStation,
 		)
 	}
 
@@ -169,8 +164,9 @@ func Test_primitive_openWebSocket_StationIsOpen(t *testing.T) {
 		"station": handleStation,
 	})
 
-	if err := keywordFunc(context.Background(), state, args); err != nil {
-		t.Fatalf("open keyword Func: unexpected error: %v", err)
+	openErr := keywordFunc(context.Background(), state, args)
+	if openErr != nil {
+		t.Fatalf(msgOpenUnexpectedErr, openErr)
 	}
 
 	sta, err := state.Station(handleStation)
@@ -242,16 +238,9 @@ func Test_primitive_openWebSocketWithSubprotocol(t *testing.T) {
 	sta, lookupErr := state.Station(handleStation)
 	if lookupErr != nil {
 		t.Fatalf(
-			"state.Station(%q) after open-with-subprotocol: unexpected error: %v",
+			"state.Station(%q): unexpected error: %v",
 			handleStation,
 			lookupErr,
-		)
-	}
-
-	if sta == nil {
-		t.Errorf(
-			"state.Station(%q): want non-nil Station, got nil",
-			handleStation,
 		)
 	}
 
@@ -264,7 +253,7 @@ func Test_primitive_openWebSocketWithSubprotocol(t *testing.T) {
 func Test_primitive_openWebSocketWithSubprotocol_Mismatch(t *testing.T) {
 	t.Parallel()
 
-	// The server accepts only an unsupported subprotocol; the client requests "ocpp1.6".
+	// The server offers an unsupported subprotocol; client requests ocpp1.6.
 	srv, wsURL := newSubprotocolServer(t, "ocpp_unsupported")
 
 	defer srv.Close()
@@ -307,8 +296,9 @@ func Test_primitive_openWebSocket_LogsConnectionMessage(t *testing.T) {
 		"station": handleStation,
 	})
 
-	if err := keywordFunc(context.Background(), state, args); err != nil {
-		t.Fatalf("open keyword Func: unexpected error: %v", err)
+	err := keywordFunc(context.Background(), state, args)
+	if err != nil {
+		t.Fatalf(msgOpenUnexpectedErr, err)
 	}
 
 	logs := state.Logs()

@@ -1,8 +1,9 @@
-// Package story — see parse.go for package documentation.
 package story
 
 import (
+	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -10,6 +11,29 @@ import (
 	"github.com/evcoreco/octane/pkg/story/ast"
 	"github.com/evcoreco/octane/pkg/story/diag"
 	"github.com/evcoreco/octane/pkg/story/lex"
+)
+
+// fmtPosExpected is the shared positional error format string used across
+// parser_meta and parser_steps.
+const fmtPosExpected = "%s:%d:%d: %w, got %s"
+
+// emptySliceLen is the zero-length sentinel for make([]T, 0, n) calls.
+const emptySliceLen = 0
+
+// Sentinel errors for parser_meta parse failures.
+var (
+	errExpectedMetaSection = errors.New(
+		"expected Meta section at top of file",
+	)
+	errStationsNotInt = errors.New(
+		"stations value is not a valid integer",
+	)
+	errStationsOutOfRange = errors.New(
+		"stations value is out of range; must be between 1 and 10000",
+	)
+	errExpectedMetaKey         = errors.New("expected meta key")
+	errExpectedColonAfterKey   = errors.New("expected ':' after meta key")
+	errExpectedValueAfterColon = errors.New("expected value after ':'")
 )
 
 // metaEntry is the internal representation of a single parsed meta line.
@@ -26,33 +50,38 @@ type metaEntry struct {
 // more indented meta-entry lines. After all entries are collected it
 // validates that required keys are present and that the Spec-Ref / helper
 // tag contract is respected.
+// zeroMeta is the zero-value ast.Meta returned on parse failure.
+func zeroMeta() ast.Meta {
+	return ast.Meta{
+		Name:       emptyStr,
+		ID:         emptyStr,
+		SpecRef:    nil,
+		Tags:       nil,
+		Stations:   tokenZeroPos,
+		Timeout:    tokenZeroPos,
+		Parameters: nil,
+		CacheTTL:   nil,
+		Depends:    nil,
+		Position:   ast.Position{Line: tokenZeroPos, Column: tokenZeroPos},
+	}
+}
+
 func (p *parser) parseMeta() (ast.Meta, error) {
 	tok := p.lex.Next()
 	if tok.Kind != lex.TokenMeta {
-		return ast.Meta{
-				Name:       "",
-				ID:         "",
-				SpecRef:    nil,
-				Tags:       nil,
-				Stations:   0,
-				Timeout:    0,
-				Parameters: nil,
-				CacheTTL:   nil,
-				Depends:    nil,
-				Position:   ast.Position{Line: tok.Line, Column: tok.Column},
-			}, fmt.Errorf(
-				"%s:%d:%d: expected Meta section at top of file, got %s",
-				p.file, tok.Line, tok.Column, tok.Kind,
-			)
+		return zeroMeta(), fmt.Errorf(
+			fmtPosExpected,
+			p.file, tok.Line, tok.Column, errExpectedMetaSection, tok.Kind,
+		)
 	}
 
 	meta := ast.Meta{
-		Name:       "",
-		ID:         "",
+		Name:       emptyStr,
+		ID:         emptyStr,
 		SpecRef:    nil,
 		Tags:       nil,
-		Stations:   0,
-		Timeout:    0,
+		Stations:   tokenZeroPos,
+		Timeout:    tokenZeroPos,
 		Parameters: nil,
 		CacheTTL:   nil,
 		Depends:    nil,
@@ -64,61 +93,51 @@ func (p *parser) parseMeta() (ast.Meta, error) {
 		hasID:         false,
 		hasStations:   false,
 		hasTags:       false,
-		specRefLine:   0,
-		specRefColumn: 0,
+		specRefLine:   tokenZeroPos,
+		specRefColumn: tokenZeroPos,
 	}
 
-	for p.lex.Peek().Kind == lex.TokenIndent && p.lex.Peek().Literal == "    " {
+	err := p.collectMetaEntries(&meta, tracker)
+	if err != nil {
+		return zeroMeta(), err
+	}
+
+	err = validateMetaRequired(p.file, meta, tracker)
+	if err != nil {
+		return zeroMeta(), err
+	}
+
+	return meta, nil
+}
+
+// isTopLevelIndent reports whether the next token is a standard four-space
+// top-level meta indent.
+func isTopLevelIndent(tok lex.Token) bool {
+	return tok.Kind == lex.TokenIndent && tok.Literal == "    "
+}
+
+// collectMetaEntries reads all indented meta-entry lines and applies them
+// to meta using the provided tracker. It stops when the next token is no
+// longer a top-level indent.
+func (p *parser) collectMetaEntries(
+	meta *ast.Meta,
+	tracker *metaTracker,
+) error {
+	for isTopLevelIndent(p.lex.Peek()) {
 		_ = p.lex.Next() // consume indent
 
 		entry, err := p.parseMetaEntry()
 		if err != nil {
-			return ast.Meta{
-				Name:       "",
-				ID:         "",
-				SpecRef:    nil,
-				Tags:       nil,
-				Stations:   0,
-				Timeout:    0,
-				Parameters: nil,
-				CacheTTL:   nil,
-				Depends:    nil,
-				Position:   ast.Position{Line: 0, Column: 0},
-			}, err
+			return err
 		}
 
-		if err = p.applyMetaEntry(&meta, entry, tracker); err != nil {
-			return ast.Meta{
-				Name:       "",
-				ID:         "",
-				SpecRef:    nil,
-				Tags:       nil,
-				Stations:   0,
-				Timeout:    0,
-				Parameters: nil,
-				CacheTTL:   nil,
-				Depends:    nil,
-				Position:   ast.Position{Line: 0, Column: 0},
-			}, err
+		err = p.applyMetaEntry(meta, entry, tracker)
+		if err != nil {
+			return err
 		}
 	}
 
-	if err := validateMetaRequired(p.file, meta, tracker); err != nil {
-		return ast.Meta{
-			Name:       "",
-			ID:         "",
-			SpecRef:    nil,
-			Tags:       nil,
-			Stations:   0,
-			Timeout:    0,
-			Parameters: nil,
-			CacheTTL:   nil,
-			Depends:    nil,
-			Position:   ast.Position{Line: 0, Column: 0},
-		}, err
-	}
-
-	return meta, nil
+	return nil
 }
 
 // metaTracker records which optional/required keys have been seen so that
@@ -140,6 +159,34 @@ func (p *parser) applyMetaEntry(
 	tracker *metaTracker,
 ) error {
 	switch entry.key {
+	case "Stations":
+		return p.applyMetaStations(meta, tracker, entry)
+
+	case "Timeout":
+		return p.applyMetaTimeout(meta, entry)
+
+	case "Cache-TTL":
+		return p.applyMetaCacheTTL(meta, entry)
+
+	case "Depends":
+		return p.applyMetaDepends(meta)
+
+	default:
+		applyMetaSimpleEntry(meta, entry, tracker)
+	}
+
+	return nil
+}
+
+// applyMetaSimpleEntry handles meta keys that never return an error:
+// Name, Id, Spec-Ref, Tags, Parameters, and unknown keys (tolerated for
+// forward compatibility).
+func applyMetaSimpleEntry(
+	meta *ast.Meta,
+	entry metaEntry,
+	tracker *metaTracker,
+) {
+	switch entry.key {
 	case "Name":
 		meta.Name = entry.value
 		tracker.hasName = true
@@ -155,75 +202,108 @@ func (p *parser) applyMetaEntry(
 		tracker.specRefColumn = entry.column
 
 	case "Tags":
-		for _, tag := range splitTrimmed(entry.value, ",") {
-			if tag != "" {
-				meta.Tags = append(meta.Tags, tag)
-				tracker.hasTags = true
-			}
-		}
-
-	case "Stations":
-		count, err := strconv.Atoi(entry.value)
-		if err != nil {
-			return fmt.Errorf(
-				"%s:%d:%d: Stations value %q is not a valid integer",
-				p.file, entry.line, entry.column, entry.value,
-			)
-		}
-
-		if count < 1 || count > 10000 {
-			return fmt.Errorf(
-				"%s:%d:%d: Stations value %d is out of range; must be between 1 and 10000",
-				p.file,
-				entry.line,
-				entry.column,
-				count,
-			)
-		}
-
-		meta.Stations = count
-		tracker.hasStations = true
-
-	case "Timeout":
-		dur, err := time.ParseDuration(entry.value)
-		if err != nil {
-			return fmt.Errorf(
-				"%s:%d:%d: Timeout value %q is not a valid duration: %w",
-				p.file, entry.line, entry.column, entry.value, err,
-			)
-		}
-
-		meta.Timeout = dur
+		applyMetaTags(meta, tracker, entry.value)
 
 	case "Parameters":
-		// T-001-23: parse comma-separated parameter list.
-		for _, param := range splitTrimmed(entry.value, ",") {
-			if param != "" {
-				meta.Parameters = append(meta.Parameters, param)
-			}
-		}
+		applyMetaParameters(meta, entry.value)
 
-	case "Cache-TTL":
-		dur, err := time.ParseDuration(entry.value)
-		if err != nil {
-			return fmt.Errorf(
-				"%s:%d:%d: Cache-TTL value %q is not a valid duration: %w",
-				p.file, entry.line, entry.column, entry.value, err,
-			)
-		}
-
-		meta.CacheTTL = &dur
-
-	case "Depends":
-		// Delegate to parseDepends which reads subsequent indented lines.
-		deps, err := p.parseDepends()
-		if err != nil {
-			return err
-		}
-
-		meta.Depends = deps
 	default: // Unknown keys are silently tolerated for forward compatibility.
 	}
+}
+
+// applyMetaTags appends non-empty comma-separated tags to meta.Tags.
+func applyMetaTags(
+	meta *ast.Meta,
+	tracker *metaTracker,
+	value string,
+) {
+	for _, tag := range splitTrimmed(value, ",") {
+		if tag != emptyStr {
+			meta.Tags = append(meta.Tags, tag)
+			tracker.hasTags = true
+		}
+	}
+}
+
+// applyMetaStations parses and validates the Stations integer value.
+func (p *parser) applyMetaStations(
+	meta *ast.Meta,
+	tracker *metaTracker,
+	entry metaEntry,
+) error {
+	count, err := strconv.Atoi(entry.value)
+	if err != nil {
+		return fmt.Errorf(
+			"%s:%d:%d: %w: %q",
+			p.file, entry.line, entry.column,
+			errStationsNotInt, entry.value,
+		)
+	}
+
+	const minStations, maxStations = 1, 10000
+
+	if count < minStations || count > maxStations {
+		return fmt.Errorf(
+			"%s:%d:%d: %w: got %d",
+			p.file, entry.line, entry.column,
+			errStationsOutOfRange, count,
+		)
+	}
+
+	meta.Stations = count
+	tracker.hasStations = true
+
+	return nil
+}
+
+// applyMetaTimeout parses the Timeout duration value.
+func (p *parser) applyMetaTimeout(meta *ast.Meta, entry metaEntry) error {
+	dur, err := time.ParseDuration(entry.value)
+	if err != nil {
+		return fmt.Errorf(
+			"%s:%d:%d: Timeout value %q is not a valid duration: %w",
+			p.file, entry.line, entry.column, entry.value, err,
+		)
+	}
+
+	meta.Timeout = dur
+
+	return nil
+}
+
+// applyMetaParameters appends non-empty comma-separated parameters to
+// meta.Parameters.
+func applyMetaParameters(meta *ast.Meta, value string) {
+	for _, param := range splitTrimmed(value, ",") {
+		if param != emptyStr {
+			meta.Parameters = append(meta.Parameters, param)
+		}
+	}
+}
+
+// applyMetaCacheTTL parses the Cache-TTL duration value.
+func (p *parser) applyMetaCacheTTL(meta *ast.Meta, entry metaEntry) error {
+	dur, err := time.ParseDuration(entry.value)
+	if err != nil {
+		return fmt.Errorf(
+			"%s:%d:%d: Cache-TTL value %q is not a valid duration: %w",
+			p.file, entry.line, entry.column, entry.value, err,
+		)
+	}
+
+	meta.CacheTTL = &dur
+
+	return nil
+}
+
+// applyMetaDepends delegates to parseDepends and assigns the result.
+func (p *parser) applyMetaDepends(meta *ast.Meta) error {
+	deps, err := p.parseDepends()
+	if err != nil {
+		return err
+	}
+
+	meta.Depends = deps
 
 	return nil
 }
@@ -237,7 +317,7 @@ func validateMetaRequired(
 	tracker *metaTracker,
 ) error {
 	if !tracker.hasName {
-		return &diag.ErrMissingKey{
+		return &diag.MissingKeyError{
 			File:       file,
 			Line:       meta.Position.Line,
 			Column:     meta.Position.Column,
@@ -247,7 +327,7 @@ func validateMetaRequired(
 	}
 
 	if !tracker.hasID {
-		return &diag.ErrMissingKey{
+		return &diag.MissingKeyError{
 			File:       file,
 			Line:       meta.Position.Line,
 			Column:     meta.Position.Column,
@@ -257,7 +337,7 @@ func validateMetaRequired(
 	}
 
 	if !tracker.hasStations {
-		return &diag.ErrMissingKey{
+		return &diag.MissingKeyError{
 			File:       file,
 			Line:       meta.Position.Line,
 			Column:     meta.Position.Column,
@@ -267,12 +347,13 @@ func validateMetaRequired(
 	}
 
 	if !tracker.hasTags {
-		return &diag.ErrMissingKey{
-			File:       file,
-			Line:       meta.Position.Line,
-			Column:     meta.Position.Column,
-			Key:        "Tags",
-			Suggestion: "add 'Tags: <comma-separated tags>' to the Meta section",
+		return &diag.MissingKeyError{
+			File:   file,
+			Line:   meta.Position.Line,
+			Column: meta.Position.Column,
+			Key:    "Tags",
+			Suggestion: "add 'Tags: <comma-separated tags>'" +
+				" to the Meta section",
 		}
 	}
 
@@ -286,7 +367,7 @@ func validateSpecRef(file string, meta ast.Meta, tracker *metaTracker) error {
 	isHelper := containsTag(meta.Tags, "helper")
 
 	if isHelper && meta.SpecRef != nil {
-		return &diag.ErrSpecRefOnHelper{
+		return &diag.SpecRefOnHelperError{
 			File:       file,
 			Line:       tracker.specRefLine,
 			Column:     tracker.specRefColumn,
@@ -296,7 +377,7 @@ func validateSpecRef(file string, meta ast.Meta, tracker *metaTracker) error {
 	}
 
 	if !isHelper && meta.SpecRef == nil {
-		return &diag.ErrMissingSpecRef{
+		return &diag.MissingSpecRefError{
 			File:       file,
 			Line:       meta.Position.Line,
 			Column:     meta.Position.Column,
@@ -313,28 +394,30 @@ func (p *parser) parseMetaEntry() (metaEntry, error) {
 	keyTok := p.lex.Next()
 	if keyTok.Kind != lex.TokenMetaKey {
 		return metaEntry{
-				key:    "",
-				value:  "",
+				key:    emptyStr,
+				value:  emptyStr,
 				line:   keyTok.Line,
 				column: keyTok.Column,
 			}, fmt.Errorf(
-				"%s:%d:%d: expected meta key, got %s",
-				p.file, keyTok.Line, keyTok.Column, keyTok.Kind,
+				"%s:%d:%d: %w, got %s",
+				p.file, keyTok.Line, keyTok.Column,
+				errExpectedMetaKey, keyTok.Kind,
 			)
 	}
 
 	colonTok := p.lex.Next()
 	if colonTok.Kind != lex.TokenColon {
 		return metaEntry{
-				key:    "",
-				value:  "",
+				key:    emptyStr,
+				value:  emptyStr,
 				line:   colonTok.Line,
 				column: colonTok.Column,
 			}, fmt.Errorf(
-				"%s:%d:%d: expected ':' after meta key %q, got %s",
+				"%s:%d:%d: %w %q, got %s",
 				p.file,
 				colonTok.Line,
 				colonTok.Column,
+				errExpectedColonAfterKey,
 				keyTok.Literal,
 				colonTok.Kind,
 			)
@@ -343,13 +426,17 @@ func (p *parser) parseMetaEntry() (metaEntry, error) {
 	valTok := p.lex.Next()
 	if valTok.Kind != lex.TokenValue {
 		return metaEntry{
-				key:    "",
-				value:  "",
+				key:    emptyStr,
+				value:  emptyStr,
 				line:   valTok.Line,
 				column: valTok.Column,
 			}, fmt.Errorf(
-				"%s:%d:%d: expected value after ':', got %s",
-				p.file, valTok.Line, valTok.Column, valTok.Kind,
+				"%s:%d:%d: %w, got %s",
+				p.file,
+				valTok.Line,
+				valTok.Column,
+				errExpectedValueAfterColon,
+				valTok.Kind,
 			)
 	}
 
@@ -365,7 +452,7 @@ func (p *parser) parseMetaEntry() (metaEntry, error) {
 func splitTrimmed(s, sep string) []string {
 	parts := strings.Split(s, sep)
 
-	result := make([]string, 0, len(parts))
+	result := make([]string, emptySliceLen, len(parts))
 
 	for _, part := range parts {
 		result = append(result, strings.TrimSpace(part))
@@ -376,11 +463,5 @@ func splitTrimmed(s, sep string) []string {
 
 // containsTag reports whether tags contains the given tag (case-sensitive).
 func containsTag(tags []string, tag string) bool {
-	for _, t := range tags {
-		if t == tag {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(tags, tag)
 }

@@ -79,12 +79,12 @@ func NewMockState() *State {
 	}
 }
 
-// Station returns the [api.Station] registered under the given handle.
+// Station returns the [api.StationValue] registered under the given handle.
 // It panics if no station has been registered for that name, because
 // an unresolved station handle is a test-setup bug, not a runtime error.
 //
 // Call [State.RegisterStation] before running the keyword under test.
-func (s *State) Station(handle string) (api.Station, error) {
+func (s *State) Station(handle string) (api.StationValue, error) {
 	station, found := s.stations[handle]
 	if !found {
 		panic(fmt.Sprintf(
@@ -94,7 +94,7 @@ func (s *State) Station(handle string) (api.Station, error) {
 		))
 	}
 
-	return station, nil
+	return api.StationValue{Station: station}, nil
 }
 
 // Now returns the frozen time configured via [State.SetNow]. The default
@@ -135,7 +135,12 @@ func (s *State) SetClock(clk clock.Clock) {
 // [State.SetClock] to inject a [clock.DeterministicClock] in tests that
 // must advance time without real wall-clock delay.
 func (s *State) Sleep(ctx context.Context, d time.Duration) error {
-	return s.clk.Sleep(ctx, d)
+	err := s.clk.Sleep(ctx, d)
+	if err != nil {
+		return fmt.Errorf("mock: clock sleep: %w", err)
+	}
+
+	return nil
 }
 
 // RegisterStation adds station under handle so that [State.Station] can
@@ -202,6 +207,16 @@ type Station struct {
 	open bool
 }
 
+// firstFrameIdx is the index of the first element in pendingFrames.
+const firstFrameIdx = 0
+
+// afterFirstIdx is the start index of the slice after consuming the first
+// element (used with pendingFrames[afterFirstIdx:]).
+const afterFirstIdx = 1
+
+// noFrames is the zero-length sentinel used to check if the queue is empty.
+const noFrames = 0
+
 // NewMockStation returns a ready-to-use *[Station] with empty frame
 // buffers, nil errors, and the connection open (IsOpen returns true
 // until [Station.Close] is called).
@@ -223,8 +238,9 @@ func NewMockStation() *Station {
 // Use [Station.SentFrames] after the keyword returns to assert the
 // sequence and content of outbound frames.
 func (st *Station) Send(ctx context.Context, frame []any) error {
-	if err := ctx.Err(); err != nil {
-		return err
+	err := ctx.Err()
+	if err != nil {
+		return fmt.Errorf("mock: send context: %w", err)
 	}
 
 	if st.sendErr != nil {
@@ -250,16 +266,16 @@ func (st *Station) Expect(ctx context.Context) ([]any, error) {
 		return nil, st.expectErr
 	}
 
-	if len(st.pendingFrames) > 0 {
-		frame := st.pendingFrames[0]
-		st.pendingFrames = st.pendingFrames[1:]
+	if len(st.pendingFrames) > noFrames {
+		frame := st.pendingFrames[firstFrameIdx]
+		st.pendingFrames = st.pendingFrames[afterFirstIdx:]
 
 		return frame, nil
 	}
 
 	<-ctx.Done()
 
-	return nil, ctx.Err()
+	return nil, fmt.Errorf("mock: expect context: %w", ctx.Err())
 }
 
 // SentFrames returns a copy of every frame recorded by [Station.Send] in

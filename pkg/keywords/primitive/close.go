@@ -5,17 +5,7 @@ import (
 	"fmt"
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
-	"github.com/evcoreco/octane/pkg/keywords/registry"
 )
-
-func init() {
-	registry.Register(api.Keyword{
-		Pattern:     "close station {station:string}",
-		Layer:       api.LayerPrimitive,
-		OCPPVersion: 0,
-		Func:        closeStation,
-	})
-}
 
 // closeStation implements the primitive keyword:
 //
@@ -40,7 +30,8 @@ func closeStation(
 		)
 	}
 
-	if closeErr := sta.Close(); closeErr != nil {
+	closeErr := sta.Close()
+	if closeErr != nil {
 		return fmt.Errorf(
 			"primitive: close station %q: %w",
 			handle,

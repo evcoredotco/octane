@@ -9,6 +9,7 @@ package serialize
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/evcoreco/octane/pkg/story/ast"
 )
@@ -18,5 +19,10 @@ import (
 // (deterministic by construction since structs have no map keys).
 // This function is for test use only; it is not part of the public API.
 func Serialize(story *ast.Story) ([]byte, error) {
-	return json.Marshal(story)
+	data, err := json.Marshal(story)
+	if err != nil {
+		return nil, fmt.Errorf("serialize: marshal story: %w", err)
+	}
+
+	return data, nil
 }

@@ -4,34 +4,21 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
-	"github.com/evcoreco/octane/pkg/keywords/registry"
 )
 
-func init() {
-	registry.Register(api.Keyword{
-		Pattern:     "send raw frame {frame:any} on station {station:string}",
-		Layer:       api.LayerPrimitive,
-		OCPPVersion: 0,
-		Func:        sendRawFrame,
-	})
-
-	registry.Register(api.Keyword{
-		Pattern:     "send raw bytes {bytes:string} on station {station:string}",
-		Layer:       api.LayerPrimitive,
-		OCPPVersion: 0,
-		Func:        sendRawBytes,
-	})
-}
+// errFrameNotSlice is returned when the frame argument is not a JSON array.
+var errFrameNotSlice = errors.New("frame must be []any")
 
 // sendRawFrame implements the primitive keyword:
 //
 //	send raw frame {frame:any} on station {station:string}
 //
 // The frame argument must be a []any — the decoded Go representation of an
-// OCPP-J JSON array (per ADR 0006). Any other type returns [ErrFrameShape].
+// OCPP-J JSON array (per ADR 0006). Any other type returns [FrameShapeError].
 // The frame is encoded by the transport layer and emitted on the station's
 // WebSocket connection.
 func sendRawFrame(
@@ -45,9 +32,9 @@ func sendRawFrame(
 	frame, ok := raw.([]any)
 	if !ok {
 		return fmt.Errorf(
-			"primitive: send raw frame on station %q: "+
-				"frame must be []any, got %T",
+			"primitive: send raw frame on station %q: %w, got %T",
 			handle,
+			errFrameNotSlice,
 			raw,
 		)
 	}
@@ -61,7 +48,8 @@ func sendRawFrame(
 		)
 	}
 
-	if sendErr := sta.Send(ctx, frame); sendErr != nil {
+	sendErr := sta.Send(ctx, frame)
+	if sendErr != nil {
 		return fmt.Errorf(
 			"primitive: send raw frame on station %q: %w",
 			handle,
@@ -112,7 +100,8 @@ func sendRawBytes(
 
 	var frame []any
 
-	if jsonErr := json.Unmarshal(decoded, &frame); jsonErr != nil {
+	jsonErr := json.Unmarshal(decoded, &frame)
+	if jsonErr != nil {
 		return fmt.Errorf(
 			"primitive: send raw bytes on station %q: "+
 				"decoded bytes are not a JSON array: %w",
@@ -130,7 +119,8 @@ func sendRawBytes(
 		)
 	}
 
-	if sendErr := sta.Send(ctx, frame); sendErr != nil {
+	sendErr := sta.Send(ctx, frame)
+	if sendErr != nil {
 		return fmt.Errorf(
 			"primitive: send raw bytes on station %q: %w",
 			handle,

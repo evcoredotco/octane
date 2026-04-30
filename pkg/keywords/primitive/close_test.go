@@ -12,21 +12,21 @@
 // wraps whatever error state.Station returns, but the mock cannot exercise
 // that branch without a real runtime State.  See the hand-off note at the
 // end of this file.
+
 package primitive_test
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
 	"github.com/evcoreco/octane/pkg/keywords/api/mock"
-	// Blank import registers all primitive keywords at init() time.
-	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
 )
 
-// ── Named constants ───────────────────────────────────────────────────────────
+// ── Named constants ──────────────────────────────────────────────────────────
 
 const (
 	// handleClose is the station handle name used across close tests.
@@ -36,7 +36,7 @@ const (
 	patternClose = "close station {station:string}"
 )
 
-// ── tests ─────────────────────────────────────────────────────────────────────
+// ── tests ────────────────────────────────────────────────────────────────────
 
 // Test_primitive_closeStation verifies that calling the close keyword's Func
 // invokes Close() on the mock station so that IsOpen() returns false (AC1).
@@ -117,7 +117,8 @@ func Test_primitive_closeStation_LogsCloseMessage(t *testing.T) {
 		"station": handleClose,
 	})
 
-	if err := keywordFunc(context.Background(), state, args); err != nil {
+	err := keywordFunc(context.Background(), state, args)
+	if err != nil {
 		t.Fatalf("close keyword Func: unexpected error: %v", err)
 	}
 
@@ -143,7 +144,7 @@ func Test_primitive_closeStation_LogsCloseMessage(t *testing.T) {
 	}
 }
 
-// ── test-local helpers ────────────────────────────────────────────────────────
+// ── test-local helpers ───────────────────────────────────────────────────────
 
 // errCloseStub is the sentinel error returned by closeErrorStation.Close().
 var errCloseStub = errors.New("stub: Close failed")
@@ -155,14 +156,24 @@ type closeErrorStation struct {
 }
 
 func (s *closeErrorStation) Send(ctx context.Context, frame []any) error {
-	return s.inner.Send(ctx, frame)
+	err := s.inner.Send(ctx, frame)
+	if err != nil {
+		return fmt.Errorf("test: send: %w", err)
+	}
+
+	return nil
 }
 
 func (s *closeErrorStation) Expect(ctx context.Context) ([]any, error) {
-	return s.inner.Expect(ctx)
+	frame, err := s.inner.Expect(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("test: expect: %w", err)
+	}
+
+	return frame, nil
 }
 
-func (s *closeErrorStation) Close() error {
+func (*closeErrorStation) Close() error {
 	return errCloseStub
 }
 
@@ -188,4 +199,4 @@ func (s *closeErrorStation) IsOpen() bool {
 //       an error should be provided.
 //
 // Until one of these is resolved, the error-from-missing-handle branch in
-// close.go, status.go is unreachable from black-box unit tests using mock.State.
+// close.go and status.go are unreachable from black-box tests via mock.State.

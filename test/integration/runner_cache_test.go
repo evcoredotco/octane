@@ -2,6 +2,7 @@
 //
 // Task: T-005-51
 // AC2: Cache hit on second run: both stories are served from cache on re-run.
+
 package integration_test
 
 import (
@@ -50,11 +51,7 @@ func Test_runner_RunCacheHitOnSecondRun(t *testing.T) {
 	writeFile(t, storyDir+"/cache_prereq.story", storyPrereq)
 	writeFile(t, storyDir+"/cache_dependent.story", storyDependent)
 
-	cfg := runner.Config{
-		StoryPaths: []string{storyDir},
-		NoCache:    false,
-		CacheDir:   cacheDir,
-	}
+	cfg := cachedCfg(storyDir, cacheDir)
 
 	// First run: both stories are cache misses and get executed.
 	firstResult, err := runner.Run(context.Background(), cfg)
@@ -71,16 +68,7 @@ func Test_runner_RunCacheHitOnSecondRun(t *testing.T) {
 		)
 	}
 
-	for _, sr := range firstResult.Stories {
-		// Invariant: first run must be a cache miss.
-		if sr.CacheStatus != runner.CacheMiss {
-			t.Errorf(
-				"first run: story %q: want CacheMiss, got %s",
-				sr.TestID,
-				sr.CacheStatus,
-			)
-		}
-	}
+	assertAllCacheMiss(t, firstResult.Stories)
 
 	// Second run with same config: both stories should be cache hits.
 	secondResult, err := runner.Run(context.Background(), cfg)
@@ -96,18 +84,7 @@ func Test_runner_RunCacheHitOnSecondRun(t *testing.T) {
 		)
 	}
 
-	for _, sr := range secondResult.Stories {
-		// Invariant: second run must be a cache hit (pass or skip).
-		isHit := sr.CacheStatus == runner.CacheHitPass ||
-			sr.CacheStatus == runner.CacheHitSkip
-		if !isHit {
-			t.Errorf(
-				"second run: story %q: want CacheHit*, got %s",
-				sr.TestID,
-				sr.CacheStatus,
-			)
-		}
-	}
+	assertAllCacheHit(t, secondResult.Stories)
 
 	// Invariant: Summary.CacheHits must equal the number of stories.
 	const expectedCacheHits = 2
@@ -117,5 +94,38 @@ func Test_runner_RunCacheHitOnSecondRun(t *testing.T) {
 			expectedCacheHits,
 			secondResult.Summary.CacheHits,
 		)
+	}
+}
+
+// assertAllCacheMiss verifies that every story has a CacheMiss status.
+func assertAllCacheMiss(t *testing.T, stories []runner.StoryResult) {
+	t.Helper()
+
+	for _, sr := range stories {
+		if sr.CacheStatus != runner.CacheMiss {
+			t.Errorf(
+				"first run: story %q: want CacheMiss, got %s",
+				sr.TestID,
+				sr.CacheStatus,
+			)
+		}
+	}
+}
+
+// assertAllCacheHit verifies that every story has a CacheHitPass or
+// CacheHitSkip status.
+func assertAllCacheHit(t *testing.T, stories []runner.StoryResult) {
+	t.Helper()
+
+	for _, story := range stories {
+		isHit := story.CacheStatus == runner.CacheHitPass ||
+			story.CacheStatus == runner.CacheHitSkip
+		if !isHit {
+			t.Errorf(
+				"second run: story %q: want CacheHit*, got %s",
+				story.TestID,
+				story.CacheStatus,
+			)
+		}
 	}
 }

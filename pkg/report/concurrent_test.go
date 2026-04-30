@@ -17,9 +17,115 @@ import (
 	"github.com/evcoreco/octane/pkg/runner"
 )
 
-// goroutineCount is the number of parallel writers exercised by the
-// concurrent write test (AC10: each run uses a distinct run-id).
-const goroutineCount = 10
+const (
+	// goroutineCount is the number of parallel writers exercised by the
+	// concurrent write test (AC10: each run uses a distinct run-id).
+	goroutineCount = 10
+
+	// concurrentTestYear is the year component of the fixed timestamp used
+	// in concurrent write test fixtures.
+	concurrentTestYear = 2024
+
+	// concurrentTestMonth is the month (January) used in the fixed timestamp.
+	concurrentTestMonth = 1
+
+	// concurrentTestDay is the day-of-month used in the fixed timestamp.
+	concurrentTestDay = 15
+
+	// concurrentTestHour is the hour used in the fixed timestamp.
+	concurrentTestHour = 10
+
+	// zeroTimeField is the zero value for minute, second, and nanosecond
+	// arguments in time.Date calls.
+	zeroTimeField = 0
+)
+
+// validateRunIDEntry checks that a single directory entry in the shared output
+// dir contains a valid octane.json with a matching run_id and records the
+// run_id into seenRunIDs. It reports all invariant violations via t.Errorf and
+// returns the run_id (empty string on failure).
+func validateRunIDEntry(
+	t *testing.T,
+	sharedDir string,
+	entry os.DirEntry,
+	seenRunIDs map[string]struct{},
+) {
+	t.Helper()
+
+	if !entry.IsDir() {
+		t.Errorf("expected directory entry, got file %q", entry.Name())
+
+		return
+	}
+
+	reportPath := filepath.Join(sharedDir, entry.Name(), "octane.json")
+
+	data, readErr := os.ReadFile(filepath.Clean(reportPath))
+	if readErr != nil {
+		t.Errorf("reading %s: %v", reportPath, readErr)
+
+		return
+	}
+
+	var top map[string]any
+
+	unmarshalErr := json.Unmarshal(data, &top)
+	if unmarshalErr != nil {
+		t.Errorf("unmarshalling %s: %v", reportPath, unmarshalErr)
+
+		return
+	}
+
+	runID, ok := top["runId"].(string)
+	if !ok || runID == "" {
+		t.Errorf("%s: missing or empty runId", reportPath)
+
+		return
+	}
+
+	if runID != entry.Name() {
+		t.Errorf(
+			"%s: runId %q does not match directory name %q",
+			reportPath, runID, entry.Name(),
+		)
+	}
+
+	if _, dup := seenRunIDs[runID]; dup {
+		t.Errorf("duplicate runId %q across concurrent writes", runID)
+	}
+
+	seenRunIDs[runID] = struct{}{}
+}
+
+// writeTestReport builds a minimal RunResult and calls reportjson.WriteJSON
+// for a single goroutine in the concurrent test. Errors are sent to errs.
+func writeTestReport(goroutineIdx int, sharedDir string, errs chan<- error) {
+	fixedTime := time.Date(
+		concurrentTestYear, concurrentTestMonth,
+		concurrentTestDay, concurrentTestHour,
+		zeroTimeField, zeroTimeField, zeroTimeField,
+		time.UTC,
+	)
+	result := &runner.RunResult{
+		RunID:      fmt.Sprintf("run-%02d", goroutineIdx),
+		StartedAt:  fixedTime,
+		FinishedAt: fixedTime.Add(5 * time.Second),
+		Stories:    []runner.StoryResult{},
+		Summary:    runner.Summary{}, //nolint:exhaustruct // zero-value fixture
+	}
+
+	outDir := filepath.Join(sharedDir, result.RunID)
+
+	// NoTraceOnPass zero value is correct for this fixture.
+	opts := report.JSONOptions{ //nolint:exhaustruct
+		OctaneVersion: "test",
+	}
+
+	writeErr := reportjson.WriteJSON(result, outDir, opts)
+	if writeErr != nil {
+		errs <- fmt.Errorf("goroutine %d: %w", goroutineIdx, writeErr)
+	}
+}
 
 // Test_report_WriteJSON_ConcurrentDistinctRunIDs asserts that N parallel
 // WriteJSON calls with distinct run-ids produce no file conflicts and that
@@ -31,39 +137,19 @@ func Test_report_WriteJSON_ConcurrentDistinctRunIDs(t *testing.T) {
 
 	errs := make(chan error, goroutineCount)
 
-	var wg sync.WaitGroup
+	var workGroup sync.WaitGroup
 
-	wg.Add(goroutineCount)
+	workGroup.Add(goroutineCount)
 
-	for i := range goroutineCount {
-		i := i // capture loop variable for Go < 1.22 compatibility
-
+	for goroutineIdx := range goroutineCount {
 		go func() {
-			defer wg.Done()
+			defer workGroup.Done()
 
-			fixedTime := time.Date(2024, 1, 15, 10, 0, 0, 0, time.UTC)
-			result := &runner.RunResult{
-				RunID:      fmt.Sprintf("run-%02d", i),
-				StartedAt:  fixedTime,
-				FinishedAt: fixedTime.Add(5 * time.Second),
-				Stories:    []runner.StoryResult{},
-				Summary:    runner.Summary{ //nolint:exhaustruct // zero-value fixture
-				},
-			}
-
-			outDir := filepath.Join(sharedDir, result.RunID)
-
-			opts := report.JSONOptions{ //nolint:exhaustruct // NoTraceOnPass zero value is correct
-				OctaneVersion: "test",
-			}
-
-			if err := reportjson.WriteJSON(result, outDir, opts); err != nil {
-				errs <- fmt.Errorf("goroutine %d: %w", i, err)
-			}
+			writeTestReport(goroutineIdx, sharedDir, errs)
 		}()
 	}
 
-	wg.Wait()
+	workGroup.Wait()
 	close(errs)
 
 	// Invariant: no goroutine reported an error.
@@ -80,70 +166,22 @@ func Test_report_WriteJSON_ConcurrentDistinctRunIDs(t *testing.T) {
 	if len(entries) != goroutineCount {
 		t.Fatalf(
 			"expected %d run subdirectories, got %d",
-			goroutineCount,
-			len(entries),
+			goroutineCount, len(entries),
 		)
 	}
 
-	// Invariant: each file encodes a distinct RunID matching its directory name.
+	// Invariant: each file encodes a distinct RunID matching its
+	// directory name.
 	seenRunIDs := make(map[string]struct{}, goroutineCount)
 
 	for _, entry := range entries {
-		if !entry.IsDir() {
-			t.Errorf("expected directory entry, got file %q", entry.Name())
-
-			continue
-		}
-
-		reportPath := filepath.Join(sharedDir, entry.Name(), "octane.json")
-
-		data, readErr := os.ReadFile(
-			reportPath,
-		) //nolint:gosec // G304: t.TempDir path
-		if readErr != nil {
-			t.Errorf("reading %s: %v", reportPath, readErr)
-
-			continue
-		}
-
-		var top map[string]any
-
-		if unmarshalErr := json.Unmarshal(data, &top); unmarshalErr != nil {
-			t.Errorf("unmarshalling %s: %v", reportPath, unmarshalErr)
-
-			continue
-		}
-
-		runID, ok := top["run_id"].(string)
-		if !ok || runID == "" {
-			t.Errorf("%s: missing or empty run_id", reportPath)
-
-			continue
-		}
-
-		// Invariant: run_id encoded in the file matches the directory name.
-		if runID != entry.Name() {
-			t.Errorf(
-				"%s: run_id %q does not match directory name %q",
-				reportPath,
-				runID,
-				entry.Name(),
-			)
-		}
-
-		// Invariant: run_id values are unique across all written files.
-		if _, dup := seenRunIDs[runID]; dup {
-			t.Errorf("duplicate run_id %q across concurrent writes", runID)
-		}
-
-		seenRunIDs[runID] = struct{}{}
+		validateRunIDEntry(t, sharedDir, entry, seenRunIDs)
 	}
 
 	if len(seenRunIDs) != goroutineCount {
 		t.Errorf(
 			"expected %d distinct run IDs, got %d",
-			goroutineCount,
-			len(seenRunIDs),
+			goroutineCount, len(seenRunIDs),
 		)
 	}
 }

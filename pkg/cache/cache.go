@@ -42,6 +42,9 @@ import (
 	"time"
 )
 
+// noTTL is the zero Duration value representing "no TTL / never expires".
+const noTTL = 0
+
 // ErrCacheMiss is returned by [Cache.Get] when no valid entry
 // exists for the requested key. Callers should use [errors.Is] to
 // detect this condition:
@@ -156,7 +159,7 @@ type Entry struct {
 // to treat expired entries as cache misses and re-execute the
 // story.
 func (e *Entry) IsExpired(now time.Time) bool {
-	if e.TTL <= 0 {
+	if e.TTL <= noTTL {
 		return false
 	}
 

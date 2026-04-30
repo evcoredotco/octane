@@ -1,151 +1,150 @@
 {
-  "Path": "../../scenarios/v16/transaction_pluginfirst_accepted.story",
-  "Meta": {
-    "Name": "Transaction start plugin-first accepted",
-    "ID": "transaction_pluginfirst_accepted",
-    "SpecRef": "OCPP-J 1.6 §6.13 StatusNotification, §6.2 Authorize, §6.16 StartTransaction",
-    "Tags": [
+  "path": "../../scenarios/v16/transaction_pluginfirst_accepted.story",
+  "meta": {
+    "name": "Transaction start plugin-first accepted",
+    "id": "transaction_pluginfirst_accepted",
+    "specRef": "OCPP-J 1.6 §6.13 StatusNotification, §6.2 Authorize, §6.16 StartTransaction",
+    "tags": [
       "transaction",
       "charging",
       "wire-only"
     ],
-    "Stations": 1,
-    "Timeout": 60000000000,
-    "Parameters": [
+    "stations": 1,
+    "timeout": 60000000000,
+    "parameters": [
       "connectorId",
       "idTag",
       "meterStart"
     ],
-    "CacheTTL": null,
-    "Depends": [
+    "depends": [
       {
-        "ID": "connector_status_available",
-        "Scope": 1,
-        "Position": {
-          "Line": 47,
-          "Column": 7
+        "id": "connector_status_available",
+        "scope": 1,
+        "position": {
+          "line": 47,
+          "column": 7
         }
       }
     ],
-    "Position": {
-      "Line": 38,
-      "Column": 1
+    "position": {
+      "line": 38,
+      "column": 1
     }
   },
-  "Background": [
+  "background": [
     {
-      "Kind": 1,
-      "Text": "the CSMS is reachable",
-      "Position": {
-        "Line": 51,
-        "Column": 5
+      "kind": 1,
+      "text": "the CSMS is reachable",
+      "position": {
+        "line": 51,
+        "column": 5
       }
     },
     {
-      "Kind": 4,
-      "Text": "the operator has provisioned id token \"{idTag}\" with status \"Accepted\"",
-      "Position": {
-        "Line": 52,
-        "Column": 5
+      "kind": 4,
+      "text": "the operator has provisioned id token \"{idTag}\" with status \"Accepted\"",
+      "position": {
+        "line": 52,
+        "column": 5
       }
     }
   ],
-  "Setup": null,
-  "Scenarios": [
+  "setup": null,
+  "scenarios": [
     {
-      "Name": "Plug-in precedes authorization; transaction starts cleanly",
-      "Steps": [
+      "name": "Plug-in precedes authorization; transaction starts cleanly",
+      "steps": [
         {
-          "Kind": 2,
-          "Text": "station \"CP01\" sends StatusNotification for connector {connectorId} with status \"Preparing\"",
-          "Position": {
-            "Line": 55,
-            "Column": 5
+          "kind": 2,
+          "text": "station \"CP01\" sends StatusNotification for connector {connectorId} with status \"Preparing\"",
+          "position": {
+            "line": 55,
+            "column": 5
           }
         },
         {
-          "Kind": 3,
-          "Text": "the CSMS acknowledges the status within 10 seconds",
-          "Position": {
-            "Line": 56,
-            "Column": 5
+          "kind": 3,
+          "text": "the CSMS acknowledges the status within 10 seconds",
+          "position": {
+            "line": 56,
+            "column": 5
           }
         },
         {
-          "Kind": 2,
-          "Text": "station \"CP01\" sends Authorize with idTag \"{idTag}\"",
-          "Position": {
-            "Line": 58,
-            "Column": 5
+          "kind": 2,
+          "text": "station \"CP01\" sends Authorize with idTag \"{idTag}\"",
+          "position": {
+            "line": 58,
+            "column": 5
           }
         },
         {
-          "Kind": 3,
-          "Text": "the CSMS responds to Authorize with idTagInfo.status \"Accepted\" within 30 seconds",
-          "Position": {
-            "Line": 59,
-            "Column": 5
+          "kind": 3,
+          "text": "the CSMS responds to Authorize with idTagInfo.status \"Accepted\" within 30 seconds",
+          "position": {
+            "line": 59,
+            "column": 5
           }
         },
         {
-          "Kind": 2,
-          "Text": "station \"CP01\" starts a transaction on connector {connectorId} with idTag \"{idTag}\" and meterStart {meterStart}",
-          "Position": {
-            "Line": 61,
-            "Column": 5
+          "kind": 2,
+          "text": "station \"CP01\" starts a transaction on connector {connectorId} with idTag \"{idTag}\" and meterStart {meterStart}",
+          "position": {
+            "line": 61,
+            "column": 5
           }
         },
         {
-          "Kind": 3,
-          "Text": "the CSMS responds to StartTransaction with idTagInfo.status \"Accepted\" within 30 seconds",
-          "Position": {
-            "Line": 62,
-            "Column": 5
+          "kind": 3,
+          "text": "the CSMS responds to StartTransaction with idTagInfo.status \"Accepted\" within 30 seconds",
+          "position": {
+            "line": 62,
+            "column": 5
           }
         },
         {
-          "Kind": 4,
-          "Text": "the StartTransaction response assigns a positive transactionId",
-          "Position": {
-            "Line": 63,
-            "Column": 5
+          "kind": 4,
+          "text": "the StartTransaction response assigns a positive transactionId",
+          "position": {
+            "line": 63,
+            "column": 5
           }
         },
         {
-          "Kind": 2,
-          "Text": "station \"CP01\" sends StatusNotification for connector {connectorId} with status \"Charging\"",
-          "Position": {
-            "Line": 65,
-            "Column": 5
+          "kind": 2,
+          "text": "station \"CP01\" sends StatusNotification for connector {connectorId} with status \"Charging\"",
+          "position": {
+            "line": 65,
+            "column": 5
           }
         },
         {
-          "Kind": 3,
-          "Text": "the CSMS acknowledges the status within 10 seconds",
-          "Position": {
-            "Line": 66,
-            "Column": 5
+          "kind": 3,
+          "text": "the CSMS acknowledges the status within 10 seconds",
+          "position": {
+            "line": 66,
+            "column": 5
           }
         }
       ],
-      "Position": {
-        "Line": 54,
-        "Column": 1
+      "position": {
+        "line": 54,
+        "column": 1
       }
     }
   ],
-  "Teardown": [
+  "teardown": [
     {
-      "Kind": 6,
-      "Text": "Disconnect station \"CP01\"",
-      "Position": {
-        "Line": 69,
-        "Column": 5
+      "kind": 6,
+      "text": "Disconnect station \"CP01\"",
+      "position": {
+        "line": 69,
+        "column": 5
       }
     }
   ],
-  "Position": {
-    "Line": 38,
-    "Column": 1
+  "position": {
+    "line": 38,
+    "column": 1
   }
 }

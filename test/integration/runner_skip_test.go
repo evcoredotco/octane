@@ -3,6 +3,7 @@
 // Task: T-005-52
 // AC4: Dependent story is skipped when its prerequisite fails. The Findings
 // field on the skipped story references the failing prerequisite's ID.
+
 package integration_test
 
 import (
@@ -14,7 +15,8 @@ import (
 	"github.com/evcoreco/octane/pkg/runner"
 )
 
-// storyAlwaysFails uses an unrecognised step so the runner produces ErrNoMatch.
+// storyAlwaysFails uses an unrecognised step so the runner
+// produces NoMatchError.
 const storyAlwaysFails = `Meta
     Name:      Always failing story
     Id:        always_fails
@@ -52,10 +54,7 @@ func Test_runner_RunDependentSkippedOnPrereqFailure(t *testing.T) {
 	writeFile(t, storyDir+"/always_fails.story", storyAlwaysFails)
 	writeFile(t, storyDir+"/skip_dependent.story", storySkipDependent)
 
-	cfg := runner.Config{
-		StoryPaths: []string{storyDir},
-		NoCache:    true,
-	}
+	cfg := noopCfg(storyDir)
 
 	result, err := runner.Run(context.Background(), cfg)
 	if err != nil {
@@ -74,8 +73,8 @@ func Test_runner_RunDependentSkippedOnPrereqFailure(t *testing.T) {
 	byID := storyResultsByTestID(result.Stories)
 
 	// Invariant: the prerequisite must be StatusFailed.
-	prereq, ok := byID["always_fails"]
-	if !ok {
+	prereq, found := byID["always_fails"]
+	if !found {
 		t.Fatal("story always_fails not found in results")
 	}
 
@@ -84,8 +83,8 @@ func Test_runner_RunDependentSkippedOnPrereqFailure(t *testing.T) {
 	}
 
 	// Invariant: the dependent must be StatusSkipped.
-	dependent, ok := byID["skip_dependent"]
-	if !ok {
+	dependent, found := byID["skip_dependent"]
+	if !found {
 		t.Fatal("story skip_dependent not found in results")
 	}
 
@@ -102,20 +101,22 @@ func Test_runner_RunDependentSkippedOnPrereqFailure(t *testing.T) {
 	}
 }
 
-// storyResultsByTestID indexes a slice of StoryResult by TestID for O(1) lookup.
+// storyResultsByTestID indexes a slice of StoryResult by TestID for
+// O(1) lookup.
 func storyResultsByTestID(
 	stories []runner.StoryResult,
 ) map[string]runner.StoryResult {
-	m := make(map[string]runner.StoryResult, len(stories))
+	byStoryID := make(map[string]runner.StoryResult, len(stories))
 
 	for _, sr := range stories {
-		m[sr.TestID] = sr
+		byStoryID[sr.TestID] = sr
 	}
 
-	return m
+	return byStoryID
 }
 
-// findingsContain reports whether any finding message in findings contains substr.
+// findingsContain reports whether any finding message in findings
+// contains substr.
 func findingsContain(findings []runner.Finding, substr string) bool {
 	for _, f := range findings {
 		if strings.Contains(f.Message, substr) {

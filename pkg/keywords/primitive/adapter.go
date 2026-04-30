@@ -2,6 +2,7 @@ package primitive
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/evcoreco/octane/pkg/transport"
 )
@@ -18,17 +19,32 @@ type stationAdapter struct {
 
 // Send delegates to the inner [transport.Station].
 func (a *stationAdapter) Send(ctx context.Context, frame []any) error {
-	return a.inner.Send(ctx, frame)
+	err := a.inner.Send(ctx, frame)
+	if err != nil {
+		return fmt.Errorf("adapter: send: %w", err)
+	}
+
+	return nil
 }
 
 // Expect delegates to the inner [transport.Station].
 func (a *stationAdapter) Expect(ctx context.Context) ([]any, error) {
-	return a.inner.Expect(ctx)
+	frame, err := a.inner.Expect(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("adapter: expect: %w", err)
+	}
+
+	return frame, nil
 }
 
 // Close delegates to the inner [transport.Station].
 func (a *stationAdapter) Close() error {
-	return a.inner.Close()
+	err := a.inner.Close()
+	if err != nil {
+		return fmt.Errorf("adapter: close: %w", err)
+	}
+
+	return nil
 }
 
 // IsOpen delegates to the inner [transport.Station].

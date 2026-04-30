@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -30,7 +31,8 @@ func Load(path string) (Config, error) {
 
 	cfg := Default()
 
-	if err = yaml.Unmarshal(data, &cfg); err != nil {
+	err = yaml.Unmarshal(data, &cfg)
+	if err != nil {
 		return Config{}, fmt.Errorf("config: parse %q: %w", path, err)
 	}
 
@@ -41,7 +43,10 @@ func Load(path string) (Config, error) {
 // --config flag and is therefore operator-controlled; the gosec G304
 // warning is intentionally suppressed.
 func readConfigFile(path string) ([]byte, error) {
-	return os.ReadFile(
-		path,
-	) //nolint:gosec // G304: path from --config flag; operator-controlled
+	data, err := os.ReadFile(filepath.Clean(path))
+	if err != nil {
+		return nil, fmt.Errorf("config: read file: %w", err)
+	}
+
+	return data, nil
 }

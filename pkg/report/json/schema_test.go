@@ -1,5 +1,6 @@
 // Task: T-007-24.
-package json_test
+
+package reportjson_test
 
 import (
 	"encoding/json"
@@ -13,37 +14,76 @@ import (
 	"github.com/evcoreco/octane/pkg/runner"
 )
 
-// requiredTopLevelKeys are the JSON keys that must appear at the top
+// schemaTestYear is the year used in buildMinimalResult time fixtures.
+const schemaTestYear = 2024
+
+// schemaTestMonth is the month used in time.Date for schema test fixtures.
+const schemaTestMonth = 1
+
+// schemaTestDay is the day-of-month used in time.Date for schema test fixtures.
+const schemaTestDay = 15
+
+// schemaTestHour is the hour used in time.Date for schema test fixtures.
+const schemaTestHour = 12
+
+// minimalTotalStories is the total story count for the minimal test result.
+const minimalTotalStories = 1
+
+// noFailures is the expected failed story count in the passing minimal result.
+const noFailures = 0
+
+// noSkipped is the expected skipped story count in the passing minimal result.
+const noSkipped = 0
+
+// noCacheHits is the expected cache-hit count in the passing minimal result.
+const noCacheHits = 0
+
+// orderZero is the Order index for the first story in the minimal result.
+const orderZero = 0
+
+// zeroSchemaVersion is the lower bound used in schemaVersion validation.
+const zeroSchemaVersion = 0
+
+// requiredTopLevelKeys returns the JSON keys that must appear at the top
 // level of every octane.json report.
-var requiredTopLevelKeys = []string{
-	"schema_version",
-	"octane_version",
-	"run_id",
-	"started_at",
-	"finished_at",
-	"summary",
-	"stories",
+func requiredTopLevelKeys() []string {
+	return []string{
+		"schemaVersion",
+		"octaneVersion",
+		"runId",
+		"startedAt",
+		"finishedAt",
+		"summary",
+		"stories",
+	}
 }
 
 // buildMinimalResult creates a minimal runner.RunResult suitable for
 // schema validation tests.
 func buildMinimalResult() *runner.RunResult {
-	now := time.Date(2024, 1, 15, 12, 0, 0, 0, time.UTC)
+	now := time.Date(
+		schemaTestYear,
+		schemaTestMonth,
+		schemaTestDay,
+		schemaTestHour,
+		zeroTimeField, zeroTimeField, zeroTimeField,
+		time.UTC,
+	)
 
 	return &runner.RunResult{
 		RunID:      "01ARZ3NDEKTSV4RRFFQ69G5FAV",
 		StartedAt:  now,
 		FinishedAt: now.Add(5 * time.Second),
 		Summary: runner.Summary{
-			Total:     1,
-			Passed:    1,
-			Failed:    0,
-			Skipped:   0,
-			CacheHits: 0,
+			Total:     minimalTotalStories,
+			Passed:    minimalTotalStories,
+			Failed:    noFailures,
+			Skipped:   noSkipped,
+			CacheHits: noCacheHits,
 		},
 		Stories: []runner.StoryResult{
 			{
-				Order:       0,
+				Order:       orderZero,
 				TestID:      "tc_example",
 				ScopeKey:    "CP01",
 				OCPPVersion: "1.6",
@@ -72,8 +112,9 @@ func Test_json_Schema(t *testing.T) {
 	}
 	dir := t.TempDir()
 
-	if err := reportjson.WriteJSON(result, dir, opts); err != nil {
-		t.Fatalf("WriteJSON: %v", err)
+	writeErr := reportjson.WriteJSON(result, dir, opts)
+	if writeErr != nil {
+		t.Fatalf("WriteJSON: %v", writeErr)
 	}
 
 	outPath := filepath.Join(dir, "octane.json")
@@ -85,11 +126,12 @@ func Test_json_Schema(t *testing.T) {
 
 	var top map[string]any
 
-	if err := json.Unmarshal(data, &top); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+	unmarshalErr := json.Unmarshal(data, &top)
+	if unmarshalErr != nil {
+		t.Fatalf("unmarshal: %v", unmarshalErr)
 	}
 
-	for _, key := range requiredTopLevelKeys {
+	for _, key := range requiredTopLevelKeys() {
 		if _, present := top[key]; !present {
 			t.Errorf("missing required top-level key: %q", key)
 		}
@@ -101,33 +143,33 @@ func Test_json_Schema(t *testing.T) {
 	assertStoriesShape(t, top)
 }
 
-// assertOctaneVersion verifies that octane_version is a non-empty string.
+// assertOctaneVersion verifies that octaneVersion is a non-empty string.
 func assertOctaneVersion(t *testing.T, top map[string]any) {
 	t.Helper()
 
-	val, present := top["octane_version"]
+	val, present := top["octaneVersion"]
 	if !present {
 		return
 	}
 
 	str, isStr := val.(string)
 	if !isStr || str == "" {
-		t.Errorf("octane_version: got %v, want non-empty string", val)
+		t.Errorf("octaneVersion: got %v, want non-empty string", val)
 	}
 }
 
-// assertSchemaVersion verifies that schema_version is a non-zero number.
+// assertSchemaVersion verifies that schemaVersion is a non-zero number.
 func assertSchemaVersion(t *testing.T, top map[string]any) {
 	t.Helper()
 
-	val, present := top["schema_version"]
+	val, present := top["schemaVersion"]
 	if !present {
 		return
 	}
 
 	num, isFloat := val.(float64)
-	if !isFloat || num <= 0 {
-		t.Errorf("schema_version: got %v, want positive integer", val)
+	if !isFloat || num <= zeroSchemaVersion {
+		t.Errorf("schemaVersion: got %v, want positive integer", val)
 	}
 }
 
@@ -148,7 +190,8 @@ func assertSummaryShape(t *testing.T, top map[string]any) {
 		return
 	}
 
-	for _, key := range []string{"total", "passed", "failed", "skipped", "cache_hits"} {
+	summaryKeys := []string{"total", "passed", "failed", "skipped", "cacheHits"}
+	for _, key := range summaryKeys {
 		if _, exists := summaryMap[key]; !exists {
 			t.Errorf("summary: missing required key %q", key)
 		}

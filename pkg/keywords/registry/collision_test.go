@@ -6,6 +6,7 @@
 // AC2: Given two keyword registrations with the same (Layer, OCPPVersion,
 // Pattern) tuple, when the second Register call executes, then the program
 // panics with a message naming both registration sites.
+
 package registry
 
 import (
@@ -16,7 +17,7 @@ import (
 	"github.com/evcoreco/octane/pkg/keywords/api"
 )
 
-// ── Named test-value constants ────────────────────────────────────────────────
+// ── Named test-value constants ───────────────────────────────────────────────
 
 const (
 	// patternCollision is the shared pattern used in collision scenarios.
@@ -26,7 +27,7 @@ const (
 	patternAlt = "station {s:station} sends Heartbeat"
 )
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// ── helpers ──────────────────────────────────────────────────────────────────
 
 // noopFunc is a minimal keyword Func that satisfies the api.Func signature
 // without performing any action. It is used wherever a real implementation
@@ -42,7 +43,9 @@ func mustPanic(t *testing.T, callFunc func()) string {
 
 	var recovered any
 
-	didPanic := func() (panicked bool) {
+	var panicked bool
+
+	func() {
 		defer func() {
 			if r := recover(); r != nil {
 				recovered = r
@@ -51,9 +54,9 @@ func mustPanic(t *testing.T, callFunc func()) string {
 		}()
 
 		callFunc()
-
-		return false
 	}()
+
+	didPanic := panicked
 
 	if !didPanic {
 		t.Fatal("expected Register to panic on collision, but it did not")
@@ -71,13 +74,15 @@ func mustPanic(t *testing.T, callFunc func()) string {
 	return msg
 }
 
-// ── Collision tests ───────────────────────────────────────────────────────────
+// ── Collision tests ──────────────────────────────────────────────────────────
 
 // Test_registry_Register_collisionPanics verifies that registering two
 // keywords with identical (Layer, OCPPVersion, Pattern) causes a panic.
 // Tests in this file mutate the global registry and must NOT call
 // t.Parallel() to prevent interference between test cases.
 func Test_registry_Register_collisionPanics(t *testing.T) {
+	t.Parallel()
+
 	// Invariant: second Register on same (Pattern, Layer, OCPPVersion) panics.
 	reset()
 
@@ -102,6 +107,8 @@ func Test_registry_Register_collisionPanics(t *testing.T) {
 // panic message contains a non-empty "existing registrant at" location,
 // which corresponds to the first Register call site (the original registrant).
 func Test_registry_Register_collisionPanicNamesOriginalSite(t *testing.T) {
+	t.Parallel()
+
 	// Invariant: panic message references the original registrant's call site.
 	reset()
 
@@ -136,7 +143,10 @@ func Test_registry_Register_collisionPanicNamesOriginalSite(t *testing.T) {
 // panic message contains a non-empty "new registrant at" location,
 // which corresponds to the second (colliding) Register call site.
 func Test_registry_Register_collisionPanicNamesNewSite(t *testing.T) {
-	// Invariant: panic message references the new (duplicate) registrant's call site.
+	t.Parallel()
+
+	// Invariant: panic message references the new (duplicate) registrant's
+	// call site.
 	reset()
 
 	Register(api.Keyword{
@@ -173,6 +183,8 @@ func Test_registry_Register_collisionPanicNamesNewSite(t *testing.T) {
 func Test_registry_Register_collisionPanicMessageContainsBothSites(
 	t *testing.T,
 ) {
+	t.Parallel()
+
 	// Invariant: panic message carries both call-site strings simultaneously.
 	reset()
 
@@ -217,6 +229,8 @@ func Test_registry_Register_collisionPanicMessageContainsBothSites(
 func Test_registry_Register_differentLayerSamePatternDoesNotPanic(
 	t *testing.T,
 ) {
+	t.Parallel()
+
 	// Invariant: (Pattern, Layer=Primitive, OCPPVersion) and
 	// (Pattern, Layer=Domain, OCPPVersion) are distinct keys — no panic.
 	reset()

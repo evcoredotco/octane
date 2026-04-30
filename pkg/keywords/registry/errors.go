@@ -1,13 +1,8 @@
-// Package registry — typed resolver error values.
-//
-// This file defines [ErrNoMatch] and [ErrTypeMismatch], the two
-// typed errors returned by [Resolve] when step resolution fails.
-// See registry.go for the package-level documentation.
 package registry
 
 import "fmt"
 
-// ErrNoMatch is returned by the resolver when no registered
+// NoMatchError is returned by the resolver when no registered
 // keyword pattern matches the given step text. It carries the
 // unmatched step text and, when available, a suggested closest
 // pattern (determined by Levenshtein distance, capped at edit
@@ -15,14 +10,14 @@ import "fmt"
 //
 // Callers should use [errors.As] to extract the typed error:
 //
-//	var noMatch *ErrNoMatch
+//	var noMatch *NoMatchError
 //	if errors.As(err, &noMatch) {
 //	    fmt.Println("unmatched step:", noMatch.StepText)
 //	    if noMatch.Closest != "" {
 //	        fmt.Println("did you mean:", noMatch.Closest)
 //	    }
 //	}
-type ErrNoMatch struct {
+type NoMatchError struct {
 	// StepText is the full step text that failed to match any
 	// registered keyword pattern.
 	StepText string
@@ -37,7 +32,7 @@ type ErrNoMatch struct {
 // Error returns a human-readable message describing the
 // unmatched step. When a close pattern suggestion is available,
 // it is appended as a "did you mean" hint.
-func (e *ErrNoMatch) Error() string {
+func (e *NoMatchError) Error() string {
 	if e.Closest != "" {
 		return fmt.Sprintf(
 			"no keyword matches step %q (did you mean: %q?)",
@@ -52,16 +47,16 @@ func (e *ErrNoMatch) Error() string {
 	)
 }
 
-// ErrTypeMismatch is returned by the resolver when a
+// TypeMismatchError is returned by the resolver when a
 // placeholder capture in a matched pattern cannot be coerced to
 // the type declared in the {name:type} placeholder. For example,
 // if the pattern declares {n:int} and the step text supplies
-// "abc", the resolver returns an ErrTypeMismatch with ArgName
+// "abc", the resolver returns an TypeMismatchError with ArgName
 // "n", Expected "int", and Got "abc".
 //
 // Callers should use [errors.As] to extract the typed error:
 //
-//	var mismatch *ErrTypeMismatch
+//	var mismatch *TypeMismatchError
 //	if errors.As(err, &mismatch) {
 //	    fmt.Printf(
 //	        "argument %q: expected %s, got %q\n",
@@ -70,7 +65,7 @@ func (e *ErrNoMatch) Error() string {
 //	        mismatch.Got,
 //	    )
 //	}
-type ErrTypeMismatch struct {
+type TypeMismatchError struct {
 	// ArgName is the placeholder name from the keyword pattern
 	// (e.g., "n" in {n:int}).
 	ArgName string
@@ -87,7 +82,7 @@ type ErrTypeMismatch struct {
 // Error returns a human-readable message identifying the
 // argument, its expected type, and the raw value that failed
 // coercion.
-func (e *ErrTypeMismatch) Error() string {
+func (e *TypeMismatchError) Error() string {
 	return fmt.Sprintf(
 		"argument %q: expected type %s, got %q",
 		e.ArgName,

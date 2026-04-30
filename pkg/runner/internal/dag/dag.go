@@ -10,7 +10,12 @@ package dag
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
+
+// firstEdgeIdx is the index of the first edge in the cycle edge list,
+// used when printing the closing node of a cycle path.
+const firstEdgeIdx = 0
 
 // Node is a vertex in the dependency graph. Each node corresponds to
 // a single story identified by its stable snake_case ID.
@@ -94,7 +99,7 @@ func (g *Graph) AddNode(node Node) {
 // before calling AddEdge.
 //
 // AddEdge returns [ErrUnknownNode] (wrapped) when either endpoint has
-// not been registered. AddEdge returns [*ErrCycle] if the new edge
+// not been registered. AddEdge returns [*CycleError] if the new edge
 // would introduce a cycle. On any error the graph is left unchanged.
 func (g *Graph) AddEdge(edge Edge) error {
 	if _, ok := g.nodeIndex[edge.From]; !ok {
@@ -110,11 +115,11 @@ func (g *Graph) AddEdge(edge Edge) error {
 	if cyclePath := g.reachablePath(edge.To, edge.From); cyclePath != nil {
 		// Build the cycle edge list: the new edge first, then the
 		// existing path back, so the sequence closes the loop.
-		cycleEdges := make([]Edge, 0, len(cyclePath)+1)
+		cycleEdges := make([]Edge, emptyInitialLen, len(cyclePath)+1)
 		cycleEdges = append(cycleEdges, edge)
 		cycleEdges = append(cycleEdges, cyclePath...)
 
-		return &ErrCycle{Edges: cycleEdges}
+		return &CycleError{Edges: cycleEdges}
 	}
 
 	g.edges = append(g.edges, edge)
@@ -122,6 +127,22 @@ func (g *Graph) AddEdge(edge Edge) error {
 	g.inDegree[edge.To]++
 
 	return nil
+}
+
+// Nodes returns a copy of the graph's nodes in insertion order.
+func (g *Graph) Nodes() []Node {
+	out := make([]Node, len(g.nodes))
+	copy(out, g.nodes)
+
+	return out
+}
+
+// Edges returns a copy of the graph's edges in insertion order.
+func (g *Graph) Edges() []Edge {
+	out := make([]Edge, len(g.edges))
+	copy(out, g.edges)
+
+	return out
 }
 
 // reachablePath returns the sequence of edges that form a path from
@@ -162,36 +183,20 @@ func (g *Graph) dfsPath(
 	return nil
 }
 
-// Nodes returns a copy of the graph's nodes in insertion order.
-func (g *Graph) Nodes() []Node {
-	out := make([]Node, len(g.nodes))
-	copy(out, g.nodes)
-
-	return out
-}
-
-// Edges returns a copy of the graph's edges in insertion order.
-func (g *Graph) Edges() []Edge {
-	out := make([]Edge, len(g.edges))
-	copy(out, g.edges)
-
-	return out
-}
-
-// ErrCycle is returned by [Graph.AddEdge] when inserting an edge would
+// CycleError is returned by [Graph.AddEdge] when inserting an edge would
 // create a cycle in the dependency graph. The Edges field lists every
 // edge that participates in the cycle, enabling callers to produce
 // actionable diagnostic output identifying the offending dependencies.
 //
 // Callers should use [errors.As] to extract the typed error:
 //
-//	var cycle *dag.ErrCycle
+//	var cycle *dag.CycleError
 //	if errors.As(err, &cycle) {
 //	    for _, e := range cycle.Edges {
 //	        fmt.Printf("%s -> %s\n", e.From, e.To)
 //	    }
 //	}
-type ErrCycle struct {
+type CycleError struct {
 	// Edges lists the directed edges that form the cycle, in
 	// traversal order. The last edge's To field equals the first
 	// edge's From field, closing the loop.
@@ -200,22 +205,25 @@ type ErrCycle struct {
 
 // Error returns a human-readable description of the cycle, listing
 // every participating edge.
-func (e *ErrCycle) Error() string {
-	if len(e.Edges) == 0 {
+func (e *CycleError) Error() string {
+	if len(e.Edges) == zeroInDegree {
 		return "dag: cycle detected (no edge details available)"
 	}
 
 	msg := "dag: cycle detected: "
 
+	var msgSb strings.Builder
+
 	for i, edge := range e.Edges {
-		if i > 0 {
-			msg += " -> "
+		if i > zeroInDegree {
+			msgSb.WriteString(" -> ")
 		}
 
-		msg += edge.From
+		msgSb.WriteString(edge.From)
 	}
 
-	msg += fmt.Sprintf(" -> %s", e.Edges[0].From)
+	msg += msgSb.String()
+	msg += " -> " + e.Edges[firstEdgeIdx].From
 
 	return msg
 }

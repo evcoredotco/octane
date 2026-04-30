@@ -52,7 +52,8 @@ func lockFile(path string) (*os.File, error) {
 //
 // This function is called by [lockCloser.Close] in acquire.go (T-005-32).
 func unlockFile(fileHandle *os.File) error {
-	if err := fileHandle.Close(); err != nil {
+	err := fileHandle.Close()
+	if err != nil {
 		return fmt.Errorf("lock: close lock file: %w", err)
 	}
 

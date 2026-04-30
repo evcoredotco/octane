@@ -6,6 +6,17 @@ import (
 	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
 )
 
+const (
+	wantOK               = 0
+	wantTestFailed       = 1
+	wantToolError        = 2
+	wantCacheLockTimeout = 9
+	wantConfigError      = 64
+	wantStoryParseError  = 65
+	wantKeywordError     = 66
+	wantTransportError   = 70
+)
+
 // TestExitCodesUnique asserts that each exit code constant is a
 // distinct value, exists with its expected numeric value, and that
 // the full set matches spec 006 §10.
@@ -18,14 +29,14 @@ func TestExitCodesUnique(t *testing.T) {
 		got  int
 		want int
 	}{
-		{"OK", exitcode.OK, 0},
-		{"TestFailed", exitcode.TestFailed, 1},
-		{"ToolError", exitcode.ToolError, 2},
-		{"CacheLockTimeout", exitcode.CacheLockTimeout, 9},
-		{"ConfigError", exitcode.ConfigError, 64},
-		{"StoryParseError", exitcode.StoryParseError, 65},
-		{"KeywordError", exitcode.KeywordError, 66},
-		{"TransportError", exitcode.TransportError, 70},
+		{"OK", exitcode.OK, wantOK},
+		{"TestFailed", exitcode.TestFailed, wantTestFailed},
+		{"ToolError", exitcode.ToolError, wantToolError},
+		{"CacheLockTimeout", exitcode.CacheLockTimeout, wantCacheLockTimeout},
+		{"ConfigError", exitcode.ConfigError, wantConfigError},
+		{"StoryParseError", exitcode.StoryParseError, wantStoryParseError},
+		{"KeywordError", exitcode.KeywordError, wantKeywordError},
+		{"TransportError", exitcode.TransportError, wantTransportError},
 	}
 
 	seen := make(map[int]string, len(cases))

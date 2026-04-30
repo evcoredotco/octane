@@ -10,6 +10,7 @@
 // used by any production keyword).  Alongside it, register a primitive keyword
 // with the same pattern.  This avoids calling the unexported reset() function
 // from the registry package while keeping the test deterministic and parallel.
+
 package primitive_test
 
 import (
@@ -17,20 +18,22 @@ import (
 	"testing"
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
-	// Blank import ensures all production primitives are registered at
-	// init() time before the test-local keywords are registered.
-	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
+	"github.com/evcoreco/octane/pkg/keywords/primitive"
 	"github.com/evcoreco/octane/pkg/keywords/registry"
 )
 
-// ── Named constants ───────────────────────────────────────────────────────────
+// ── Named constants ──────────────────────────────────────────────────────────
 
 const (
+	// fixturePrefix is the shared prefix for precedence fixture patterns.
+	// The "fixture:" prefix makes them globally unique.
+	fixturePrefix = "fixture: domain keyword beats primitive for ocpp16 step "
+
 	// patternPrecedenceFixture is the shared step pattern used for both the
 	// fixture domain keyword and the fixture primitive keyword.  The prefix
 	// "fixture:" makes it globally unique so it cannot collide with any
 	// production-registered keyword and avoids needing registry.reset().
-	patternPrecedenceFixture = "fixture: domain keyword beats primitive for ocpp16 step {n:int}"
+	patternPrecedenceFixture = fixturePrefix + "{n:int}"
 
 	// valueFixtureN is the int value bound to the {n:int} placeholder in the
 	// step text exercised by the precedence tests.
@@ -38,10 +41,14 @@ const (
 
 	// stepPrecedenceFixture is the concrete step text that resolves against
 	// patternPrecedenceFixture.
-	stepPrecedenceFixture = "fixture: domain keyword beats primitive for ocpp16 step 42"
+	stepPrecedenceFixture = fixturePrefix + "42"
+
+	// msgResolveUnexpectedErr is the message format for unexpected Resolve
+	// errors in precedence tests.
+	msgResolveUnexpectedErr = "registry.Resolve: unexpected error: %v"
 )
 
-// ── init: register fixture keywords ──────────────────────────────────────────
+// ── fixture helpers ──────────────────────────────────────────────────────────
 
 // fixtureNoopFunc is the Func shared by all fixture keywords.  Its body is
 // intentionally empty; the test only cares about which keyword the resolver
@@ -50,9 +57,16 @@ func fixtureNoopFunc(_ context.Context, _ api.State, _ api.Args) error {
 	return nil
 }
 
-func init() {
-	// Register the fixture primitive keyword.  This runs once at package
-	// init time, before any test function executes.
+// TestMain registers all production primitive keywords and the fixture
+// keywords once before any test in this package runs.  Explicit registration
+// via primitive.Register() replaces the former init() hook and satisfies the
+// gochecknoinits linter rule.
+func TestMain(m *testing.M) {
+	// Register all production primitive keywords so that resolveFunc() and
+	// registry.Resolve() work correctly in every test in this package.
+	primitive.Register()
+
+	// Register the fixture primitive keyword.
 	registry.Register(api.Keyword{
 		Pattern:     patternPrecedenceFixture,
 		Layer:       api.LayerPrimitive,
@@ -69,9 +83,11 @@ func init() {
 		OCPPVersion: api.OCPP16,
 		Func:        fixtureNoopFunc,
 	})
+
+	m.Run()
 }
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
+// ── Tests ────────────────────────────────────────────────────────────────────
 
 // Test_primitive_precedence_domainWinsForOCPP16 verifies that when the
 // resolver runs for OCPP 1.6 and both a domain keyword (OCPP16-scoped) and a
@@ -84,12 +100,13 @@ func Test_primitive_precedence_domainWinsForOCPP16(t *testing.T) {
 	// domain keyword and a primitive keyword match the same step text (AC7).
 	match, err := registry.Resolve(stepPrecedenceFixture, api.OCPP16)
 	if err != nil {
-		t.Fatalf("registry.Resolve: unexpected error: %v", err)
+		t.Fatalf(msgResolveUnexpectedErr, err)
 	}
 
 	if match.Keyword.Layer != api.LayerDomain {
 		t.Errorf(
-			"Match.Keyword.Layer: want LayerDomain (domain wins over primitive), got %v",
+			"Match.Keyword.Layer: want LayerDomain "+
+				"(domain wins over primitive), got %v",
 			match.Keyword.Layer,
 		)
 	}
@@ -112,7 +129,7 @@ func Test_primitive_precedence_argsCorrectlyBound(t *testing.T) {
 	// paths (domain for OCPP16).
 	match, err := registry.Resolve(stepPrecedenceFixture, api.OCPP16)
 	if err != nil {
-		t.Fatalf("registry.Resolve: unexpected error: %v", err)
+		t.Fatalf(msgResolveUnexpectedErr, err)
 	}
 
 	gotN := match.Args.Int("n")
@@ -132,10 +149,11 @@ func Test_primitive_precedence_argsCorrectlyBound(t *testing.T) {
 func Test_primitive_precedence_domainPatternString(t *testing.T) {
 	t.Parallel()
 
-	// Invariant: the returned Match carries the exact registered pattern string.
+	// Invariant: the returned Match carries the exact registered
+	// pattern string.
 	match, err := registry.Resolve(stepPrecedenceFixture, api.OCPP16)
 	if err != nil {
-		t.Fatalf("registry.Resolve: unexpected error: %v", err)
+		t.Fatalf(msgResolveUnexpectedErr, err)
 	}
 
 	if match.Keyword.Pattern != patternPrecedenceFixture {

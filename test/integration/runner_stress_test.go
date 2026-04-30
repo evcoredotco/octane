@@ -2,6 +2,7 @@
 //
 // Stress test: 100 leaf stories all depending on a single shared prereq.
 // Validates correctness under load with MaxParallel:4.
+
 package integration_test
 
 import (
@@ -53,8 +54,10 @@ func Test_runner_RunStress(t *testing.T) {
 
 	t.Parallel()
 
-	const totalLeaves = 100
-	const maxParallel = 4
+	const (
+		totalLeaves = 100
+		maxParallel = 4
+	)
 	// Total nodes: 1 prereq + 100 leaves.
 	const expectedTotal = totalLeaves + 1
 
@@ -74,11 +77,19 @@ func Test_runner_RunStress(t *testing.T) {
 		writeFile(t, name, stressLeafTemplate(i))
 	}
 
-	cfg := runner.Config{
-		StoryPaths:  []string{storyDir},
-		NoCache:     true,
-		MaxParallel: maxParallel,
-	}
+	cfg := noopCfg(storyDir)
+	cfg.MaxParallel = maxParallel
+
+	assertStressResult(t, cfg, expectedTotal)
+}
+
+// assertStressResult runs the runner and checks that all stories passed.
+func assertStressResult(
+	t *testing.T,
+	cfg runner.Config,
+	expectedTotal int,
+) {
+	t.Helper()
 
 	result, err := runner.Run(context.Background(), cfg)
 	if err != nil {
@@ -95,30 +106,15 @@ func Test_runner_RunStress(t *testing.T) {
 	}
 
 	// Invariant: all stories must have passed.
-	for _, sr := range result.Stories {
-		if sr.Status != runner.StatusPassed {
+	for _, storyResult := range result.Stories {
+		if storyResult.Status != runner.StatusPassed {
 			t.Errorf(
 				"story %q: want StatusPassed, got %s",
-				sr.TestID,
-				sr.Status,
+				storyResult.TestID,
+				storyResult.Status,
 			)
 		}
 	}
 
-	// Invariant: summary must report all passed.
-	if result.Summary.Passed != expectedTotal {
-		t.Errorf(
-			"Summary.Passed: want %d, got %d",
-			expectedTotal,
-			result.Summary.Passed,
-		)
-	}
-
-	if result.Summary.Failed != 0 {
-		t.Errorf("Summary.Failed: want 0, got %d", result.Summary.Failed)
-	}
-
-	if result.Summary.Skipped != 0 {
-		t.Errorf("Summary.Skipped: want 0, got %d", result.Summary.Skipped)
-	}
+	assertSummaryAllPassed(t, result.Summary, expectedTotal)
 }

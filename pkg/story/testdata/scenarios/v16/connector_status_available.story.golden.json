@@ -1,73 +1,71 @@
 {
-  "Path": "../../scenarios/v16/connector_status_available.story",
-  "Meta": {
-    "Name": "Connector reported as Available",
-    "ID": "connector_status_available",
-    "SpecRef": null,
-    "Tags": [
+  "path": "../../scenarios/v16/connector_status_available.story",
+  "meta": {
+    "name": "Connector reported as Available",
+    "id": "connector_status_available",
+    "tags": [
       "helper",
       "lifecycle",
       "wire-only"
     ],
-    "Stations": 1,
-    "Timeout": 10000000000,
-    "Parameters": null,
-    "CacheTTL": null,
-    "Depends": [
+    "stations": 1,
+    "timeout": 10000000000,
+    "parameters": null,
+    "depends": [
       {
-        "ID": "station_boot_accepted",
-        "Scope": 1,
-        "Position": {
-          "Line": 18,
-          "Column": 7
+        "id": "station_boot_accepted",
+        "scope": 1,
+        "position": {
+          "line": 18,
+          "column": 7
         }
       }
     ],
-    "Position": {
-      "Line": 11,
-      "Column": 1
+    "position": {
+      "line": 11,
+      "column": 1
     }
   },
-  "Background": null,
-  "Setup": null,
-  "Scenarios": [
+  "background": null,
+  "setup": null,
+  "scenarios": [
     {
-      "Name": "Station declares its connector available to the CSMS",
-      "Steps": [
+      "name": "Station declares its connector available to the CSMS",
+      "steps": [
         {
-          "Kind": 2,
-          "Text": "station \"CP01\" sends StatusNotification for connector 1 with status \"Available\"",
-          "Position": {
-            "Line": 22,
-            "Column": 5
+          "kind": 2,
+          "text": "station \"CP01\" sends StatusNotification for connector 1 with status \"Available\"",
+          "position": {
+            "line": 22,
+            "column": 5
           }
         },
         {
-          "Kind": 3,
-          "Text": "the CSMS acknowledges the status within 10 seconds",
-          "Position": {
-            "Line": 23,
-            "Column": 5
+          "kind": 3,
+          "text": "the CSMS acknowledges the status within 10 seconds",
+          "position": {
+            "line": 23,
+            "column": 5
           }
         },
         {
-          "Kind": 4,
-          "Text": "connector 1 of station \"CP01\" is in state \"Available\"",
-          "Position": {
-            "Line": 24,
-            "Column": 5
+          "kind": 4,
+          "text": "connector 1 of station \"CP01\" is in state \"Available\"",
+          "position": {
+            "line": 24,
+            "column": 5
           }
         }
       ],
-      "Position": {
-        "Line": 21,
-        "Column": 1
+      "position": {
+        "line": 21,
+        "column": 1
       }
     }
   ],
-  "Teardown": null,
-  "Position": {
-    "Line": 11,
-    "Column": 1
+  "teardown": null,
+  "position": {
+    "line": 11,
+    "column": 1
   }
 }

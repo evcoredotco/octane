@@ -1,11 +1,13 @@
-// Package model defines the in-memory representation of an OCTANE run result.
-// This file implements the projection from runner.RunResult to model.Report.
+// from_runner.go implements the projection from runner.RunResult
+// to model.Report.
 //
 // Task: T-007-03.
+
 package model
 
 import (
-	"sort"
+	"cmp"
+	"slices"
 
 	"github.com/evcoreco/octane/pkg/report/internal/redact"
 	"github.com/evcoreco/octane/pkg/runner"
@@ -16,6 +18,9 @@ const schemaVersion = 1
 
 // defaultOctaneVersion is used when the caller does not supply a version.
 const defaultOctaneVersion = "dev"
+
+// noFindings is the length of an empty findings slice.
+const noFindings = 0
 
 // FromRunner projects a runner.RunResult into a model.Report.
 // Stories are sorted by (TestID, ScopeKey) for byte-deterministic output.
@@ -29,12 +34,12 @@ func FromRunner(result *runner.RunResult, octaneVersion string) *Report {
 
 	stories := projectStories(result.Stories)
 
-	sort.Slice(stories, func(i, j int) bool {
-		if stories[i].TestID != stories[j].TestID {
-			return stories[i].TestID < stories[j].TestID
+	slices.SortFunc(stories, func(a, b StoryReport) int {
+		if n := cmp.Compare(a.TestID, b.TestID); n != 0 {
+			return n
 		}
 
-		return stories[i].ScopeKey < stories[j].ScopeKey
+		return cmp.Compare(a.ScopeKey, b.ScopeKey)
 	})
 
 	return &Report{
@@ -128,7 +133,7 @@ func projectCacheStatus(src runner.CacheStatus) string {
 // model.Finding. Each finding message is scrubbed for JWT patterns and
 // other credential-bearing strings before inclusion in the report.
 func projectFindings(src []runner.Finding) []Finding {
-	if len(src) == 0 {
+	if len(src) == noFindings {
 		return nil
 	}
 

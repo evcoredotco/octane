@@ -30,7 +30,8 @@ jobs:
         uses: golangci/golangci-lint-action@v9
         with:
           version: latest
-          args: --config golangci.yml
+          args: --config golangci.yml --timeout 5m
+          skip-cache: true
 
   test:
     name: Test

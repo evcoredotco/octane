@@ -1,28 +1,28 @@
 {
-  "schema_version": 1,
-  "octane_version": "0.1.0-test",
-  "run_id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-  "started_at": "2024-01-15T10:00:00Z",
-  "finished_at": "2024-01-15T10:00:30Z",
+  "schemaVersion": 1,
+  "octaneVersion": "0.1.0-test",
+  "runId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+  "startedAt": "2024-01-15T10:00:00Z",
+  "finishedAt": "2024-01-15T10:00:30Z",
   "summary": {
     "total": 3,
     "passed": 1,
     "failed": 1,
     "skipped": 1,
-    "cache_hits": 1
+    "cacheHits": 1
   },
   "stories": [
     {
-      "test_id": "tc_boot_notification",
-      "scope_key": "CP01",
-      "ocpp_version": "1.6",
+      "testId": "tc_boot_notification",
+      "scopeKey": "CP01",
+      "ocppVersion": "1.6",
       "status": "passed",
-      "cache_status": "hit-pass",
-      "started_at": "2024-01-15T10:00:00Z",
-      "finished_at": "2024-01-15T10:00:10Z",
-      "duration_ms": 10000,
+      "cacheStatus": "hit-pass",
+      "startedAt": "2024-01-15T10:00:00Z",
+      "finishedAt": "2024-01-15T10:00:10Z",
+      "durationMs": 10000,
       "findings": null,
-      "trace_present": true,
+      "tracePresent": true,
       "trace": {
         "frames": [
           [
@@ -46,14 +46,14 @@
       }
     },
     {
-      "test_id": "tc_heartbeat",
-      "scope_key": "CP01",
-      "ocpp_version": "1.6",
+      "testId": "tc_heartbeat",
+      "scopeKey": "CP01",
+      "ocppVersion": "1.6",
       "status": "failed",
-      "cache_status": "miss",
-      "started_at": "2024-01-15T10:00:10Z",
-      "finished_at": "2024-01-15T10:00:20Z",
-      "duration_ms": 10000,
+      "cacheStatus": "miss",
+      "startedAt": "2024-01-15T10:00:10Z",
+      "finishedAt": "2024-01-15T10:00:20Z",
+      "durationMs": 10000,
       "findings": [
         {
           "message": "response took 250ms",
@@ -64,21 +64,21 @@
           "severity": "error"
         }
       ],
-      "trace_present": false
+      "tracePresent": false
     },
     {
-      "test_id": "tc_status_notification",
-      "scope_key": "CP01",
-      "ocpp_version": "1.6",
+      "testId": "tc_status_notification",
+      "scopeKey": "CP01",
+      "ocppVersion": "1.6",
       "status": "skipped",
-      "cache_status": "bypassed",
-      "started_at": "2024-01-15T10:00:20Z",
-      "finished_at": "2024-01-15T10:00:20Z",
-      "duration_ms": 0,
+      "cacheStatus": "bypassed",
+      "startedAt": "2024-01-15T10:00:20Z",
+      "finishedAt": "2024-01-15T10:00:20Z",
+      "durationMs": 0,
       "findings": null,
-      "trace_present": false,
+      "tracePresent": false,
       "cause": "tc_heartbeat/CP01",
-      "cause_chain": [
+      "causeChain": [
         "tc_heartbeat/CP01"
       ]
     }

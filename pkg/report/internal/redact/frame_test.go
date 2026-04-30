@@ -1,4 +1,5 @@
 // Task: T-007-10 (security review fix).
+
 package redact_test
 
 import (
@@ -6,6 +7,16 @@ import (
 	"testing"
 
 	"github.com/evcoreco/octane/pkg/report/internal/redact"
+)
+
+const (
+	// ocppJPayloadIndex is the index of the payload object in an OCPP-J Call
+	// frame (message type id, unique id, action, payload).
+	ocppJPayloadIndex = 3
+
+	// ocppJCallResultBodyIndex is the index of the body object in an OCPP-J
+	// CallResult frame (message type id, unique id, payload).
+	ocppJCallResultBodyIndex = 2
 )
 
 func Test_redact_Frame_credentialField(t *testing.T) {
@@ -21,14 +32,27 @@ func Test_redact_Frame_credentialField(t *testing.T) {
 	scrubbed := redact.Frame(raw)
 
 	var parsed []any
-	if err := json.Unmarshal(scrubbed, &parsed); err != nil {
+
+	err := json.Unmarshal(scrubbed, &parsed)
+	if err != nil {
 		t.Fatalf("scrubbed frame is not valid JSON: %v", err)
 	}
 
 	// Verify password and idToken are redacted.
-	payload, _ := parsed[3].(map[string]any)
-	connData, _ := payload["connectionData"].(map[string]any)
-	identity, _ := connData["identityDocument"].(map[string]any)
+	payload, assertOK := parsed[ocppJPayloadIndex].(map[string]any)
+	if !assertOK {
+		t.Fatal("parsed[3] is not a map")
+	}
+
+	connData, assertOK := payload["connectionData"].(map[string]any)
+	if !assertOK {
+		t.Fatal("connectionData is not a map")
+	}
+
+	identity, assertOK := connData["identityDocument"].(map[string]any)
+	if !assertOK {
+		t.Fatal("identityDocument is not a map")
+	}
 
 	if identity["password"] != redact.Placeholder {
 		t.Errorf("password not redacted: got %v", identity["password"])
@@ -51,20 +75,26 @@ func Test_redact_Frame_jwtInString(t *testing.T) {
 	t.Parallel()
 
 	raw := []byte(
-		`[3,"abc",{"error":"invalid token eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.abc123"}]`,
+		`[3,"abc",{"error":"invalid token ` +
+			`eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.abc123"}]`,
 	)
 
 	scrubbed := redact.Frame(raw)
 
 	var parsed []any
-	if err := json.Unmarshal(scrubbed, &parsed); err != nil {
+
+	err := json.Unmarshal(scrubbed, &parsed)
+	if err != nil {
 		t.Fatalf("scrubbed frame is not valid JSON: %v", err)
 	}
 
-	result, _ := parsed[2].(map[string]any)
+	result, assertOK := parsed[ocppJCallResultBodyIndex].(map[string]any)
+	if !assertOK {
+		t.Fatal("parsed[2] is not a map")
+	}
 
-	errMsg, _ := result["error"].(string)
-	if errMsg == "" {
+	errMsg, assertOK := result["error"].(string)
+	if !assertOK || errMsg == "" {
 		t.Fatal("error field missing after scrub")
 	}
 
@@ -97,7 +127,8 @@ func Test_redact_Frame_nilFrame(t *testing.T) {
 func Test_redact_FindingMessage_jwt(t *testing.T) {
 	t.Parallel()
 
-	msg := "TLS handshake failed: token eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.abc123 rejected"
+	msg := "TLS handshake failed: token " +
+		"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.abc123 rejected"
 	scrubbed := redact.FindingMessage(msg)
 
 	if scrubbed == msg {

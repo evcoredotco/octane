@@ -1,21 +1,29 @@
 package pattern
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 )
 
+// errUnknownPlaceholderType is returned when a placeholder's type is
+// not supported.
+var errUnknownPlaceholderType = errors.New("internal: unknown placeholder type")
+
+// float64BitSize is the bit-width passed to strconv.ParseFloat.
+const float64BitSize = 64
+
 // CoercionError is returned by [Coerce] when a captured string
 // token cannot be converted to the Go type declared by its
 // placeholder. It carries the three fields that the registry layer
-// needs to construct a [registry.ErrTypeMismatch] value for the
+// needs to construct a [registry.TypeMismatchError] value for the
 // caller.
 //
 // Callers outside the internal package (i.e., the registry itself)
 // should inspect this error with [errors.As] and then wrap the
-// fields in a registry.ErrTypeMismatch before returning to
+// fields in a registry.TypeMismatchError before returning to
 // consumers. The split avoids a circular import: the registry
 // package imports internal/pattern, so internal/pattern must not
 // import the registry package.
@@ -34,7 +42,7 @@ type CoercionError struct {
 }
 
 // Error returns a human-readable description of the failed
-// coercion in the same format used by registry.ErrTypeMismatch so
+// coercion in the same format used by registry.TypeMismatchError so
 // that test assertions can compare message strings without
 // importing the registry package.
 func (e *CoercionError) Error() string {
@@ -71,7 +79,7 @@ func (e *CoercionError) Error() string {
 // If any conversion fails, Coerce returns nil and a *[CoercionError]
 // identifying the argument name, declared type, and raw value that
 // triggered the failure. The registry layer is expected to wrap the
-// *CoercionError fields into a registry.ErrTypeMismatch before
+// *CoercionError fields into a registry.TypeMismatchError before
 // surfacing it to callers.
 func Coerce(
 	captures map[string]string,
@@ -114,63 +122,84 @@ func coerceOne(
 		return raw, nil
 
 	case TypeInt:
-		intVal, err := strconv.Atoi(raw)
-		if err != nil {
-			return nil, &CoercionError{
-				ArgName:  name,
-				Expected: string(TypeInt),
-				Got:      raw,
-			}
-		}
-
-		return intVal, nil
+		return coerceInt(name, raw)
 
 	case TypeFloat:
-		floatVal, err := strconv.ParseFloat(raw, 64)
-		if err != nil {
-			return nil, &CoercionError{
-				ArgName:  name,
-				Expected: string(TypeFloat),
-				Got:      raw,
-			}
-		}
-
-		return floatVal, nil
+		return coerceFloat(name, raw)
 
 	case TypeBool:
-		switch strings.ToLower(raw) {
-		case "true":
-			return true, nil
-		case "false":
-			return false, nil
-		default:
-			return nil, &CoercionError{
-				ArgName:  name,
-				Expected: string(TypeBool),
-				Got:      raw,
-			}
-		}
+		return coerceBool(name, raw)
 
 	case TypeDuration:
-		durVal, err := time.ParseDuration(raw)
-		if err != nil {
-			return nil, &CoercionError{
-				ArgName:  name,
-				Expected: string(TypeDuration),
-				Got:      raw,
-			}
-		}
-
-		return durVal, nil
+		return coerceDuration(name, raw)
 
 	default:
 		// Parse rejects unknown types at registration time, so
 		// reaching this branch indicates an internal invariant
 		// violation rather than a user-facing authoring error.
 		return nil, fmt.Errorf(
-			"internal: unknown placeholder type %q for argument %q",
+			"%w %q for argument %q",
+			errUnknownPlaceholderType,
 			pType,
 			name,
 		)
 	}
+}
+
+// coerceInt parses raw as a base-10 integer.
+func coerceInt(name, raw string) (any, error) {
+	intVal, err := strconv.Atoi(raw)
+	if err != nil {
+		return nil, &CoercionError{
+			ArgName:  name,
+			Expected: string(TypeInt),
+			Got:      raw,
+		}
+	}
+
+	return intVal, nil
+}
+
+// coerceFloat parses raw as a 64-bit float.
+func coerceFloat(name, raw string) (any, error) {
+	floatVal, err := strconv.ParseFloat(raw, float64BitSize)
+	if err != nil {
+		return nil, &CoercionError{
+			ArgName:  name,
+			Expected: string(TypeFloat),
+			Got:      raw,
+		}
+	}
+
+	return floatVal, nil
+}
+
+// coerceBool parses raw as a case-insensitive boolean ("true"/"false").
+func coerceBool(name, raw string) (any, error) {
+	switch strings.ToLower(raw) {
+	case "true":
+		return true, nil
+	case "false":
+		return false, nil
+	default:
+		return nil, &CoercionError{
+			ArgName:  name,
+			Expected: string(TypeBool),
+			Got:      raw,
+		}
+	}
+}
+
+// coerceDuration parses raw using time.ParseDuration.
+func coerceDuration(name, raw string) (any, error) {
+	durVal, err := time.ParseDuration(raw)
+	if err != nil {
+		return nil, &CoercionError{
+			ArgName:  name,
+			Expected: string(TypeDuration),
+			Got:      raw,
+		}
+	}
+
+	return durVal, nil
 }
