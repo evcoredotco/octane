@@ -18,7 +18,7 @@ const minShardTotal = 0
 //
 // Stories NOT in the requested shard but required as prerequisites
 // of sharded stories are added back by collectPrerequisites (called
-// after this function), satisfying ADR 0019 §"Prerequisite inclusion".
+// after this function), satisfying ADR 0019 -"Prerequisite inclusion".
 func applyShardFilter(
 	stories []*ast.Story,
 	shardIndex,

@@ -61,7 +61,7 @@ func sendStopTransaction(
 //
 //	the CSMS accepts StopTransaction within {timeout:duration}
 //
-// It waits for the StopTransaction.conf CALLRESULT. Per OCPP 1.6 §6.47
+// It waits for the StopTransaction.conf CALLRESULT. Per OCPP 1.6 -6.47
 // the confirmation payload is empty; success means the frame arrived
 // without error.
 func csmsAcceptsStopTransaction(

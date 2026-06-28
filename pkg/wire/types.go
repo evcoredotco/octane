@@ -1,6 +1,6 @@
 // Package wire provides OCPP-J frame parsing and serialization for CALL
 // (type 2), CALLRESULT (type 3), and CALLERROR (type 4) frames per
-// OCPP-J §3.4.
+// OCPP-J -3.4.
 //
 // OCPP-J frames are JSON arrays whose first element is a numeric message
 // type code. This package decodes the raw []any produced by encoding/json
@@ -18,15 +18,15 @@ package wire
 import "encoding/json"
 
 // MessageTypeCall is the OCPP-J message type code for a CALL frame (request).
-// Value 2 is mandated by OCPP-J §3.4 and must not be changed.
+// Value 2 is mandated by OCPP-J -3.4 and must not be changed.
 const MessageTypeCall = 2
 
 // MessageTypeResult is the OCPP-J message type code for a CALLRESULT frame.
-// Value 3 is mandated by OCPP-J §3.4 and must not be changed.
+// Value 3 is mandated by OCPP-J -3.4 and must not be changed.
 const MessageTypeResult = 3
 
 // MessageTypeError is the OCPP-J message type code for a CALLERROR frame.
-// Value 4 is mandated by OCPP-J §3.4 and must not be changed.
+// Value 4 is mandated by OCPP-J -3.4 and must not be changed.
 const MessageTypeError = 4
 
 // Call represents a decoded OCPP-J CALL frame.
@@ -38,7 +38,7 @@ const MessageTypeError = 4
 // without re-serialization.
 type Call struct {
 	// UniqueID is the correlation identifier chosen by the station.
-	// OCPP-J §3.4 requires this to be a unique string per outstanding request.
+	// OCPP-J -3.4 requires this to be a unique string per outstanding request.
 	UniqueID string
 	// Action names the OCPP operation, e.g. "BootNotification" or
 	// "Authorize". It is case-sensitive per the OCPP-J specification.

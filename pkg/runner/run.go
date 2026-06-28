@@ -24,7 +24,7 @@ import (
 )
 
 // defaultLockTimeout is the lock acquisition timeout used when
-// Config.LockTimeout is zero (spec 005 G6, ADR 0019 §"Lock timeout
+// Config.LockTimeout is zero (spec 005 G6, ADR 0019 -"Lock timeout
 // and fast-fail").
 const defaultLockTimeout = 60 * time.Second
 
@@ -553,7 +553,7 @@ type execParams struct {
 
 // makeExecFunc constructs the execution function for a single story
 // node. The returned function follows the double-checked acquire
-// pattern from ADR 0016 §"Acquire pattern".
+// pattern from ADR 0016 -"Acquire pattern".
 func makeExecFunc(params execParams) func(ctx context.Context) StoryResult {
 	return func(ctx context.Context) StoryResult {
 		return execStoryNode(ctx, params)
@@ -1096,7 +1096,7 @@ func buildCacheKey(
 }
 
 // buildRunResult assembles the final RunResult from the scheduler
-// state, preserving the stable topological order (ADR 0019 §
+// state, preserving the stable topological order (ADR 0019 -
 // "Dispatch order and determinism").
 func buildRunResult(
 	runID string,
@@ -1221,7 +1221,7 @@ func discoverStories(cfg Config) ([]*ast.Story, error) {
 
 	// Collect prerequisites from the full index so that stories
 	// outside the shard that are prerequisites of sharded stories
-	// are included (ADR 0019 §"Prerequisite inclusion").
+	// are included (ADR 0019 -"Prerequisite inclusion").
 	return collectPrerequisites(sharded, allIndex), nil
 }
 

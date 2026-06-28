@@ -1,5 +1,5 @@
 // Package primitive_test exercises the connection-status assertion keywords
-// (spec 004 §10, items 9–10) against mock.MockState and mock.MockStation.
+// (spec 004 -10, items 9–10) against mock.MockState and mock.MockStation.
 //
 // Task: T-004-05
 // AC1: "the connection on station {station} is open" passes when

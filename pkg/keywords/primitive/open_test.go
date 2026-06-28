@@ -1,5 +1,5 @@
 // Package primitive_test exercises the connection-open primitive keywords
-// (spec 004 §10, items 1–2) against a local WebSocket server created with
+// (spec 004 -10, items 1–2) against a local WebSocket server created with
 // net/http/httptest. These tests do not reach the public internet.
 //
 // Task: T-004-05

@@ -18,7 +18,7 @@ const lockFileMode = 0o600
 //
 // The lock file is opened with O_CREATE|O_RDWR and permissions
 // 0o600 so it is readable and writable only by the owning user,
-// matching the cache directory permission policy (ADR 0016 §
+// matching the cache directory permission policy (ADR 0016 -
 // "Lock file layout").
 //
 // If the lock is held by another process, lockFile returns

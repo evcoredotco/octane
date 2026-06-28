@@ -44,7 +44,7 @@ const (
 	messageIDSmoke = "msg-001"
 
 	// messageTypeCALLRESULT is the OCPP-J message type code for a CALLRESULT
-	// frame (type 3 per OCPP-J §3.4).  Used to validate the received frame.
+	// frame (type 3 per OCPP-J -3.4).  Used to validate the received frame.
 	messageTypeCALLRESULT = float64(3)
 
 	// smokeTimeout is the wall-clock budget for the entire smoke scenario
