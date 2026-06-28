@@ -20,27 +20,27 @@ func sendStartTransaction(
 	args api.Args,
 ) error {
 	station := args.String("station")
-	connectorID := args.Int("connectorId")
+	connectorID := args.Int(fieldConnectorID)
 	idTag := args.String("idTag")
 	meterStart := args.Int("meterStart")
 
-	msgID := nextMsgID(state, station, "StartTransaction")
+	msgID := nextMsgID(state, station, actionStartTransaction)
 
 	payload := map[string]any{
-		"connectorId": connectorID,
-		"idTag":       idTag,
-		"meterStart":  meterStart,
-		"timestamp":   state.Now().Format("2006-01-02T15:04:05Z"),
+		fieldConnectorID: connectorID,
+		fieldIDTag:       idTag,
+		"meterStart":     meterStart,
+		fieldTimestamp:   state.Now().Format(iso8601SecondFormat),
 	}
 
-	if err := sendCall(ctx, state, station, msgID, "StartTransaction", payload); err != nil {
+	if err := sendCall(ctx, state, station, msgID, actionStartTransaction, payload); err != nil {
 		return err
 	}
 
 	state.Stash(pendingKey, &pendingInfo{
 		station: station,
 		msgID:   msgID,
-		action:  "StartTransaction",
+		action:  actionStartTransaction,
 	})
 
 	state.Logf(
@@ -71,27 +71,18 @@ func csmsRespondsToStartTransaction(
 		return errors.New("ocpp16: no pending StartTransaction; call sendStartTransaction first")
 	}
 
-	_, payload, err := expectResult(ctx, state, info.station, timeout)
+	payload, err := expectResult(ctx, state, info.station, timeout)
 	if err != nil {
 		return err
 	}
 
 	state.Stash(lastPayloadKey, payload)
 
-	rawTagInfo, exists := payload["idTagInfo"]
-	if !exists {
-		return errors.New("ocpp16: StartTransaction.conf payload missing idTagInfo field")
+	gotStatus, err := startTransactionIDTagStatus(payload)
+	if err != nil {
+		return err
 	}
 
-	tagInfo, ok := rawTagInfo.(map[string]any)
-	if !ok {
-		return fmt.Errorf(
-			"ocpp16: StartTransaction.conf idTagInfo has unexpected type %T (want object)",
-			rawTagInfo,
-		)
-	}
-
-	gotStatus, _ := tagInfo["status"].(string)
 	if gotStatus != expectedStatus {
 		return fmt.Errorf(
 			"ocpp16: station %q: StartTransaction.conf idTagInfo.status: want %q, got %q",
@@ -99,11 +90,7 @@ func csmsRespondsToStartTransaction(
 		)
 	}
 
-	if rawTxID, exists := payload["transactionId"]; exists {
-		if txID, ok := rawTxID.(float64); ok && txID > 0 {
-			state.Stash(transactionIDKey, int(txID))
-		}
-	}
+	stashPositiveTransactionID(state, payload)
 
 	state.Logf(
 		"station %q received StartTransaction.conf idTagInfo.status=%q",
@@ -111,6 +98,35 @@ func csmsRespondsToStartTransaction(
 	)
 
 	return nil
+}
+
+func startTransactionIDTagStatus(payload map[string]any) (string, error) {
+	rawTagInfo, exists := payload["idTagInfo"]
+	if !exists {
+		return "", errors.New("ocpp16: StartTransaction.conf payload missing idTagInfo field")
+	}
+
+	tagInfo, ok := rawTagInfo.(map[string]any)
+	if !ok {
+		return "", fmt.Errorf(
+			"ocpp16: StartTransaction.conf idTagInfo has unexpected type %T (want object)",
+			rawTagInfo,
+		)
+	}
+
+	return payloadString(tagInfo, fieldStatus, "StartTransaction.conf idTagInfo")
+}
+
+func stashPositiveTransactionID(state api.State, payload map[string]any) {
+	rawTxID, exists := payload["transactionId"]
+	if !exists {
+		return
+	}
+
+	txID, ok := rawTxID.(float64)
+	if ok && txID > positiveTransactionIDBoundary {
+		state.Stash(transactionIDKey, int(txID))
+	}
 }
 
 // startTransactionAssignsPositiveTransactionID implements:
@@ -142,7 +158,7 @@ func startTransactionAssignsPositiveTransactionID(
 		)
 	}
 
-	if txID <= 0 {
+	if txID <= positiveTransactionIDBoundary {
 		return fmt.Errorf(
 			"ocpp16: StartTransaction.conf transactionId must be positive, got %v",
 			txID,

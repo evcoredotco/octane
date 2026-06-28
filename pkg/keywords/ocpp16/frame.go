@@ -21,7 +21,7 @@ func sendCall(
 ) error {
 	sv, err := state.Station(station)
 	if err != nil {
-		return fmt.Errorf("ocpp16: station %q: not connected: %w", station, err)
+		return fmt.Errorf(stationNotConnectedFormat, station, err)
 	}
 
 	frame := []any{
@@ -49,11 +49,11 @@ func expectResult(
 	state api.State,
 	station string,
 	timeout time.Duration,
-) (wire.Result, map[string]any, error) {
+) (map[string]any, error) {
 	sv, err := state.Station(station)
 	if err != nil {
-		return wire.Result{}, nil, fmt.Errorf(
-			"ocpp16: station %q: not connected: %w", station, err,
+		return nil, fmt.Errorf(
+			stationNotConnectedFormat, station, err,
 		)
 	}
 
@@ -62,21 +62,21 @@ func expectResult(
 
 	frame, err := sv.Expect(subCtx)
 	if err != nil {
-		return wire.Result{}, nil, fmt.Errorf(
+		return nil, fmt.Errorf(
 			"ocpp16: station %q: expect response: %w", station, err,
 		)
 	}
 
 	result, err := wire.ParseResult(frame)
 	if err != nil {
-		return wire.Result{}, nil, fmt.Errorf(
+		return nil, fmt.Errorf(
 			"ocpp16: station %q: parse CALLRESULT: %w", station, err,
 		)
 	}
 
 	var payload map[string]any
 	if err := json.Unmarshal(result.Payload, &payload); err != nil {
-		return wire.Result{}, nil, fmt.Errorf(
+		return nil, fmt.Errorf(
 			"ocpp16: station %q: unmarshal payload: %w", station, err,
 		)
 	}
@@ -85,7 +85,7 @@ func expectResult(
 		payload = map[string]any{}
 	}
 
-	return result, payload, nil
+	return payload, nil
 }
 
 // expectCSMSCall waits for a CALL frame sent by the CSMS on the station's
@@ -100,7 +100,7 @@ func expectCSMSCall(
 ) (string, map[string]any, error) {
 	sv, err := state.Station(station)
 	if err != nil {
-		return "", nil, fmt.Errorf("ocpp16: station %q: not connected: %w", station, err)
+		return emptyUniqueID, nil, fmt.Errorf(stationNotConnectedFormat, station, err)
 	}
 
 	subCtx, cancel := context.WithTimeout(ctx, timeout)
@@ -108,16 +108,16 @@ func expectCSMSCall(
 
 	frame, err := sv.Expect(subCtx)
 	if err != nil {
-		return "", nil, fmt.Errorf("ocpp16: station %q: expect %s CALL: %w", station, action, err)
+		return emptyUniqueID, nil, fmt.Errorf("ocpp16: station %q: expect %s CALL: %w", station, action, err)
 	}
 
 	call, err := wire.ParseCall(frame)
 	if err != nil {
-		return "", nil, fmt.Errorf("ocpp16: station %q: parse inbound CALL: %w", station, err)
+		return emptyUniqueID, nil, fmt.Errorf("ocpp16: station %q: parse inbound CALL: %w", station, err)
 	}
 
 	if call.Action != action {
-		return "", nil, fmt.Errorf(
+		return emptyUniqueID, nil, fmt.Errorf(
 			"ocpp16: station %q: expected %s CALL, got action %q",
 			station, action, call.Action,
 		)
@@ -125,8 +125,9 @@ func expectCSMSCall(
 
 	var payload map[string]any
 	if err := json.Unmarshal(call.Payload, &payload); err != nil {
-		return "", nil, fmt.Errorf("ocpp16: station %q: unmarshal %s payload: %w", station, action, err)
+		return emptyUniqueID, nil, fmt.Errorf("ocpp16: station %q: unmarshal %s payload: %w", station, action, err)
 	}
+
 	if payload == nil {
 		payload = map[string]any{}
 	}
@@ -144,7 +145,7 @@ func sendCSMSResponse(
 ) error {
 	sv, err := state.Station(station)
 	if err != nil {
-		return fmt.Errorf("ocpp16: station %q: not connected: %w", station, err)
+		return fmt.Errorf(stationNotConnectedFormat, station, err)
 	}
 
 	frame := []any{
@@ -171,9 +172,12 @@ func peekPayload(state api.State) (map[string]any, bool) {
 
 	state.Stash(lastPayloadKey, val)
 
-	payload, _ := val.(map[string]any)
+	payload, ok := val.(map[string]any)
+	if !ok {
+		return nil, false
+	}
 
-	return payload, payload != nil
+	return payload, true
 }
 
 // popCSMSCallID retrieves and removes the uniqueID stashed by a
@@ -182,13 +186,19 @@ func peekPayload(state api.State) (map[string]any, bool) {
 func popCSMSCallID(state api.State, station, action string) (string, error) {
 	val, ok := state.Pop(csmsCallIDKey(station, action))
 	if !ok {
-		return "", fmt.Errorf(
+		return emptyUniqueID, fmt.Errorf(
 			"ocpp16: station %q: no %s uniqueID stashed; call the CSMS-send keyword first",
 			station, action,
 		)
 	}
 
-	uid, _ := val.(string)
+	uid, ok := val.(string)
+	if !ok {
+		return emptyUniqueID, fmt.Errorf(
+			"ocpp16: station %q: %s uniqueID stash has unexpected type %T",
+			station, action, val,
+		)
+	}
 
 	return uid, nil
 }
@@ -201,7 +211,10 @@ func popPending(state api.State) (*pendingInfo, bool) {
 		return nil, false
 	}
 
-	info, _ := val.(*pendingInfo)
+	info, ok := val.(*pendingInfo)
+	if !ok {
+		return nil, false
+	}
 
-	return info, info != nil
+	return info, true
 }

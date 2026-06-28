@@ -57,7 +57,7 @@ func csmsRespondsToHeartbeat(
 		return errors.New("ocpp16: no pending Heartbeat; call sendHeartbeat first")
 	}
 
-	_, payload, err := expectResult(ctx, state, info.station, timeout)
+	payload, err := expectResult(ctx, state, info.station, timeout)
 	if err != nil {
 		return err
 	}

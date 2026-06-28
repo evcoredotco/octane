@@ -24,12 +24,16 @@ func csmsEnqueuesChangeAvailability(
 	station := args.String("station")
 	timeout := args.Duration("timeout")
 
-	uniqueID, payload, err := expectCSMSCall(ctx, state, station, "ChangeAvailability", timeout)
+	uniqueID, payload, err := expectCSMSCall(ctx, state, station, actionChangeAvailability, timeout)
 	if err != nil {
 		return err
 	}
 
-	gotConnector, _ := payload["connectorId"].(float64)
+	gotConnector, err := payloadNumber(payload, fieldConnectorID, actionChangeAvailability)
+	if err != nil {
+		return err
+	}
+
 	if int(gotConnector) != connectorID {
 		return fmt.Errorf(
 			"ocpp16: station %q: ChangeAvailability connectorId: want %d, got %d",
@@ -37,7 +41,11 @@ func csmsEnqueuesChangeAvailability(
 		)
 	}
 
-	gotType, _ := payload["type"].(string)
+	gotType, err := payloadString(payload, "type", actionChangeAvailability)
+	if err != nil {
+		return err
+	}
+
 	if gotType != availType {
 		return fmt.Errorf(
 			"ocpp16: station %q: ChangeAvailability type: want %q, got %q",
@@ -45,7 +53,7 @@ func csmsEnqueuesChangeAvailability(
 		)
 	}
 
-	state.Stash(csmsCallIDKey(station, "ChangeAvailability"), uniqueID)
+	state.Stash(csmsCallIDKey(station, actionChangeAvailability), uniqueID)
 
 	state.Logf(
 		"station %q received ChangeAvailability CALL (uniqueID=%s, connector=%d, type=%q)",
@@ -69,12 +77,12 @@ func stationRespondsToChangeAvailability(
 	station := args.String("station")
 	status := args.String("status")
 
-	uniqueID, err := popCSMSCallID(state, station, "ChangeAvailability")
+	uniqueID, err := popCSMSCallID(state, station, actionChangeAvailability)
 	if err != nil {
 		return err
 	}
 
-	if err := sendCSMSResponse(ctx, state, station, uniqueID, map[string]any{"status": status}); err != nil {
+	if err := sendCSMSResponse(ctx, state, station, uniqueID, map[string]any{fieldStatus: status}); err != nil {
 		return err
 	}
 

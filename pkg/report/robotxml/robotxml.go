@@ -271,7 +271,7 @@ func buildKeywords(story model.StoryReport) []xmlKw {
 		out[idx] = xmlKw{
 			Name: "trace.frame",
 			Status: xmlKwStatus{
-				Status:    "PASS",
+				Status:    robotStatusPass,
 				StartTime: frameTime,
 				EndTime:   frameTime,
 			},

@@ -41,7 +41,7 @@ func registerPreconditionKeywords() {
 		Pattern:     "the operator has provisioned id token {idTag:string} with status {status:string}",
 		Layer:       api.LayerDomain,
 		OCPPVersion: api.OCPP16,
-		Func:        operatorProvisionedIdTag,
+		Func:        operatorProvisionedIDTag,
 	})
 
 	registry.Register(api.Keyword{
