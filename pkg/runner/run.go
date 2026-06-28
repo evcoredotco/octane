@@ -365,6 +365,8 @@ type schedRunner struct {
 	maxParallel int
 	pool        *workerPool
 	inProcess   sync.Map
+	// storyIdx maps story ID → *ast.Story used when inlining prerequisites.
+	storyIdx storyIndex
 }
 
 // runSchedulerArgs bundles the arguments for [runScheduler] that
@@ -403,6 +405,7 @@ func runScheduler(
 		maxParallel: maxParallel,
 		pool:        newWorkerPool(ctx, maxParallel),
 		inProcess:   sync.Map{},
+		storyIdx:    buildStoryIdx(args.dagResult),
 	}
 
 	var workGroup sync.WaitGroup
@@ -414,6 +417,19 @@ func runScheduler(
 	workGroup.Wait()
 
 	return args.schedState.result
+}
+
+// buildStoryIdx builds a storyIndex from all nodes in result.
+// Multiple nodes with the same story ID (different scopes) map to the
+// same *ast.Story pointer, so last-write-wins is correct.
+func buildStoryIdx(result *buildDAGResult) storyIndex {
+	idx := make(storyIndex, len(result.nodes))
+
+	for _, node := range result.nodes {
+		idx[node.story.Meta.ID] = node.story
+	}
+
+	return idx
 }
 
 // dispatchBatch sends all currently eligible nodes to the pool up to the
@@ -458,6 +474,7 @@ func (sr *schedRunner) submitNode(
 		clk:         sr.clk,
 		runID:       sr.runID,
 		inProcess:   &sr.inProcess,
+		storyIdx:    sr.storyIdx,
 	})
 
 	item := workItem{nodeID: nodeID, execute: execFn}
@@ -527,6 +544,8 @@ type execParams struct {
 	clk         clock.Clock
 	runID       string
 	inProcess   *sync.Map
+	// storyIdx maps story ID → *ast.Story for inline prerequisite lookup.
+	storyIdx storyIndex
 }
 
 // makeExecFunc constructs the execution function for a single story
@@ -546,7 +565,7 @@ func execStoryNode(ctx context.Context, params execParams) StoryResult {
 	cacheKey := buildCacheKey(params.storyNode, params.cfg, params.runID)
 
 	if params.cfg.NoCache {
-		result := executeStory(ctx, params.storyNode, params.cfg, params.clk)
+		result := executeStory(ctx, params.storyNode, params.cfg, params.clk, params.storyIdx)
 		result.StartedAt = startedAt
 		result.FinishedAt = params.clk.Now()
 		result.CacheStatus = CacheBypassed
@@ -595,7 +614,7 @@ func execWithDedup(
 	}
 
 	// Cache miss even after the Once: execute fresh.
-	result := executeStory(ctx, params.storyNode, params.cfg, params.clk)
+	result := executeStory(ctx, params.storyNode, params.cfg, params.clk, params.storyIdx)
 	result.StartedAt = startedAt
 	result.FinishedAt = params.clk.Now()
 
@@ -691,7 +710,7 @@ func executeWithLock(
 
 	// Step 4: execute the story.
 	result := executeStory(
-		ctx, params.storyNode, params.cfg, params.clk,
+		ctx, params.storyNode, params.cfg, params.clk, params.storyIdx,
 	)
 	result.StartedAt = startedAt
 	result.FinishedAt = params.clk.Now()
@@ -763,6 +782,7 @@ func executeStory(
 	storyNodeVal storyNode,
 	cfg Config,
 	clk clock.Clock,
+	storyIdx storyIndex,
 ) StoryResult {
 	state := newRunnerState(clk, cfg.CSMSEndpoint)
 
@@ -773,6 +793,7 @@ func executeStory(
 	result := executeAllSections(
 		ctx,
 		storyNodeVal.story,
+		storyIdx,
 		state,
 		ocppVer,
 		&findings,
@@ -801,10 +822,33 @@ func executeStory(
 func executeAllSections(
 	ctx context.Context,
 	storyAST *ast.Story,
+	storyIdx storyIndex,
 	state api.State,
 	ocppVer string,
 	findings *[]Finding,
 ) StoryResult {
+	// Run prerequisite stories' non-teardown steps inline so that dependent
+	// stories inherit runtime state (e.g., open WebSocket connections).
+	if prereqFailed := runPrereqSections(ctx, storyAST, storyIdx, state, ocppVer, findings); prereqFailed {
+		// Teardown always runs.
+		_ = runSteps(ctx, storyAST.Teardown, state, ocppVer, findings)
+
+		return StoryResult{
+			Order:       emptyLen,
+			TestID:      emptyTestID,
+			ScopeKey:    emptyString,
+			OCPPVersion: ocppVersionEmpty,
+			Status:      StatusFailed,
+			CacheStatus: CacheMiss,
+			StartedAt:   time.Time{},
+			FinishedAt:  time.Time{},
+			Findings:    nil,
+			Trace:       nil,
+			Cause:       emptyCause,
+			CauseChain:  nil,
+		}
+	}
+
 	failed := false
 
 	failed = runSteps(ctx, storyAST.Background, state, ocppVer, findings) ||
@@ -839,6 +883,55 @@ func executeAllSections(
 		Cause:       emptyCause,
 		CauseChain:  nil,
 	}
+}
+
+// runPrereqSections runs the non-teardown steps of each prerequisite story
+// inline within the current story's execution context. This allows dependent
+// stories to inherit runtime state established by their prerequisites (e.g.,
+// open WebSocket connections from a "connect to CSMS" step).
+//
+// Prerequisites are processed depth-first: if A depends on B which depends on
+// C, running A inlines C then B then A (post-order). Teardown sections are NOT
+// run for prerequisites — only the outermost story's Teardown runs.
+//
+// Returns true if any prerequisite step failed, in which case the caller
+// should not execute the main story's own steps.
+func runPrereqSections(
+	ctx context.Context,
+	storyAST *ast.Story,
+	storyIdx storyIndex,
+	state api.State,
+	ocppVer string,
+	findings *[]Finding,
+) bool {
+	for _, dep := range storyAST.Meta.Depends {
+		prereqStory, ok := storyIdx[dep.ID]
+		if !ok {
+			continue
+		}
+
+		// Recurse into this prerequisite's own prerequisites first.
+		if failed := runPrereqSections(ctx, prereqStory, storyIdx, state, ocppVer, findings); failed {
+			return true
+		}
+
+		// Run the prerequisite's Background, Setup, and Scenario steps.
+		if failed := runSteps(ctx, prereqStory.Background, state, ocppVer, findings); failed {
+			return true
+		}
+
+		if failed := runSteps(ctx, prereqStory.Setup, state, ocppVer, findings); failed {
+			return true
+		}
+
+		for _, scenario := range prereqStory.Scenarios {
+			if failed := runSteps(ctx, scenario.Steps, state, ocppVer, findings); failed {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // runSteps invokes the keyword function for each step in steps.
