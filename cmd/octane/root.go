@@ -11,9 +11,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// version is the binary version string, injected at build time by goreleaser
-// via -X main.version={{.Version}}. Defaults to "dev" in local builds.
-var version = "dev"
+// version, commit, and date are injected at build time by goreleaser via
+// -X main.version={{.Version}}, -X main.commit={{.Commit}}, and
+// -X main.date={{.CommitDate}}. They fall back to safe defaults for local builds.
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
 
 // globalFlagsT holds the parsed values of the persistent global flags
 // declared on the root command. They are set by cobra's flag binding
@@ -50,6 +55,8 @@ story files, and manages the content-addressed result cache.
 Global flags apply to all subcommands. Use "octane help <command>"
 for subcommand-specific documentation.`,
 	}
+
+	cmd.Version = fmt.Sprintf("%s (commit %.7s, built %s)", version, commit, date)
 
 	persistentFlags := cmd.PersistentFlags()
 

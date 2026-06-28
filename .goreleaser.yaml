@@ -105,6 +105,7 @@ brews:
       owner: evcoreco
       name: homebrew-octane
       branch: main
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     homepage: "https://octane.dev"
     description: "OCPP Conformance Testing & Network Evaluation"
     license: "Apache-2.0"
