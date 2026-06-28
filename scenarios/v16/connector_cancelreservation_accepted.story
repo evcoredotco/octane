@@ -1,11 +1,11 @@
 # Connector cancel reservation accepted.
 #
-# Validates that a CSMS implementing OCPP-J 1.6 §5.17 CancelReservation
+# Validates that a CSMS implementing OCPP-J 1.6 -5.17 CancelReservation
 # sends a well-formed CancelReservation.req CALL with the expected
 # reservationId to the station and that the station can respond with
 # status "Accepted".
 #
-# Per OCPP-J 1.6 §5.17 the station must respond with "Accepted" if the
+# Per OCPP-J 1.6 -5.17 the station must respond with "Accepted" if the
 # reservationId matches an active reservation, or "Rejected" if it does
 # not. This story validates the accepted path. The connector_reservation_faulted
 # dependency is used for connection setup; no active reservation is required
@@ -14,7 +14,7 @@
 Meta
     Name:        Connector cancel reservation accepted
     Id:          connector_cancelreservation_accepted
-    Spec-Ref:    OCPP-J 1.6 §5.17 CancelReservation
+    Spec-Ref:    OCPP-J 1.6 -5.17 CancelReservation
     Tags:        reservation, csms-initiated, wire-only
     Stations:    1
     Timeout:     30s

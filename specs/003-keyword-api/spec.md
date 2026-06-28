@@ -143,7 +143,7 @@ no version-specific message logic appears in this package.
        Defensive `(value, error)` would push noise into every
        keyword body without catching a real failure mode.
        *(owner: Architect, due: with this spec — RESOLVED in favor
-       of panic; documented in §10.)*
+       of panic; documented in -10.)*
 - OQ2. Whether to support optional parameters in patterns
        (e.g., `[with idTag {idTag:string}]`). Recommendation:
        no, in this spec. If the need arises, two patterns can

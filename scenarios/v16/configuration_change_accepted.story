@@ -1,6 +1,6 @@
 # Configuration change accepted.
 #
-# Validates that a CSMS implementing OCPP-J 1.6 §5.3 ChangeConfiguration
+# Validates that a CSMS implementing OCPP-J 1.6 -5.3 ChangeConfiguration
 # sends a well-formed ChangeConfiguration.req CALL with the expected key
 # and value to the station and that the station can respond with status
 # "Accepted".
@@ -12,7 +12,7 @@
 Meta
     Name:        Configuration change accepted
     Id:          configuration_change_accepted
-    Spec-Ref:    OCPP-J 1.6 §5.3 ChangeConfiguration
+    Spec-Ref:    OCPP-J 1.6 -5.3 ChangeConfiguration
     Tags:        configuration, csms-initiated, wire-only
     Stations:    1
     Timeout:     30s

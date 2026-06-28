@@ -12,7 +12,7 @@
 
 OCTANE drives a real CSMS over the wire. The wire engine is the
 layer that opens an OCPP-J WebSocket connection, frames messages
-per OCPP-J §3.4, and exchanges CALL / CALLRESULT / CALLERROR
+per OCPP-J -3.4, and exchanges CALL / CALLRESULT / CALLERROR
 frames with deterministic timing.
 
 Two concerns are bundled in this spec because they are inseparable
@@ -38,7 +38,7 @@ observable wire effect. Spec 003 (keyword API) consumes the
       subprotocol negotiation, and configurable timeouts.
 - G2. Implement `pkg/wire/` — OCPP-J frame parsing and
       serialization for CALL (type 2), CALLRESULT (type 3), and
-      CALLERROR (type 4) per OCPP-J §3.4.
+      CALLERROR (type 4) per OCPP-J -3.4.
 - G3. Implement `pkg/engine/clock` — a `Clock` interface with a
       real-clock implementation and a deterministic-clock test
       double that advances on explicit ticks.
@@ -94,7 +94,7 @@ observable wire effect. Spec 003 (keyword API) consumes the
 - AC2. **Given** a `Station` handle, **when** the caller invokes
        `Send(ctx, frame)` with a well-formed CALL frame, **then**
        the bytes on the wire are the canonical OCPP-J encoding
-       per §3.4 and the frame round-trips through `wire.ParseCall`.
+       per -3.4 and the frame round-trips through `wire.ParseCall`.
 - AC3. **Given** an inbound CALLRESULT (type 3), **when** the
        station's reader goroutine processes the message, **then**
        the parsed `Result` is delivered through `Expect(ctx)` in
@@ -124,8 +124,8 @@ observable wire effect. Spec 003 (keyword API) consumes the
 
 ## 7. OCPP Scope
 
-This spec covers the OCPP-J framing layer per OCPP-J 1.6 §3.4
-and OCPP 1.6 §3 (which defines an analogous JSON-array frame
+This spec covers the OCPP-J framing layer per OCPP-J 1.6 -3.4
+and OCPP 1.6 -3 (which defines an analogous JSON-array frame
 format). Message-level semantics (Authorize.req payload schema,
 BootNotification.req schema) are out of scope; they live in the
 domain keyword specs (007+).
@@ -176,7 +176,7 @@ hides this from keyword authors.
 
 ### MessageType constants
 
-OCPP-J §3.4 defines three numeric type codes:
+OCPP-J -3.4 defines three numeric type codes:
 
 | Code | Meaning |
 |------|---------|
@@ -198,7 +198,7 @@ error message.
 
 ### Frame size limits
 
-OCPP-J 1.6 §3.4 does not specify a frame size cap. OCTANE
+OCPP-J 1.6 -3.4 does not specify a frame size cap. OCTANE
 applies a configurable `MaxFrameBytes` limit (default 1 MiB) to
 guard against pathological CSMS responses. Frames exceeding the
 limit return `ErrFrameTooLarge` and are not parsed.

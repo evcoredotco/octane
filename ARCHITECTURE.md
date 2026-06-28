@@ -64,7 +64,7 @@ and design decision must comply with it. The principles, in summary:
 
 Principles XI and XII are the two pivots that distinguish the current
 design from earlier drafts. They emerged from a deliberate rejection
-of an adapter-based model (see §12) and align OCTANE with a
+of an adapter-based model (see -12) and align OCTANE with a
 **zero-cooperation-cost** adoption philosophy: any CSMS team can
 run OCTANE against an unmodified deployment with one CLI command.
 
@@ -237,7 +237,7 @@ Framework Python library:
 | Per-test scope                         | `api.State` per-scenario by construction                         |
 
 OCTANE does not use Robot Framework at runtime, but borrows its
-mental model and emits its `output.xml` format (see §8).
+mental model and emits its `output.xml` format (see -8).
 
 Defined in **ADR 0007**.
 
@@ -381,7 +381,7 @@ cases**. Every story can be a prerequisite for another via the
 Meta
     Name:     Connector reservation faulted
     Id:       connector_reservation_faulted
-    Spec-Ref: OCPP-J 1.6 §6.40 ReserveNow
+    Spec-Ref: OCPP-J 1.6 -6.40 ReserveNow
     Stations: 1
     Depends:
       - id:    connector_status_available
@@ -434,7 +434,7 @@ handle. So a story declaring `Stations: 2` causes
 `station_boot_accepted` to run twice, once for `CP01` and once for
 `CP02`. A `per-run` prerequisite runs once regardless of station
 count. A `global` prerequisite runs once across the validity window
-defined by the cache (see §8).
+defined by the cache (see -8).
 
 Defined in **ADR 0015**.
 
@@ -763,7 +763,7 @@ octane/
 ├── docs/
 │   ├── adr/                         # 17 ADRs, all active, sequentially numbered
 │   ├── conformance-claim.md         # public conformance scope statement
-│   └── man/                         # scdoc sources for §5 and §7
+│   └── man/                         # scdoc sources for -5 and -7
 ├── specs/
 │   ├── 001-story-parser/            # .story → AST (no I/O)
 │   ├── 002-wire-engine/              # transport + wire framing + clock/rand
@@ -848,7 +848,7 @@ This is honest scaffolding inventory, not aspirational marketing.
 | All Go code (`pkg/keywords`, `pkg/wire`, `pkg/cache`, `pkg/engine`, `pkg/transport`, `pkg/story` parser, `cmd/octane`)                                                                                                                                                                                | Specced, not implemented                   |
 | Sample connection profile YAML files (`connections/citrineos.yaml`, etc.)                                                                                                                                                                                                                             | Specced, not bootstrapped                  |
 | `CONTRIBUTING.md` and `docs/conformance-claim.md`                                                                                                                                                                                                                                                     | Done                                       |
-| Man-page sources (§5, §7)                                                                                                                                                                                                                                                                             | Done                                       |
+| Man-page sources (-5, -7)                                                                                                                                                                                                                                                                             | Done                                       |
 | Man-page generation script + scdoc + cobra hooks                                                                                                                                                                                                                                                      | Done (cobra hooks fire when binary exists) |
 | Shell completion script                                                                                                                                                                                                                                                                               | Done (depends on binary)                   |
 | Packaging (`.goreleaser.yaml`, `packaging/nfpm.yaml`)                                                                                                                                                                                                                                                 | Done (depends on binary)                   |
@@ -871,7 +871,7 @@ implementation-ready detail.
 5. The matching ADRs from `docs/adr/`
 6. The example stories under `scenarios/v16/` and `scenarios/`
    to see how the design plays out in practice. The starter keyword
-   catalog in spec 002 §10 lists every pattern the example stories
+   catalog in spec 002 -10 lists every pattern the example stories
    reference.
 7. The example stories under `scenarios/`
 

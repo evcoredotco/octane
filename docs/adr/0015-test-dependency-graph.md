@@ -48,7 +48,7 @@ A story declares its dependencies through the `Depends:` Meta key:
 Meta
     Name:     Connector reservation faulted
     Id:       connector_reservation_faulted
-    Spec-Ref: OCPP-J 1.6 §6.40 ReserveNow
+    Spec-Ref: OCPP-J 1.6 -6.40 ReserveNow
     Stations: 1
     Depends:
       - id:    connector_status_available

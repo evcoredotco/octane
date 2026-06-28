@@ -1,6 +1,6 @@
 # Transaction remote start accepted.
 #
-# Validates that a CSMS implementing OCPP-J 1.6 §5.11
+# Validates that a CSMS implementing OCPP-J 1.6 -5.11
 # RemoteStartTransaction sends a well-formed RemoteStartTransaction.req
 # CALL to the station and that the station can respond with status
 # "Accepted".
@@ -13,7 +13,7 @@
 Meta
     Name:        Transaction remote start accepted
     Id:          transaction_remotestart_accepted
-    Spec-Ref:    OCPP-J 1.6 §5.11 RemoteStartTransaction
+    Spec-Ref:    OCPP-J 1.6 -5.11 RemoteStartTransaction
     Tags:        transaction, csms-initiated, wire-only
     Stations:    1
     Timeout:     60s

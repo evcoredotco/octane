@@ -41,7 +41,7 @@ Same as previous specs.
 
 | ID | Title | Agent | P/S | AC | Files |
 |----|-------|-------|-----|----|-------|
-| T-007-30 | Implement `WriteRobotXML` mapping per spec 007 §10 | backend | S | AC3, AC9 | `pkg/report/robotxml/robotxml.go` |
+| T-007-30 | Implement `WriteRobotXML` mapping per spec 007 -10 | backend | S | AC3, AC9 | `pkg/report/robotxml/robotxml.go` |
 | T-007-31 | Implement status mapping (passed/failed/skipped/bypassed → PASS/FAIL/SKIP/NOT RUN) | backend | P | AC9 | `pkg/report/robotxml/status.go` |
 | T-007-32 | Robot XML golden tests | qa | S | AC3 | `pkg/report/robotxml/golden_test.go` |
 | T-007-33 | rebot-consumability integration test (via Docker) | qa | S | AC4 | `test/integration/rebot_test.go` |

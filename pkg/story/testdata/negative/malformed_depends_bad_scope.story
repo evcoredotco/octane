@@ -1,7 +1,7 @@
 Meta
     Name:      Malformed Depends Bad Scope Fixture
     Id:        malformed_depends_bad_scope_fixture
-    Spec-Ref:  OCPP 2.0.1 §B01 BootNotification
+    Spec-Ref:  OCPP 2.0.1 -B01 BootNotification
     Tags:      conformance
     Stations:  1
     Depends:

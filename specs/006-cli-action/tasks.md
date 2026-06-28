@@ -36,7 +36,7 @@ Same as previous specs.
 
 | ID | Title | Agent | P/S | AC | Files |
 |----|-------|-------|-----|----|-------|
-| T-006-20 | Centralize exit-code constants per spec 006 §10 | backend | S | AC2 | `cmd/octane/internal/exitcode/exitcode.go` |
+| T-006-20 | Centralize exit-code constants per spec 006 -10 | backend | S | AC2 | `cmd/octane/internal/exitcode/exitcode.go` |
 | T-006-21 | Wire each error type to its documented exit code | backend | S | AC2 | (across cmd/octane) |
 | T-006-22 | Stability test: every documented code reachable & unique | qa | S | AC2 | `cmd/octane/exitcode_test.go` |
 | T-006-23 | Insecure-skip-verify banner test | qa | P | AC7 | `cmd/octane/insecure_test.go` |
@@ -45,7 +45,7 @@ Same as previous specs.
 
 | ID | Title | Agent | P/S | AC | Files |
 |----|-------|-------|-----|----|-------|
-| T-006-30 | Update `action/action.yml` with full input/output set per spec 006 §4 | devops | P | AC4 | `action/action.yml` |
+| T-006-30 | Update `action/action.yml` with full input/output set per spec 006 -4 | devops | P | AC4 | `action/action.yml` |
 | T-006-31 | Implement `action/entrypoint.sh` translating inputs to flags | devops | S | AC4 | `action/entrypoint.sh` |
 | T-006-32 | Action smoke workflow `_test-action.yml` | devops | S | AC4 | `.github/workflows/_test-action.yml` |
 | T-006-33 | Pin Docker base image; multi-arch build | devops | P | AC5 | `action/Dockerfile` |

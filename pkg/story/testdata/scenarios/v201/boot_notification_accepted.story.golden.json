@@ -3,7 +3,7 @@
   "Meta": {
     "Name": "Boot notification with accepted registration",
     "ID": "boot_notification_accepted",
-    "SpecRef": "OCPP 2.0.1 §B01 BootNotification",
+    "SpecRef": "OCPP 2.0.1 -B01 BootNotification",
     "Tags": [
       "core",
       "boot",

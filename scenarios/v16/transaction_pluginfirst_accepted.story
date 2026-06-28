@@ -38,7 +38,7 @@
 Meta
     Name:        Transaction start plugin-first accepted
     Id:          transaction_pluginfirst_accepted
-    Spec-Ref:    OCPP-J 1.6 §6.13 StatusNotification, §6.2 Authorize, §6.16 StartTransaction
+    Spec-Ref:    OCPP-J 1.6 -6.13 StatusNotification, -6.2 Authorize, -6.16 StartTransaction
     Tags:        transaction, charging, wire-only
     Stations:    1
     Timeout:     60s

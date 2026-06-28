@@ -78,7 +78,7 @@ The main Claude session (no subagent) may **read** anything.
 
 **Everything else is delegated.** If a task touches `cmd/`, `internal/`,
 `pkg/`, `.github/`, `action/`, `*_test.go`, or `docs/` prose, delegate
-to the appropriate subagent per the roster in `AGENTS.md §5`. Do not
+to the appropriate subagent per the roster in `AGENTS.md -5`. Do not
 write to those paths directly from the main thread.
 
 ## Things Claude should refuse to do

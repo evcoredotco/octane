@@ -37,7 +37,7 @@ introduced by a top-level keyword on its own line:
 Meta
     Name:        Boot notification with accepted registration
     Id:          boot_notification_accepted
-    Spec-Ref:    OCPP 1.6 §B01 BootNotification
+    Spec-Ref:    OCPP 1.6 -B01 BootNotification
     Tags:        core, boot, wire-only
     Stations:    1
     Timeout:     30s
@@ -80,7 +80,7 @@ keep diffs deterministic.
 |------------|------------------|---------------------------------------|-----------------------------------------------------------------------------|
 | `Name`     | yes              | free text                             | Human-readable test name                                                    |
 | `Id`       | yes              | snake_case slug                       | Stable identifier for `Depends:` references                                 |
-| `Spec-Ref` | conformance only | `OCPP-<version> §<section> <message>` | OCPP specification traceability (constitution principle I)                  |
+| `Spec-Ref` | conformance only | `OCPP-<version> -<section> <message>` | OCPP specification traceability (constitution principle I)                  |
 | `Tags`     | yes              | comma list                            | At least one of `wire-only`, `multi-station`, `operator-assisted`, `helper` |
 | `Stations` | yes              | integer ≥ 1                           | Declared station count for preflight resource allocation                    |
 | `Timeout`  | no               | duration                              | Default per-step timeout; overrides `--default-timeout`                     |

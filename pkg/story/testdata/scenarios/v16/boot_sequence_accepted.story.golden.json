@@ -3,7 +3,7 @@
   "meta": {
     "name": "Cold boot sequence accepted",
     "id": "boot_sequence_accepted",
-    "specRef": "OCPP-J 1.6 §6.5 BootNotification, §6.13 StatusNotification, §6.7 Heartbeat",
+    "specRef": "OCPP-J 1.6 -6.5 BootNotification, -6.13 StatusNotification, -6.7 Heartbeat",
     "tags": [
       "boot",
       "lifecycle",

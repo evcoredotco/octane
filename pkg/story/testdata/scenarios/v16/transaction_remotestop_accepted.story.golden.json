@@ -3,7 +3,7 @@
   "meta": {
     "name": "Transaction remote stop accepted",
     "id": "transaction_remotestop_accepted",
-    "specRef": "OCPP-J 1.6 §5.12 RemoteStopTransaction",
+    "specRef": "OCPP-J 1.6 -5.12 RemoteStopTransaction",
     "tags": [
       "transaction",
       "csms-initiated",

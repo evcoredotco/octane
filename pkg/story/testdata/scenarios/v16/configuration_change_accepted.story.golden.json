@@ -3,7 +3,7 @@
   "meta": {
     "name": "Configuration change accepted",
     "id": "configuration_change_accepted",
-    "specRef": "OCPP-J 1.6 §5.3 ChangeConfiguration",
+    "specRef": "OCPP-J 1.6 -5.3 ChangeConfiguration",
     "tags": [
       "configuration",
       "csms-initiated",

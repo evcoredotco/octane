@@ -3,7 +3,7 @@
   "meta": {
     "name": "Connector cancel reservation accepted",
     "id": "connector_cancelreservation_accepted",
-    "specRef": "OCPP-J 1.6 §5.17 CancelReservation",
+    "specRef": "OCPP-J 1.6 -5.17 CancelReservation",
     "tags": [
       "reservation",
       "csms-initiated",

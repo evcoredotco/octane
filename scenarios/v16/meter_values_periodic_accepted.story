@@ -1,6 +1,6 @@
 # Meter values periodic accepted.
 #
-# Validates that a CSMS implementing OCPP-J 1.6 §4.7 MeterValues
+# Validates that a CSMS implementing OCPP-J 1.6 -4.7 MeterValues
 # correctly processes a periodic MeterValues.req sent by the station
 # during an active transaction and responds with an empty MeterValues.conf.
 #
@@ -14,7 +14,7 @@
 Meta
     Name:        Meter values periodic accepted
     Id:          meter_values_periodic_accepted
-    Spec-Ref:    OCPP-J 1.6 §4.7 MeterValues
+    Spec-Ref:    OCPP-J 1.6 -4.7 MeterValues
     Tags:        metering, wire-only
     Stations:    1
     Timeout:     60s

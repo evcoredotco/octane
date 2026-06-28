@@ -32,7 +32,7 @@ This spec defines:
 
 - G1. Implement `cmd/octane/` using `spf13/cobra` (per ADR 0011
       for shell completion compatibility).
-- G2. Stable exit codes per the table in §6.
+- G2. Stable exit codes per the table in -6.
 - G3. Configuration resolution chain (per ADR 0010): CLI flags
       override env vars override `octane.yml` overrides defaults.
 - G4. The GitHub Action is a thin wrapper: `action.yml` declares
@@ -85,7 +85,7 @@ This spec defines:
        command executes against the pinned CitrineOS, **then**
        it returns exit code 0 on suite-pass and exit code 1 on
        any-fail; output is the report path and a one-line summary.
-- AC2. **Given** the documented exit code table in §10, **when**
+- AC2. **Given** the documented exit code table in -10, **when**
        any documented condition is reached, **then** the CLI
        exits with the matching code. Documented codes are stable
        across releases.

@@ -3,7 +3,7 @@
   "meta": {
     "name": "Connector reservation faulted",
     "id": "connector_reservation_faulted",
-    "specRef": "OCPP-J 1.6 §6.40 ReserveNow",
+    "specRef": "OCPP-J 1.6 -6.40 ReserveNow",
     "tags": [
       "reservation",
       "csms-initiated",

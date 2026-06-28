@@ -3,7 +3,7 @@
   "meta": {
     "name": "Transaction start identification-first accepted",
     "id": "transaction_identificationfirst_accepted",
-    "specRef": "OCPP-J 1.6 §6.13 StatusNotification, §6.2 Authorize, §6.16 StartTransaction",
+    "specRef": "OCPP-J 1.6 -6.13 StatusNotification, -6.2 Authorize, -6.16 StartTransaction",
     "tags": [
       "transaction",
       "charging",

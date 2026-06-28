@@ -3,7 +3,7 @@
   "meta": {
     "name": "Meter values periodic accepted",
     "id": "meter_values_periodic_accepted",
-    "specRef": "OCPP-J 1.6 §4.7 MeterValues",
+    "specRef": "OCPP-J 1.6 -4.7 MeterValues",
     "tags": [
       "metering",
       "wire-only"

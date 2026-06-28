@@ -114,7 +114,7 @@ Conformance story depending on the helper per station:
 ```yaml
 Meta:
   Id: connector_reservation_faulted
-  Spec-Ref: "OCPP 1.6J §7.3"
+  Spec-Ref: "OCPP 1.6J -7.3"
   Tags: [ocpp1.6]
   Stations: 2
   Depends:

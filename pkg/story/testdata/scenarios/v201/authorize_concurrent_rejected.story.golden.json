@@ -3,7 +3,7 @@
   "Meta": {
     "Name": "Authorize concurrent transaction rejection",
     "ID": "authorize_concurrent_rejected",
-    "SpecRef": "OCPP 2.0.1 §C01 Authorize",
+    "SpecRef": "OCPP 2.0.1 -C01 Authorize",
     "Tags": [
       "core",
       "authorization",

@@ -37,9 +37,9 @@ Adopt a **hybrid toolchain**:
 
 | Section | Tool                           | Rationale                                                                          |
 |---------|--------------------------------|------------------------------------------------------------------------------------|
-| §1      | `spf13/cobra` `doc.GenManTree` | Auto-generated from CLI definitions; zero drift between `--help` and the man page. |
-| §5      | `scdoc`                        | Hand-written; minimal mdoc-flavored input; no runtime dependency.                  |
-| §7      | `scdoc`                        | Same.                                                                              |
+| -1      | `spf13/cobra` `doc.GenManTree` | Auto-generated from CLI definitions; zero drift between `--help` and the man page. |
+| -5      | `scdoc`                        | Hand-written; minimal mdoc-flavored input; no runtime dependency.                  |
+| -7      | `scdoc`                        | Same.                                                                              |
 
 ### Section 1 — generated
 
@@ -72,8 +72,8 @@ Adopt a **hybrid toolchain**:
 ### Cross-references and SEE ALSO
 
 Each man page ends with a `SEE ALSO` section that lists related
-pages. Cobra populates this for §1 from the cobra command tree;
-hand-written pages cite back to §1 commands and forward to §7
+pages. Cobra populates this for -1 from the cobra command tree;
+hand-written pages cite back to -1 commands and forward to -7
 concepts.
 
 ### Packaging
@@ -100,9 +100,9 @@ concepts.
 
 ### Versioning policy
 
-- Man page format is stable: changes to §1 mirror CLI changes (semver
-  via the binary). Changes to §5 mirror file format changes (config
-  schema and story grammar). Changes to §7 are editorial and do not
+- Man page format is stable: changes to -1 mirror CLI changes (semver
+  via the binary). Changes to -5 mirror file format changes (config
+  schema and story grammar). Changes to -7 are editorial and do not
   affect contracts.
 - A breaking change to either file format requires a `.5` page
   amendment and a `CHANGELOG.md` entry under the version that
@@ -136,9 +136,9 @@ concepts.
 - **Pandoc for everything.** Heavier dependency, more flexible than
   scdoc but indistinguishable in output for this use case. Rejected
   on dependency-weight grounds.
-- **All sections hand-written.** Rejected: §1 drift is the dominant
+- **All sections hand-written.** Rejected: -1 drift is the dominant
   failure mode in long-lived CLIs.
-- **All sections generated.** Cobra cannot produce §5 or §7 without
+- **All sections generated.** Cobra cannot produce -5 or -7 without
   significant scaffolding; the result would be uglier than scdoc and
   no easier to maintain.
 - **AsciiDoc (git's choice).** Considered. Rejected because scdoc's

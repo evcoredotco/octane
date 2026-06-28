@@ -44,10 +44,10 @@ This project adheres to [Keep a Changelog 1.1.0][kac] and
   `cache info/prune/clear/key`, `completion bash|zsh|fish|powershell`,
   and the hidden `gen-manpages` utility.
 - Configuration resolution chain: CLI flags override `OCTANE_*` env vars
-  override `octane.yml` override built-in defaults (ADR 0010, spec 006 §11).
+  override `octane.yml` override built-in defaults (ADR 0010, spec 006 -11).
 - Stable exit-code contract: codes 0 (`OK`), 1 (`TestFailed`),
   64 (`ConfigError`), 74 (`IOError`), 125 (`InternalError`) are
-  documented and stability-tested (spec 006 §10).
+  documented and stability-tested (spec 006 -10).
 - `action/action.yml` updated with full input set: `stories`, `fail-on`,
   `config`, `cache-dir`, `report-dir`, `ocpp-version`, `shard`,
   `max-parallel`, `no-cache`, `insecure-skip-verify`.
@@ -81,7 +81,7 @@ This project adheres to [Keep a Changelog 1.1.0][kac] and
   sections. Three scope types supported: `per-station` (one prerequisite
   instance per station handle), `per-run` (one instance per `octane run`
   invocation), and `global` (shared across runs via cache) (ADR 0015, spec
-  005 §10).
+  005 -10).
 - Cycle detection via topological sort; `runner.ErrCycle` is returned when
   a cycle is found. The error wraps `*dag.ErrCycle` which names the offending
   edges (spec 005 AC3).
@@ -106,10 +106,10 @@ This project adheres to [Keep a Changelog 1.1.0][kac] and
   - `cache.Open(dir)` — creates or verifies the cache directory structure and
     returns a `Cache` implementation.
   - Atomic write protocol: temp file → `fsync` → rename → directory `fsync`
-    (spec 005 §10 step 4).
+    (spec 005 -10 step 4).
   - `cache.AcquireLock` — exclusive `flock` on `<hash>.lock`; implements the
     double-checked acquire pattern to prevent two concurrent `octane run`
-    processes from executing the same story twice (ADR 0016 §"Acquire
+    processes from executing the same story twice (ADR 0016 -"Acquire
     pattern", ADR 0019).
   - `Cache-TTL:` Meta key support: `Entry.TTL == 0` means never expires;
     helper stories default to no TTL (spec 005 AC10).
@@ -128,7 +128,7 @@ This project adheres to [Keep a Changelog 1.1.0][kac] and
 - `pkg/keywords/primitive/`: ten transport-level primitive keywords covering
   WebSocket open (with and without subprotocol negotiation), close, send raw
   frame, send raw bytes, expect any frame, expect frame of type, wait, assert
-  connection open, and assert connection closed (spec 004 §10).
+  connection open, and assert connection closed (spec 004 -10).
 - Self-registration at `init()` time under `api.LayerPrimitive` with a zero
   `OCPPVersion`; importing the package is sufficient to activate all primitives
   (spec 004 G2).
@@ -205,7 +205,7 @@ This project adheres to [Keep a Changelog 1.1.0][kac] and
   were renamed and their content rewritten; implementation notes
   from the old specs were lifted into the appropriate new specs
   (JSON decoding quirk → spec 002; per-station scratch space →
-  spec 003 §10; primitive keyword catalog → spec 004 §10).
+  spec 003 -10; primitive keyword catalog → spec 004 -10).
 - **Cache backend reversed from SQLite to a content-addressed file
   tree.** A previous draft of ADR 0016 specified SQLite as the
   cache backend; this was reconsidered after re-examining OCTANE's
@@ -256,7 +256,7 @@ This project adheres to [Keep a Changelog 1.1.0][kac] and
   - `transaction_identificationfirst_accepted` — exercises the
     identification-first variant where Authorize precedes the
     Preparing status.
-- Spec 002 §10 starter keyword catalog extended with 8 new patterns
+- Spec 002 -10 starter keyword catalog extended with 8 new patterns
   covering Heartbeat (3 patterns), Authorize (2), and
   StartTransaction (3).
 - **ADR 0014** — Intellectual Property and Authoring Guidelines.
@@ -288,7 +288,7 @@ This project adheres to [Keep a Changelog 1.1.0][kac] and
   `scenarios/v16/`.
 - **Conformance story** `connector_reservation_faulted.story`
   demonstrating the dependency chain in practice.
-- **Lifecycle keyword catalog** specified in spec 002 §10 with 9
+- **Lifecycle keyword catalog** specified in spec 002 -10 with 9
   OCPP 1.6 patterns covering the helper-story dependency chain
   (`station_connection_established` → `station_boot_accepted` →
   `connector_status_available`).
@@ -324,7 +324,7 @@ This project adheres to [Keep a Changelog 1.1.0][kac] and
   ADR-0007 (layered keyword library), ADR-0008 (multi-station
   orchestration), ADR-0009 (Robot Framework `output.xml` compatibility),
   ADR-0010 (connection profiles).
-- ADR-0011 (manual pages — cobra §1, scdoc §5/§7), ADR-0012 (shell
+- ADR-0011 (manual pages — cobra -1, scdoc -5/-7), ADR-0012 (shell
   completion — bash/zsh, dynamic, read-only rule),
   ADR-0013 (Docusaurus website, separate from man pages).
 - Constitution principles XI (wire conformance) and XII (no CSMS-
@@ -334,7 +334,7 @@ This project adheres to [Keep a Changelog 1.1.0][kac] and
   multi-station orchestration, and Robot XML emission.
 - Example stories `scenarios/TC_B_01_CS.story`,
   `TC_E_07_CS.story`, `TC_PR_01.story`.
-- Man-page sources under `docs/man/` for §5 (config, story) and §7
+- Man-page sources under `docs/man/` for -5 (config, story) and -7
   (concepts).
 - Packaging via goreleaser + nfpm (`packaging/nfpm.yaml`,
   `.goreleaser.yaml`) producing `.deb`, `.rpm`, Homebrew formula,

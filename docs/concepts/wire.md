@@ -25,7 +25,7 @@ Two supporting packages provide determinism primitives:
 ## OCPP-J frame shapes
 
 OCPP-J frames are JSON arrays whose first element is a numeric message type
-code (OCPP-J §3.4). Three frame types are relevant for station-side testing.
+code (OCPP-J -3.4). Three frame types are relevant for station-side testing.
 
 ### CALL (type 2) — station-to-CSMS request
 
@@ -93,7 +93,7 @@ import (
     "context"
     "log"
 
-    "github.com/EVCore/octane/pkg/transport"
+    "github.com/evcoredotco/octane/pkg/transport"
 )
 
 func connect(ctx context.Context) (transport.Station, error) {
