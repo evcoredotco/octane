@@ -11,7 +11,7 @@
 Implement the OCPP-J transport, frame parser, and determinism
 primitives (clock, RNG) that the rest of OCTANE consumes. The
 transport wraps `nhooyr.io/websocket` (per ADR 0003); the frame
-parser handles the JSON-array shape per OCPP-J §3.4; the clock
+parser handles the JSON-array shape per OCPP-J -3.4; the clock
 and RNG are interfaces with real and deterministic implementations
 behind them.
 
@@ -47,7 +47,7 @@ No other packages are touched. Spec 003 will consume the
 
 ### Frame shape
 
-OCPP-J §3.4 frames are JSON arrays. Encoding is canonical JSON
+OCPP-J -3.4 frames are JSON arrays. Encoding is canonical JSON
 (no trailing whitespace, sorted object keys for byte
 determinism).
 

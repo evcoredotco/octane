@@ -3,7 +3,7 @@
   "meta": {
     "name": "Transaction stop accepted",
     "id": "transaction_stop_accepted",
-    "specRef": "OCPP-J 1.6 §6.47 StopTransaction",
+    "specRef": "OCPP-J 1.6 -6.47 StopTransaction",
     "tags": [
       "transaction",
       "charging",

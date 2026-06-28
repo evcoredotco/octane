@@ -3,7 +3,7 @@
   "meta": {
     "name": "Connector unlock accepted",
     "id": "connector_unlock_accepted",
-    "specRef": "OCPP-J 1.6 §5.15 UnlockConnector",
+    "specRef": "OCPP-J 1.6 -5.15 UnlockConnector",
     "tags": [
       "connector",
       "csms-initiated",

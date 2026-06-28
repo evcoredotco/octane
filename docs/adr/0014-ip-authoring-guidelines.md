@@ -40,7 +40,7 @@ restructure third-party test catalogs.
 In practice this means:
 
 - The story's `Spec-Ref` Meta key cites the OCPP specification by
-  version, section, and message name (e.g. `OCPP-J 1.6 §6.40
+  version, section, and message name (e.g. `OCPP-J 1.6 -6.40
   ReserveNow`). It does not cite any third-party scenario catalog.
 - The story's `Name` is original prose written by the OCTANE
   contributor.
@@ -124,7 +124,7 @@ The following are explicitly prohibited:
 The following are explicitly permitted:
 
 1. **Citing the OCPP specification by section.** `Spec-Ref:
-   OCPP-J 1.6 §6.40 ReserveNow` is a factual reference to public
+   OCPP-J 1.6 -6.40 ReserveNow` is a factual reference to public
    protocol documentation.
 2. **Independently authored test descriptions.** Two parties
    describing the same protocol behavior will arrive at similar

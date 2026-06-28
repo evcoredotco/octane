@@ -75,7 +75,7 @@ indented with exactly four spaces and uses the form `Key: value`.
 
 | Key          | Type             | Default          | Description |
 |--------------|------------------|------------------|-------------|
-| `Spec-Ref`   | free text        | (none)           | OCPP specification section reference (e.g. `OCPP 1.6 §B01 BootNotification`). Required for conformance stories; forbidden for helper stories. |
+| `Spec-Ref`   | free text        | (none)           | OCPP specification section reference (e.g. `OCPP 1.6 -B01 BootNotification`). Required for conformance stories; forbidden for helper stories. |
 | `Timeout`    | Go duration      | global default   | Per-step timeout (e.g. `30s`, `2m`). |
 | `Parameters` | CSV identifiers  | (none)           | Comma-separated list of parameter names that the story accepts from `octane.yml`. |
 | `Cache-TTL`  | Go duration      | 1h (helpers) / ∞ | Cache validity window for this story's result. |
@@ -91,7 +91,7 @@ indented with exactly four spaces and uses the form `Key: value`.
 Meta
     Name:      Boot notification accepted
     Id:        boot_notification_accepted
-    Spec-Ref:  OCPP 1.6 §B01 BootNotification
+    Spec-Ref:  OCPP 1.6 -B01 BootNotification
     Tags:      core, boot, wire-only
     Stations:  1
     Timeout:   30s
@@ -171,7 +171,7 @@ in step text with `{name}` syntax.
 Meta
     Name:       Connector reservation faulted
     Id:         connector_reservation_faulted
-    Spec-Ref:   OCPP-J 1.6 §6.40 ReserveNow
+    Spec-Ref:   OCPP-J 1.6 -6.40 ReserveNow
     Tags:       reservation, wire-only
     Stations:   1
     Parameters: connectorId, idTag

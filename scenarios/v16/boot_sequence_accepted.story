@@ -27,7 +27,7 @@
 Meta
     Name:        Cold boot sequence accepted
     Id:          boot_sequence_accepted
-    Spec-Ref:    OCPP-J 1.6 §6.5 BootNotification, §6.13 StatusNotification, §6.7 Heartbeat
+    Spec-Ref:    OCPP-J 1.6 -6.5 BootNotification, -6.13 StatusNotification, -6.7 Heartbeat
     Tags:        boot, lifecycle, wire-only
     Stations:    1
     Timeout:     90s

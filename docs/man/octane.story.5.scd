@@ -46,7 +46,7 @@ four spaces. Tabs are forbidden.
 	references from other stories.
 
 *Spec-Ref* (required for conformance tests, forbidden for helpers)
-	Format: *OCPP-<version> §<section> <message>*. Identifies the
+	Format: *OCPP-<version> -<section> <message>*. Identifies the
 	OCPP specification section the test derives from. Helper stories
 	tagged *helper* must omit this key; conformance stories must
 	include it.
