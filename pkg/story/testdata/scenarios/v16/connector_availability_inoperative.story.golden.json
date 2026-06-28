@@ -1,0 +1,100 @@
+{
+  "path": "../../scenarios/v16/connector_availability_inoperative.story",
+  "meta": {
+    "name": "Connector availability inoperative",
+    "id": "connector_availability_inoperative",
+    "specRef": "OCPP-J 1.6 §5.2 ChangeAvailability",
+    "tags": [
+      "connector",
+      "csms-initiated",
+      "wire-only"
+    ],
+    "stations": 1,
+    "timeout": 30000000000,
+    "parameters": [
+      "connectorId"
+    ],
+    "depends": [
+      {
+        "id": "connector_status_available",
+        "scope": 1,
+        "position": {
+          "line": 20,
+          "column": 7
+        }
+      }
+    ],
+    "position": {
+      "line": 11,
+      "column": 1
+    }
+  },
+  "background": [
+    {
+      "kind": 1,
+      "text": "the CSMS is reachable",
+      "position": {
+        "line": 24,
+        "column": 5
+      }
+    },
+    {
+      "kind": 4,
+      "text": "station \"CP01\" is registered to the CSMS",
+      "position": {
+        "line": 25,
+        "column": 5
+      }
+    }
+  ],
+  "setup": null,
+  "scenarios": [
+    {
+      "name": "CSMS changes connector availability to Inoperative; station accepts",
+      "steps": [
+        {
+          "kind": 2,
+          "text": "the CSMS sends ChangeAvailability with connectorId {connectorId}",
+          "position": {
+            "line": 28,
+            "column": 5
+          }
+        },
+        {
+          "kind": 6,
+          "text": "and type \"Inoperative\" to station \"CP01\" within 30 seconds",
+          "position": {
+            "line": 29,
+            "column": 11
+          }
+        },
+        {
+          "kind": 3,
+          "text": "station \"CP01\" responds to ChangeAvailability with status \"Accepted\"",
+          "position": {
+            "line": 30,
+            "column": 5
+          }
+        }
+      ],
+      "position": {
+        "line": 27,
+        "column": 1
+      }
+    }
+  ],
+  "teardown": [
+    {
+      "kind": 6,
+      "text": "Disconnect station \"CP01\"",
+      "position": {
+        "line": 33,
+        "column": 5
+      }
+    }
+  ],
+  "position": {
+    "line": 11,
+    "column": 1
+  }
+}
