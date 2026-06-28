@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
+	"github.com/evcoreco/octane/pkg/keywords/lifecycle"
 	"github.com/evcoreco/octane/pkg/keywords/primitive"
 	"github.com/spf13/cobra"
 )
@@ -95,6 +96,7 @@ for subcommand-specific documentation.`,
 // correct exit code. It is the public entry point called from main.
 func Execute() {
 	primitive.Register()
+	lifecycle.Register()
 
 	root := newRootCmd()
 

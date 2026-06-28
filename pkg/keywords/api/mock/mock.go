@@ -56,6 +56,10 @@ type State struct {
 
 	// scratch is the per-scenario key-value stash used by Stash/Pop.
 	scratch map[string]any
+
+	// csmsBaseURL is the mock CSMS base URL returned by [State.CSMSBaseURL].
+	// Set it via [State.SetCSMSBaseURL].
+	csmsBaseURL string
 }
 
 // NewMockState returns a ready-to-use *[State] with an empty station map,
@@ -166,6 +170,20 @@ func (s *State) Pop(key string) (any, bool) {
 	}
 
 	return val, ok
+}
+
+// CSMSBaseURL implements [api.State]. It returns the base WebSocket URL
+// configured via [State.SetCSMSBaseURL]. Returns an empty string when
+// not set, which causes lifecycle keywords to return a descriptive error.
+func (s *State) CSMSBaseURL() string {
+	return s.csmsBaseURL
+}
+
+// SetCSMSBaseURL sets the CSMS base URL returned by [State.CSMSBaseURL].
+// Call this in tests that exercise lifecycle keywords so they can resolve
+// the per-station WebSocket URL without a real runner config.
+func (s *State) SetCSMSBaseURL(url string) {
+	s.csmsBaseURL = url
 }
 
 // Logs returns a copy of all messages passed to [State.Logf] in the order
