@@ -1,10 +1,147 @@
-/* OCTANE website custom styles. Brand decisions deferred per ADR 0023. */
+/**
+ * OCTANE website theme — "terminal / engineering".
+ * Monospace-forward display type (IBM Plex Mono), readable body
+ * (IBM Plex Sans), an emerald phosphor accent, and restrained
+ * blueprint-grid motifs. Brand tokens (--octane-*) are shared with
+ * the homepage CSS module.
+ */
 
 :root {
-  --ifm-color-primary: #2e8555;
-  --ifm-code-font-size: 95%;
+  /* Emerald accent — deep enough for AA contrast on white. */
+  --ifm-color-primary: #047857;
+  --ifm-color-primary-dark: #04684c;
+  --ifm-color-primary-darker: #036245;
+  --ifm-color-primary-darkest: #02503a;
+  --ifm-color-primary-light: #058662;
+  --ifm-color-primary-lighter: #059669;
+  --ifm-color-primary-lightest: #0bb88a;
+
+  --ifm-font-family-base: 'IBM Plex Sans', system-ui, -apple-system,
+    'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --ifm-font-family-monospace: 'IBM Plex Mono', ui-monospace, SFMono-Regular,
+    'SF Mono', Menlo, Consolas, monospace;
+  --ifm-heading-font-family: 'IBM Plex Mono', var(--ifm-font-family-monospace);
+  --ifm-heading-font-weight: 600;
+
+  --ifm-code-font-size: 90%;
+  --ifm-code-border-radius: 6px;
+  --docusaurus-highlighted-code-line-bg: rgba(4, 120, 87, 0.12);
+
+  --ifm-navbar-height: 3.75rem;
+
+  /* Shared brand tokens. */
+  --octane-term-bg: #0b0f14;
+  --octane-term-panel: #0d1117;
+  --octane-term-border: rgba(255, 255, 255, 0.1);
+  --octane-grid-line: rgba(15, 23, 42, 0.05);
+  --octane-green: #10b981;
+  --octane-green-bright: #34d399;
+  --octane-term-comment: #6e7b8b;
+  --octane-term-string: #79c0ff;
+  --octane-term-amber: #d8a23a;
+  --octane-term-text: #c9d4e0;
+  --octane-mono: var(--ifm-font-family-monospace);
 }
 
 [data-theme='dark'] {
-  --ifm-color-primary: #25c2a0;
+  --ifm-color-primary: #2ee6a0;
+  --ifm-color-primary-dark: #1ed993;
+  --ifm-color-primary-darker: #16cf8b;
+  --ifm-color-primary-darkest: #11a972;
+  --ifm-color-primary-light: #4cecb0;
+  --ifm-color-primary-lighter: #5eefb9;
+  --ifm-color-primary-lightest: #8af4cd;
+
+  --ifm-background-color: #0b0f14;
+  --ifm-background-surface-color: #0e141b;
+  --docusaurus-highlighted-code-line-bg: rgba(46, 230, 160, 0.12);
+
+  --octane-grid-line: rgba(148, 163, 184, 0.06);
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tighter, more deliberate headings. */
+.markdown h1,
+h1 {
+  letter-spacing: -0.02em;
+}
+
+.markdown h2 {
+  letter-spacing: -0.01em;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--ifm-toc-border-color);
+  margin-top: 2.5rem;
+}
+
+/* Navbar: thin rule, slight blur, mono brand. */
+.navbar {
+  border-bottom: 1px solid var(--ifm-toc-border-color);
+  backdrop-filter: saturate(140%) blur(8px);
+  background-color: color-mix(in srgb, var(--ifm-navbar-background-color) 88%, transparent);
+}
+
+.navbar__title {
+  font-family: var(--ifm-font-family-monospace);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Inline code and code blocks. */
+code {
+  border: 1px solid var(--ifm-color-emphasis-200);
+  background-color: var(--ifm-color-emphasis-100);
+}
+
+.theme-code-block {
+  box-shadow: none;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 8px;
+}
+
+/* Tables read as spec-sheets. */
+.markdown table {
+  display: table;
+  width: 100%;
+}
+
+.markdown table thead tr {
+  border-bottom: 2px solid var(--ifm-table-border-color);
+}
+
+.markdown table th {
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.82rem;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--ifm-color-emphasis-700);
+}
+
+/* Admonitions: squared, engineering feel. */
+.theme-admonition {
+  border-radius: 8px;
+  border-left-width: 3px;
+}
+
+/* Sidebar category labels in mono. */
+.menu__list-item-collapsible .menu__link,
+.theme-doc-sidebar-item-category .menu__link--sublist {
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.86rem;
+}
+
+/* Footer brand. */
+.footer {
+  --ifm-footer-background-color: #0b0f14;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.footer__title {
+  font-family: var(--ifm-font-family-monospace);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  color: var(--octane-green-bright);
 }

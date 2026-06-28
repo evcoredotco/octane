@@ -8,9 +8,12 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Concepts',
+      collapsed: false,
       items: [
         'concepts/wire-conformance',
+        'concepts/architecture',
         'concepts/stories',
+        'concepts/dependency-graph',
         'concepts/profiles',
         'concepts/multi-station',
       ],
@@ -40,6 +43,8 @@ const sidebars: SidebarsConfig = {
         'reference/cli',
         'reference/config-schema',
         'reference/story-grammar',
+        'reference/keyword-catalog',
+        'reference/ocpp-coverage',
         'reference/exit-codes',
       ],
     },

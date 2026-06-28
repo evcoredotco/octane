@@ -1,0 +1,7 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OCTANE">
+  <rect width="32" height="32" rx="7" fill="#0b0f14"/>
+  <path d="M26.5 20.2 L20.2 26.5 L11.8 26.5 L5.5 20.2 L5.5 11.8 L11.8 5.5 L20.2 5.5 L26.5 11.8 Z"
+        stroke="#10b981" stroke-width="1.8" stroke-linejoin="round"/>
+  <path d="M8 16 H12.6 L14.5 10.5 L17.8 21.5 L19.7 16 H24"
+        stroke="#34d399" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
