@@ -8,17 +8,17 @@ interface without coupling to any specific WebSocket implementation.
 
 Two packages make up the wire engine:
 
-| Package              | Responsibility |
-|----------------------|----------------|
-| `pkg/transport`      | WebSocket dialling, TLS, subprotocol negotiation, frame I/O |
-| `pkg/wire`           | OCPP-J array parsing and serialization |
+| Package         | Responsibility                                              |
+|-----------------|-------------------------------------------------------------|
+| `pkg/transport` | WebSocket dialling, TLS, subprotocol negotiation, frame I/O |
+| `pkg/wire`      | OCPP-J array parsing and serialization                      |
 
 Two supporting packages provide determinism primitives:
 
-| Package              | Responsibility |
-|----------------------|----------------|
-| `pkg/engine/clock`   | Wall-clock abstraction (`Clock` interface) |
-| `pkg/engine/rand`    | Random-number abstraction (`Rand` interface) |
+| Package            | Responsibility                               |
+|--------------------|----------------------------------------------|
+| `pkg/engine/clock` | Wall-clock abstraction (`Clock` interface)   |
+| `pkg/engine/rand`  | Random-number abstraction (`Rand` interface) |
 
 ---
 
@@ -35,12 +35,12 @@ code (OCPP-J -3.4). Three frame types are relevant for station-side testing.
 
 Elements:
 
-| Index | Type   | Meaning |
-|-------|--------|---------|
-| 0     | number | `2` — message type code for CALL |
+| Index | Type   | Meaning                                                   |
+|-------|--------|-----------------------------------------------------------|
+| 0     | number | `2` — message type code for CALL                          |
 | 1     | string | `UniqueID` — correlation identifier chosen by the station |
 | 2     | string | `Action` — OCPP operation name, e.g. `"BootNotification"` |
-| 3     | object | `Payload` — operation-specific request body |
+| 3     | object | `Payload` — operation-specific request body               |
 
 ### CALLRESULT (type 3) — CSMS-to-station response
 
@@ -50,10 +50,10 @@ Elements:
 
 Elements:
 
-| Index | Type   | Meaning |
-|-------|--------|---------|
-| 0     | number | `3` — message type code for CALLRESULT |
-| 1     | string | `UniqueID` — matches the originating CALL |
+| Index | Type   | Meaning                                      |
+|-------|--------|----------------------------------------------|
+| 0     | number | `3` — message type code for CALLRESULT       |
+| 1     | string | `UniqueID` — matches the originating CALL    |
 | 2     | object | `Payload` — operation-specific response body |
 
 ### CALLERROR (type 4) — CSMS-to-station error
@@ -64,12 +64,12 @@ Elements:
 
 Elements:
 
-| Index | Type   | Meaning |
-|-------|--------|---------|
-| 0     | number | `4` — message type code for CALLERROR |
-| 1     | string | `UniqueID` — matches the originating CALL |
-| 2     | string | `ErrorCode` — OCPP-J error code, e.g. `"NotImplemented"` |
-| 3     | string | `ErrorDescription` — human-readable description |
+| Index | Type   | Meaning                                                   |
+|-------|--------|-----------------------------------------------------------|
+| 0     | number | `4` — message type code for CALLERROR                     |
+| 1     | string | `UniqueID` — matches the originating CALL                 |
+| 2     | string | `ErrorCode` — OCPP-J error code, e.g. `"NotImplemented"`  |
+| 3     | string | `ErrorDescription` — human-readable description           |
 | 4     | object | `Details` — optional additional context; `{}` when absent |
 
 The `pkg/wire` constants `MessageTypeCall`, `MessageTypeResult`, and
@@ -118,11 +118,11 @@ After `Dial` returns, cancelling that context has no effect on the live
 
 `Station` provides three methods:
 
-| Method  | Behaviour |
-|---------|-----------|
-| `Send`  | Encodes a `[]any` as a canonical OCPP-J JSON array and writes it to the WebSocket. Blocks until the frame is on the wire or the context is cancelled. |
-| `Expect` | Blocks until an inbound frame arrives, the context is cancelled, or the connection closes. Delivers frames in FIFO order. |
-| `Close` | Gracefully shuts down the connection. Safe to call more than once. |
+| Method   | Behaviour                                                                                                                                             |
+|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Send`   | Encodes a `[]any` as a canonical OCPP-J JSON array and writes it to the WebSocket. Blocks until the frame is on the wire or the context is cancelled. |
+| `Expect` | Blocks until an inbound frame arrives, the context is cancelled, or the connection closes. Delivers frames in FIFO order.                             |
+| `Close`  | Gracefully shuts down the connection. Safe to call more than once.                                                                                    |
 
 Both `Send` and `Expect` return `*transport.ErrStationClosed` if the station
 has already been closed.
@@ -186,13 +186,13 @@ principle IV.
 
 ## Error types
 
-| Type | Returned by | Cause |
-|------|-------------|-------|
-| `*transport.ErrSubprotocolMismatch` | `Dial` | CSMS selected a subprotocol not in `DialOptions.Subprotocols`, or omitted the response header |
-| `*transport.ErrTLSValidation` | `Dial` | TLS handshake failed (expired cert, untrusted CA, hostname mismatch); wraps the underlying x509/tls error |
-| `*transport.ErrFrameTooLarge` | `Station.Expect` | Inbound frame exceeded `DialOptions.MaxFrameBytes`; the connection remains open |
-| `*transport.ErrStationClosed` | `Station.Send`, `Station.Expect` | The station was already closed before the call |
-| `*wire.ErrFrameShape` | `ParseCall`, `ParseResult`, `ParseError` | Inbound JSON does not match the expected OCPP-J array shape |
+| Type                                | Returned by                              | Cause                                                                                                     |
+|-------------------------------------|------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| `*transport.ErrSubprotocolMismatch` | `Dial`                                   | CSMS selected a subprotocol not in `DialOptions.Subprotocols`, or omitted the response header             |
+| `*transport.ErrTLSValidation`       | `Dial`                                   | TLS handshake failed (expired cert, untrusted CA, hostname mismatch); wraps the underlying x509/tls error |
+| `*transport.ErrFrameTooLarge`       | `Station.Expect`                         | Inbound frame exceeded `DialOptions.MaxFrameBytes`; the connection remains open                           |
+| `*transport.ErrStationClosed`       | `Station.Send`, `Station.Expect`         | The station was already closed before the call                                                            |
+| `*wire.ErrFrameShape`               | `ParseCall`, `ParseResult`, `ParseError` | Inbound JSON does not match the expected OCPP-J array shape                                               |
 
 Use `errors.As` to inspect typed transport errors and access structured
 fields (e.g., `ErrSubprotocolMismatch.Requested`, `ErrTLSValidation.Cause`).
