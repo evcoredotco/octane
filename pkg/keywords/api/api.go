@@ -177,6 +177,16 @@ type State interface {
 	// [fmt.Sprintf] conventions. Log output appears in the
 	// run report under the step that produced it.
 	Logf(format string, args ...any)
+
+	// CSMSBaseURL returns the base WebSocket URL of the CSMS under test,
+	// as configured via --csms-endpoint or octane.yml. Lifecycle domain
+	// keywords construct per-station URLs by appending "/" + stationHandle
+	// to this value (e.g. "ws://localhost:9210" → "ws://localhost:9210/CP01").
+	//
+	// An empty string means no CSMS endpoint has been configured; lifecycle
+	// keywords must return a descriptive error in that case rather than
+	// attempting a connection.
+	CSMSBaseURL() string
 }
 
 // Func is the function signature every keyword author implements.

@@ -1,0 +1,15 @@
+# Connection profile for a locally running CitrineOS instance.
+#
+# Usage:
+#   docker compose -f citrineos-core/Server/docker-compose.yml up -d
+#   octane run --csms-endpoint ws://localhost:9210 scenarios/v16/
+#
+# The base WebSocket URL is the CSMS endpoint without a station path.
+# OCTANE appends /<stationHandle> for each station (e.g. /CP01).
+#
+# CitrineOS default ports:
+#   9210 — OCPP-J WebSocket
+#   8080 — REST/admin API (not used by OCTANE)
+
+csmsEndpoint: ws://localhost:9210
+ocppVersion: "1.6"

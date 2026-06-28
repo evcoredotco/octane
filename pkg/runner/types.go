@@ -167,4 +167,11 @@ type Config struct {
 	// through to the wire transport and the report emitter injects
 	// a banner-level finding (spec 006 AC7, constitution principle X).
 	InsecureSkipVerify bool
+
+	// CSMSEndpoint is the base WebSocket URL of the CSMS under test
+	// (e.g. "ws://localhost:9210"). Lifecycle domain keywords append
+	// "/" + stationHandle to construct per-station URLs. An empty string
+	// means no endpoint is configured; lifecycle keywords will return
+	// a descriptive error if they need it.
+	CSMSEndpoint string
 }
