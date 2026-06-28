@@ -12,7 +12,7 @@
 // [registry.Register]. Importing this package is sufficient to
 // activate the primitives; no further setup is required.
 //
-// # Connection primitives (spec 004 §10, items 1–3, 9–10)
+// # Connection primitives (spec 004 -10, items 1–3, 9–10)
 //
 //   - "open a WebSocket to {url:string} as station {station:string}"
 //   - "open a WebSocket to {url:string} as station {station:string}
@@ -21,7 +21,7 @@
 //   - "the connection on station {station:string} is open"
 //   - "the connection on station {station:string} is closed"
 //
-// # Send primitives (spec 004 §10, items 4–5)
+// # Send primitives (spec 004 -10, items 4–5)
 //
 //   - "send raw frame {frame:any} on station {station:string}"
 //   - "send raw bytes {bytes:string} on station {station:string}"
@@ -31,7 +31,7 @@
 // and is intended for negative-path conformance testing of malformed or
 // extension frames (spec 004 OQ1).
 //
-// # Expect primitives (spec 004 §10, items 6–7)
+// # Expect primitives (spec 004 -10, items 6–7)
 //
 //   - "expect any frame on station {station:string} within {timeout:duration}"
 //   - "expect a frame of type {messageType:int} on station
@@ -42,7 +42,7 @@
 // deadline elapses before a matching frame arrives, they return
 // [*TimeoutError].
 //
-// # Wait primitive (spec 004 §10, item 8)
+// # Wait primitive (spec 004 -10, item 8)
 //
 //   - "wait {duration:duration}"
 //

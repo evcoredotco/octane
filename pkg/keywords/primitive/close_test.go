@@ -1,5 +1,5 @@
 // Package primitive_test exercises the close primitive keyword
-// (spec 004 §10, item 3) against mock.MockState and mock.MockStation.
+// (spec 004 -10, item 3) against mock.MockState and mock.MockStation.
 //
 // Task: T-004-05
 // AC1: The close keyword's Func calls Close() on the station registered

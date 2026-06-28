@@ -32,7 +32,7 @@ const zeroTTLDuration = 0
 
 // resultEnvelope is the JSON structure persisted as result.json.
 // It wraps [Entry] fields with metadata required by ADR 0016
-// §"Result file schema".
+// -"Result file schema".
 //
 // The WrittenAt and TTLSeconds fields enable TTL invalidation
 // (spec 005 AC10) without storing a Go-specific duration type in
@@ -172,15 +172,15 @@ func readOptionalTrace(entryDir string) []byte {
 }
 
 // Put writes a cache entry for the given key using the atomic
-// temp-file-and-rename protocol defined in ADR 0016 §"Atomic
-// writes" and spec 005 §10:
+// temp-file-and-rename protocol defined in ADR 0016 -"Atomic
+// writes" and spec 005 -10:
 //
 //  1. Write result.json.tmp (fsync).
 //  2. Rename to result.json (atomic on POSIX).
 //  3. fsync the directory.
 //
 // If entry.Trace is non-nil, trace.json is written with the same
-// protocol before result.json, matching ADR 0016 §"Wire trace
+// protocol before result.json, matching ADR 0016 -"Wire trace
 // splitting".
 //
 // Callers are responsible for ensuring that entry.Result and
@@ -357,7 +357,7 @@ func atomicWriteFile(path string, data []byte) error {
 
 // fsyncDir opens dir and calls Sync() on it to flush the directory
 // entry to durable storage, completing the atomic-write protocol
-// for the directory itself (step 4 of spec 005 §10).
+// for the directory itself (step 4 of spec 005 -10).
 //
 // On platforms where directory Sync is unsupported (e.g. Windows),
 // the error from Sync is silently ignored to preserve

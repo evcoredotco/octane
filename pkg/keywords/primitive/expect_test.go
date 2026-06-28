@@ -1,5 +1,5 @@
 // Package primitive_test exercises the expect primitive keywords
-// (spec 004 §10, items 6–7) against mock.MockState and mock.MockStation.
+// (spec 004 -10, items 6–7) against mock.MockState and mock.MockStation.
 //
 // Task: T-004-14
 // AC3: "expect any frame on station {station:string} within {timeout:duration}"

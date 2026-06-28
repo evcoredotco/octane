@@ -119,7 +119,7 @@ func (v OCPPVersion) String() string {
 // The surface is intentionally minimal per ADR 0007. New methods
 // require an ADR amendment and reviewer approval.
 //
-// NOTE(spec-003): Spec 003 §10 proposes StashPendingCallId and
+// NOTE(spec-003): Spec 003 -10 proposes StashPendingCallId and
 // PopPendingCallId methods for the request/response keyword
 // pairing pattern. ADR 0007 does not include them. If adopted,
 // an ADR amendment must land first. See spec 003 OQ discussion.

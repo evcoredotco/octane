@@ -54,7 +54,7 @@ type Match struct {
 // eligible for the given ocppVersion and returns the first match in
 // resolution order.
 //
-// Resolution order (per ADR 0007 and plan 003 §4):
+// Resolution order (per ADR 0007 and plan 003 -4):
 //  1. Domain-layer keywords whose OCPPVersion equals ocppVersion, or
 //     whose OCPPVersion is the zero value (version-agnostic domain
 //     keyword), are preferred over primitive-layer keywords.
