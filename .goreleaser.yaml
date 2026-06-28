@@ -119,6 +119,61 @@ brews:
     test: |
       system "#{bin}/octane", "--version"
 
+dockers:
+  - id: octane-linux-amd64
+    goos: linux
+    goarch: amd64
+    image_templates:
+      - "ghcr.io/evcoreco/octane:{{ .Tag }}-amd64"
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.created={{ .CommitDate }}"
+      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+      - "--label=org.opencontainers.image.source=https://github.com/evcoreco/octane"
+      - "--label=org.opencontainers.image.licenses=Apache-2.0"
+
+  - id: octane-linux-arm64
+    goos: linux
+    goarch: arm64
+    image_templates:
+      - "ghcr.io/evcoreco/octane:{{ .Tag }}-arm64v8"
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/arm64/v8"
+      - "--label=org.opencontainers.image.created={{ .CommitDate }}"
+      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+      - "--label=org.opencontainers.image.source=https://github.com/evcoreco/octane"
+      - "--label=org.opencontainers.image.licenses=Apache-2.0"
+
+docker_manifests:
+  # Exact version tag — always pushed (except snapshots)
+  - name_template: "ghcr.io/evcoreco/octane:{{ .Tag }}"
+    image_templates:
+      - "ghcr.io/evcoreco/octane:{{ .Tag }}-amd64"
+      - "ghcr.io/evcoreco/octane:{{ .Tag }}-arm64v8"
+    skip_push: "{{ .IsSnapshot }}"
+
+  # major.minor floating tag — only for stable releases (no prerelease segment)
+  - name_template: "ghcr.io/evcoreco/octane:{{ .Major }}.{{ .Minor }}"
+    image_templates:
+      - "ghcr.io/evcoreco/octane:{{ .Tag }}-amd64"
+      - "ghcr.io/evcoreco/octane:{{ .Tag }}-arm64v8"
+    skip_push: "{{ if or .IsSnapshot .Prerelease }}true{{ else }}false{{ end }}"
+
+  # latest — only for stable releases
+  - name_template: "ghcr.io/evcoreco/octane:latest"
+    image_templates:
+      - "ghcr.io/evcoreco/octane:{{ .Tag }}-amd64"
+      - "ghcr.io/evcoreco/octane:{{ .Tag }}-arm64v8"
+    skip_push: "{{ if or .IsSnapshot .Prerelease }}true{{ else }}false{{ end }}"
+
 sboms:
   - artifacts: archive
 
