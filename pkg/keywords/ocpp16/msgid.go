@@ -16,8 +16,18 @@ import (
 // at 1 and increments with each call for the same station.
 func nextMsgID(state api.State, station, action string) string {
 	key := msgCounterKey(station)
-	anyVal, _ := state.Pop(key)
-	n, _ := anyVal.(int)
+	anyVal, exists := state.Pop(key)
+	n := noMessageCounter
+
+	if exists {
+		var ok bool
+
+		n, ok = anyVal.(int)
+		if !ok {
+			n = noMessageCounter
+		}
+	}
+
 	n++
 	state.Stash(key, n)
 

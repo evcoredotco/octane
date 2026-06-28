@@ -39,7 +39,7 @@ func cancelPendingNodes(
 			Findings: []Finding{
 				{
 					Message:  cancelMsg,
-					Severity: "error",
+					Severity: severityError,
 				},
 			},
 			Trace:      nil,

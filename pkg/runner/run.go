@@ -80,6 +80,9 @@ const noPendingCount = 0
 // config value, meaning sequential execution.
 const noParallel = 0
 
+// severityError is the report finding severity for execution errors.
+const severityError = "error"
+
 // nodeIDParts holds the two components decoded from a DAG node ID by
 // splitNodeID. Using a struct avoids the confusing-results linter
 // violation that arises when a function returns two unnamed strings.
@@ -667,7 +670,7 @@ func lockFailureResult(
 		Findings: []Finding{
 			{
 				Message:  "lock acquisition failed: " + lockErr.Error(),
-				Severity: "error",
+				Severity: severityError,
 			},
 		},
 		Trace:      nil,
@@ -905,29 +908,52 @@ func runPrereqSections(
 	findings *[]Finding,
 ) bool {
 	for _, dep := range storyAST.Meta.Depends {
-		prereqStory, ok := storyIdx[dep.ID]
-		if !ok {
-			continue
-		}
-
-		// Recurse into this prerequisite's own prerequisites first.
-		if failed := runPrereqSections(ctx, prereqStory, storyIdx, state, ocppVer, findings); failed {
+		if failed := runPrereqSection(ctx, dep.ID, storyIdx, state, ocppVer, findings); failed {
 			return true
 		}
+	}
 
-		// Run the prerequisite's Background, Setup, and Scenario steps.
-		if failed := runSteps(ctx, prereqStory.Background, state, ocppVer, findings); failed {
+	return false
+}
+
+func runPrereqSection(
+	ctx context.Context,
+	depID string,
+	storyIdx storyIndex,
+	state api.State,
+	ocppVer string,
+	findings *[]Finding,
+) bool {
+	prereqStory, ok := storyIdx[depID]
+	if !ok {
+		return false
+	}
+
+	if failed := runPrereqSections(ctx, prereqStory, storyIdx, state, ocppVer, findings); failed {
+		return true
+	}
+
+	if failed := runSteps(ctx, prereqStory.Background, state, ocppVer, findings); failed {
+		return true
+	}
+
+	if failed := runSteps(ctx, prereqStory.Setup, state, ocppVer, findings); failed {
+		return true
+	}
+
+	return runPrereqScenarios(ctx, prereqStory, state, ocppVer, findings)
+}
+
+func runPrereqScenarios(
+	ctx context.Context,
+	prereqStory *ast.Story,
+	state api.State,
+	ocppVer string,
+	findings *[]Finding,
+) bool {
+	for _, scenario := range prereqStory.Scenarios {
+		if failed := runSteps(ctx, scenario.Steps, state, ocppVer, findings); failed {
 			return true
-		}
-
-		if failed := runSteps(ctx, prereqStory.Setup, state, ocppVer, findings); failed {
-			return true
-		}
-
-		for _, scenario := range prereqStory.Scenarios {
-			if failed := runSteps(ctx, scenario.Steps, state, ocppVer, findings); failed {
-				return true
-			}
 		}
 	}
 

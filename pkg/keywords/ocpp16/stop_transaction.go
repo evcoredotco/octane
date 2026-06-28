@@ -25,7 +25,7 @@ func sendStopTransaction(
 	reason := args.String("reason")
 
 	if val, ok := state.Pop(transactionIDKey); ok {
-		if id, ok := val.(int); ok && id > 0 {
+		if id, ok := val.(int); ok && id > positiveTransactionIDBoundary {
 			transactionID = id
 		}
 	}
@@ -35,7 +35,7 @@ func sendStopTransaction(
 	payload := map[string]any{
 		"transactionId": transactionID,
 		"meterStop":     meterStop,
-		"timestamp":     state.Now().Format("2006-01-02T15:04:05Z"),
+		fieldTimestamp:  state.Now().Format(iso8601SecondFormat),
 		"reason":        reason,
 	}
 
@@ -76,7 +76,7 @@ func csmsAcceptsStopTransaction(
 		return errors.New("ocpp16: no pending StopTransaction; call sendStopTransaction first")
 	}
 
-	_, payload, err := expectResult(ctx, state, info.station, timeout)
+	payload, err := expectResult(ctx, state, info.station, timeout)
 	if err != nil {
 		return err
 	}
@@ -90,4 +90,3 @@ func csmsAcceptsStopTransaction(
 
 	return nil
 }
-

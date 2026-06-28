@@ -8,9 +8,10 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
+
+	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
 )
 
 const (

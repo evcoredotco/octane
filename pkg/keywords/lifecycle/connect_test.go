@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
+
 	"github.com/evcoreco/octane/pkg/keywords/api"
 	"github.com/evcoreco/octane/pkg/keywords/api/mock"
 	"github.com/evcoreco/octane/pkg/keywords/lifecycle"

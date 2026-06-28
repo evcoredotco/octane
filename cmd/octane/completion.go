@@ -3,8 +3,14 @@ package main
 import (
 	"os"
 
-	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
 	"github.com/spf13/cobra"
+
+	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
+)
+
+const (
+	shellBash = "bash"
+	shellZsh  = "zsh"
 )
 
 // newCompletionCmd constructs and returns the "octane completion" subcommand.
@@ -33,7 +39,7 @@ To load completions in the current shell session:
   PowerShell:
     octane completion powershell | Out-String | Invoke-Expression`,
 		Args:      cobra.ExactArgs(exactlyOneArg),
-		ValidArgs: []string{"bash", "zsh", "fish", "powershell"},
+		ValidArgs: []string{shellBash, shellZsh, "fish", "powershell"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return generateCompletion(cmd, args, root)
 		},
@@ -52,9 +58,9 @@ func generateCompletion(
 	var err error
 
 	switch shell {
-	case "bash":
+	case shellBash:
 		err = root.GenBashCompletion(os.Stdout)
-	case "zsh":
+	case shellZsh:
 		err = root.GenZshCompletion(os.Stdout)
 	case "fish":
 		err = root.GenFishCompletion(os.Stdout, true)

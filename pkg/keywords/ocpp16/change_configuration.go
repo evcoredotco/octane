@@ -23,12 +23,16 @@ func csmsEnqueuesChangeConfiguration(
 	station := args.String("station")
 	timeout := args.Duration("timeout")
 
-	uniqueID, payload, err := expectCSMSCall(ctx, state, station, "ChangeConfiguration", timeout)
+	uniqueID, payload, err := expectCSMSCall(ctx, state, station, actionChangeConfiguration, timeout)
 	if err != nil {
 		return err
 	}
 
-	gotKey, _ := payload["key"].(string)
+	gotKey, err := payloadString(payload, "key", actionChangeConfiguration)
+	if err != nil {
+		return err
+	}
+
 	if gotKey != key {
 		return fmt.Errorf(
 			"ocpp16: station %q: ChangeConfiguration key: want %q, got %q",
@@ -36,7 +40,11 @@ func csmsEnqueuesChangeConfiguration(
 		)
 	}
 
-	gotValue, _ := payload["value"].(string)
+	gotValue, err := payloadString(payload, "value", actionChangeConfiguration)
+	if err != nil {
+		return err
+	}
+
 	if gotValue != value {
 		return fmt.Errorf(
 			"ocpp16: station %q: ChangeConfiguration value: want %q, got %q",
@@ -44,7 +52,7 @@ func csmsEnqueuesChangeConfiguration(
 		)
 	}
 
-	state.Stash(csmsCallIDKey(station, "ChangeConfiguration"), uniqueID)
+	state.Stash(csmsCallIDKey(station, actionChangeConfiguration), uniqueID)
 
 	state.Logf(
 		"station %q received ChangeConfiguration CALL (uniqueID=%s, key=%q, value=%q)",
@@ -68,12 +76,12 @@ func stationRespondsToChangeConfiguration(
 	station := args.String("station")
 	status := args.String("status")
 
-	uniqueID, err := popCSMSCallID(state, station, "ChangeConfiguration")
+	uniqueID, err := popCSMSCallID(state, station, actionChangeConfiguration)
 	if err != nil {
 		return err
 	}
 
-	if err := sendCSMSResponse(ctx, state, station, uniqueID, map[string]any{"status": status}); err != nil {
+	if err := sendCSMSResponse(ctx, state, station, uniqueID, map[string]any{fieldStatus: status}); err != nil {
 		return err
 	}
 

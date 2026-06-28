@@ -22,12 +22,12 @@ func csmsEnqueuesGetConfiguration(
 	station := args.String("station")
 	timeout := args.Duration("timeout")
 
-	uniqueID, _, err := expectCSMSCall(ctx, state, station, "GetConfiguration", timeout)
+	uniqueID, _, err := expectCSMSCall(ctx, state, station, actionGetConfiguration, timeout)
 	if err != nil {
 		return err
 	}
 
-	state.Stash(csmsCallIDKey(station, "GetConfiguration"), uniqueID)
+	state.Stash(csmsCallIDKey(station, actionGetConfiguration), uniqueID)
 
 	state.Logf(
 		"station %q received GetConfiguration CALL (uniqueID=%s)",
@@ -51,13 +51,13 @@ func stationRespondsWithGetConfiguration(
 	station := args.String("station")
 	count := args.Int("count")
 
-	uniqueID, err := popCSMSCallID(state, station, "GetConfiguration")
+	uniqueID, err := popCSMSCallID(state, station, actionGetConfiguration)
 	if err != nil {
 		return err
 	}
 
 	keys := make([]any, count)
-	for i := 0; i < count; i++ {
+	for i := configKeyStartIndex; i < count; i++ {
 		keys[i] = map[string]any{
 			"key":      fmt.Sprintf("ConfigKey%d", i+1),
 			"readonly": false,

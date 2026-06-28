@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
+
 	"github.com/evcoreco/octane/pkg/keywords/api"
 	"github.com/evcoreco/octane/pkg/keywords/registry"
-	"github.com/spf13/cobra"
 )
 
 // ocppVersionAny is the zero value for api.OCPPVersion, meaning that

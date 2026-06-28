@@ -37,14 +37,14 @@ func csmsIsReachable(
 	return nil
 }
 
-// operatorProvisionedIdTag implements:
+// operatorProvisionedIDTag implements:
 //
 //	the operator has provisioned id token {idTag:string} with status {status:string}
 //
 // OCTANE cannot provision idTags over the wire (constitution principle XII).
 // This keyword is a documentation-only precondition that logs which idTag
 // the operator must have configured in the CSMS before the run.
-func operatorProvisionedIdTag(
+func operatorProvisionedIDTag(
 	_ context.Context,
 	state api.State,
 	args api.Args,

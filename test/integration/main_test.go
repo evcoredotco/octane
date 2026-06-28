@@ -1,7 +1,6 @@
 package integration_test
 
 import (
-	"os"
 	"testing"
 
 	"github.com/evcoreco/octane/pkg/keywords/lifecycle"
@@ -14,5 +13,5 @@ import (
 func TestMain(m *testing.M) {
 	primitive.Register()
 	lifecycle.Register()
-	os.Exit(m.Run())
+	m.Run()
 }

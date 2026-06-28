@@ -2,7 +2,6 @@ package ocpp16
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -27,37 +26,16 @@ func csmsEnqueuesReserveNow(
 	station := args.String("station")
 	timeout := args.Duration("timeout")
 
-	sv, err := state.Station(station)
+	uniqueID, callPayload, err := expectCSMSCall(ctx, state, station, actionReserveNow, timeout)
 	if err != nil {
-		return fmt.Errorf("ocpp16: station %q: not connected: %w", station, err)
+		return err
 	}
 
-	subCtx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
-	frame, err := sv.Expect(subCtx)
+	gotConnector, err := payloadNumber(callPayload, fieldConnectorID, actionReserveNow)
 	if err != nil {
-		return fmt.Errorf("ocpp16: station %q: expect ReserveNow CALL: %w", station, err)
+		return err
 	}
 
-	call, err := wire.ParseCall(frame)
-	if err != nil {
-		return fmt.Errorf("ocpp16: station %q: parse inbound CALL: %w", station, err)
-	}
-
-	if call.Action != "ReserveNow" {
-		return fmt.Errorf(
-			"ocpp16: station %q: expected ReserveNow CALL, got action %q",
-			station, call.Action,
-		)
-	}
-
-	var callPayload map[string]any
-	if err := json.Unmarshal(call.Payload, &callPayload); err != nil {
-		return fmt.Errorf("ocpp16: station %q: unmarshal ReserveNow payload: %w", station, err)
-	}
-
-	gotConnector, _ := callPayload["connectorId"].(float64)
 	if int(gotConnector) != connectorID {
 		return fmt.Errorf(
 			"ocpp16: station %q: ReserveNow connectorId: want %d, got %d",
@@ -65,7 +43,11 @@ func csmsEnqueuesReserveNow(
 		)
 	}
 
-	gotIDTag, _ := callPayload["idTag"].(string)
+	gotIDTag, err := payloadString(callPayload, fieldIDTag, actionReserveNow)
+	if err != nil {
+		return err
+	}
+
 	if gotIDTag != idTag {
 		return fmt.Errorf(
 			"ocpp16: station %q: ReserveNow idTag: want %q, got %q",
@@ -73,11 +55,11 @@ func csmsEnqueuesReserveNow(
 		)
 	}
 
-	state.Stash(reserveCallIDKey(station), call.UniqueID)
+	state.Stash(reserveCallIDKey(station), uniqueID)
 
 	state.Logf(
 		"station %q received ReserveNow CALL (uniqueID=%s, connector=%d, idTag=%q)",
-		station, call.UniqueID, connectorID, idTag,
+		station, uniqueID, connectorID, idTag,
 	)
 
 	return nil
@@ -106,17 +88,20 @@ func stationRespondsWithReserveNow(
 		)
 	}
 
-	uniqueID, _ := val.(string)
+	uniqueID, ok := val.(string)
+	if !ok {
+		return fmt.Errorf("ocpp16: station %q: ReserveNow uniqueID stash has unexpected type %T", station, val)
+	}
 
 	sv, err := state.Station(station)
 	if err != nil {
-		return fmt.Errorf("ocpp16: station %q: not connected: %w", station, err)
+		return fmt.Errorf(stationNotConnectedFormat, station, err)
 	}
 
 	frame := []any{
 		float64(wire.MessageTypeResult),
 		uniqueID,
-		map[string]any{"status": status},
+		map[string]any{fieldStatus: status},
 	}
 
 	if err := sv.Send(ctx, frame); err != nil {
@@ -155,14 +140,14 @@ func csmsAcceptsReserveResponse(
 		return errors.New("ocpp16: no pending ReserveNow.conf; call stationRespondsWithReserveNow first")
 	}
 
-	waiting, _ := val.(*reserveWaiting)
-	if waiting == nil {
+	waiting, ok := val.(*reserveWaiting)
+	if !ok || waiting == nil {
 		return errors.New("ocpp16: reserveWaiting stash has unexpected type")
 	}
 
 	sv, err := state.Station(waiting.station)
 	if err != nil {
-		return fmt.Errorf("ocpp16: station %q: not connected: %w", waiting.station, err)
+		return fmt.Errorf(stationNotConnectedFormat, waiting.station, err)
 	}
 
 	subCtx, cancel := context.WithTimeout(ctx, timeout)
@@ -171,16 +156,7 @@ func csmsAcceptsReserveResponse(
 	frame, err := sv.Expect(subCtx)
 	if err != nil {
 		// Timeout means the CSMS sent nothing — the reservation response was accepted.
-		if errors.Is(err, context.DeadlineExceeded) {
-			state.Logf(
-				"station %q: no CALLERROR within timeout (ReserveNow.conf accepted)",
-				waiting.station,
-			)
-
-			return nil
-		}
-
-		return fmt.Errorf("ocpp16: station %q: expect after ReserveNow.conf: %w", waiting.station, err)
+		return handleReserveExpectError(state, waiting.station, err)
 	}
 
 	// If the frame is a CALLERROR matching the pending uniqueID, the CSMS rejected
@@ -200,4 +176,17 @@ func csmsAcceptsReserveResponse(
 	)
 
 	return nil
+}
+
+func handleReserveExpectError(state api.State, station string, err error) error {
+	if errors.Is(err, context.DeadlineExceeded) {
+		state.Logf(
+			"station %q: no CALLERROR within timeout (ReserveNow.conf accepted)",
+			station,
+		)
+
+		return nil
+	}
+
+	return fmt.Errorf("ocpp16: station %q: expect after ReserveNow.conf: %w", station, err)
 }

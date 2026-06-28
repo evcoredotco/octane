@@ -22,12 +22,16 @@ func csmsEnqueuesUnlockConnector(
 	station := args.String("station")
 	timeout := args.Duration("timeout")
 
-	uniqueID, payload, err := expectCSMSCall(ctx, state, station, "UnlockConnector", timeout)
+	uniqueID, payload, err := expectCSMSCall(ctx, state, station, actionUnlockConnector, timeout)
 	if err != nil {
 		return err
 	}
 
-	gotConnector, _ := payload["connectorId"].(float64)
+	gotConnector, err := payloadNumber(payload, fieldConnectorID, actionUnlockConnector)
+	if err != nil {
+		return err
+	}
+
 	if int(gotConnector) != connectorID {
 		return fmt.Errorf(
 			"ocpp16: station %q: UnlockConnector connectorId: want %d, got %d",
@@ -35,7 +39,7 @@ func csmsEnqueuesUnlockConnector(
 		)
 	}
 
-	state.Stash(csmsCallIDKey(station, "UnlockConnector"), uniqueID)
+	state.Stash(csmsCallIDKey(station, actionUnlockConnector), uniqueID)
 
 	state.Logf(
 		"station %q received UnlockConnector CALL (uniqueID=%s, connector=%d)",
@@ -59,12 +63,12 @@ func stationRespondsToUnlockConnector(
 	station := args.String("station")
 	status := args.String("status")
 
-	uniqueID, err := popCSMSCallID(state, station, "UnlockConnector")
+	uniqueID, err := popCSMSCallID(state, station, actionUnlockConnector)
 	if err != nil {
 		return err
 	}
 
-	if err := sendCSMSResponse(ctx, state, station, uniqueID, map[string]any{"status": status}); err != nil {
+	if err := sendCSMSResponse(ctx, state, station, uniqueID, map[string]any{fieldStatus: status}); err != nil {
 		return err
 	}
 
