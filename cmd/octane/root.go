@@ -6,6 +6,7 @@ import (
 
 	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
 	"github.com/evcoreco/octane/pkg/keywords/lifecycle"
+	"github.com/evcoreco/octane/pkg/keywords/ocpp16"
 	"github.com/evcoreco/octane/pkg/keywords/primitive"
 	"github.com/spf13/cobra"
 )
@@ -97,6 +98,7 @@ for subcommand-specific documentation.`,
 func Execute() {
 	primitive.Register()
 	lifecycle.Register()
+	ocpp16.Register()
 
 	root := newRootCmd()
 
