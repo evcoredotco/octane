@@ -34,21 +34,21 @@ func sendBootNotification(
 	station := args.String("station")
 	reason := args.String("reason")
 
-	msgID := nextMsgID(state, station, "BootNotification")
+	msgID := nextMsgID(state, station, actionBootNotification)
 
 	payload := map[string]any{
 		"chargePointVendor": "EVCore",
 		"chargePointModel":  "OCTANE",
 	}
 
-	if err := sendCall(ctx, state, station, msgID, "BootNotification", payload); err != nil {
+	if err := sendCall(ctx, state, station, msgID, actionBootNotification, payload); err != nil {
 		return err
 	}
 
 	state.Stash(pendingKey, &pendingInfo{
 		station: station,
 		msgID:   msgID,
-		action:  "BootNotification",
+		action:  actionBootNotification,
 	})
 
 	state.Logf("station %q sent BootNotification (reason=%q, msgID=%s)", station, reason, msgID)
@@ -78,12 +78,16 @@ func csmsRespondsWithStatus(
 		return errors.New("ocpp16: no pending BootNotification; call sendBootNotification first")
 	}
 
-	_, payload, err := expectResult(ctx, state, info.station, timeout)
+	payload, err := expectResult(ctx, state, info.station, timeout)
 	if err != nil {
 		return err
 	}
 
-	gotStatus, _ := payload["status"].(string)
+	gotStatus, err := payloadString(payload, fieldStatus, "BootNotification.conf")
+	if err != nil {
+		return err
+	}
+
 	if gotStatus != expectedStatus {
 		return fmt.Errorf(
 			"ocpp16: station %q: BootNotification.conf status: want %q, got %q",
@@ -93,7 +97,7 @@ func csmsRespondsWithStatus(
 
 	state.Stash(lastPayloadKey, payload)
 
-	if info.action == "BootNotification" && gotStatus == "Accepted" {
+	if info.action == actionBootNotification && gotStatus == statusAccepted {
 		state.Stash(registeredKey(info.station), true)
 	}
 
@@ -140,8 +144,8 @@ func responseIncludesHeartbeatInterval(
 	state api.State,
 	args api.Args,
 ) error {
-	min := args.Int("min")
-	max := args.Int("max")
+	minInterval := args.Int("min")
+	maxInterval := args.Int("max")
 
 	payload, ok := peekPayload(state)
 	if !ok {
@@ -162,10 +166,10 @@ func responseIncludesHeartbeatInterval(
 	}
 
 	intVal := int(interval)
-	if intVal < min || intVal > max {
+	if intVal < minInterval || intVal > maxInterval {
 		return fmt.Errorf(
 			"ocpp16: heartbeatInterval %d not in [%d, %d]",
-			intVal, min, max,
+			intVal, minInterval, maxInterval,
 		)
 	}
 

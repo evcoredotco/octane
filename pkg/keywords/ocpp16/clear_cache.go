@@ -21,12 +21,12 @@ func csmsEnqueuesClearCache(
 	station := args.String("station")
 	timeout := args.Duration("timeout")
 
-	uniqueID, _, err := expectCSMSCall(ctx, state, station, "ClearCache", timeout)
+	uniqueID, _, err := expectCSMSCall(ctx, state, station, actionClearCache, timeout)
 	if err != nil {
 		return err
 	}
 
-	state.Stash(csmsCallIDKey(station, "ClearCache"), uniqueID)
+	state.Stash(csmsCallIDKey(station, actionClearCache), uniqueID)
 
 	state.Logf(
 		"station %q received ClearCache CALL (uniqueID=%s)",
@@ -49,12 +49,12 @@ func stationRespondsToClearCache(
 	station := args.String("station")
 	status := args.String("status")
 
-	uniqueID, err := popCSMSCallID(state, station, "ClearCache")
+	uniqueID, err := popCSMSCallID(state, station, actionClearCache)
 	if err != nil {
 		return err
 	}
 
-	if err := sendCSMSResponse(ctx, state, station, uniqueID, map[string]any{"status": status}); err != nil {
+	if err := sendCSMSResponse(ctx, state, station, uniqueID, map[string]any{fieldStatus: status}); err != nil {
 		return err
 	}
 

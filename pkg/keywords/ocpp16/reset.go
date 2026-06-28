@@ -22,12 +22,16 @@ func csmsEnqueuesReset(
 	station := args.String("station")
 	timeout := args.Duration("timeout")
 
-	uniqueID, payload, err := expectCSMSCall(ctx, state, station, "Reset", timeout)
+	uniqueID, payload, err := expectCSMSCall(ctx, state, station, actionReset, timeout)
 	if err != nil {
 		return err
 	}
 
-	gotType, _ := payload["type"].(string)
+	gotType, err := payloadString(payload, "type", actionReset)
+	if err != nil {
+		return err
+	}
+
 	if gotType != resetType {
 		return fmt.Errorf(
 			"ocpp16: station %q: Reset type: want %q, got %q",
@@ -35,7 +39,7 @@ func csmsEnqueuesReset(
 		)
 	}
 
-	state.Stash(csmsCallIDKey(station, "Reset"), uniqueID)
+	state.Stash(csmsCallIDKey(station, actionReset), uniqueID)
 
 	state.Logf(
 		"station %q received Reset CALL (uniqueID=%s, type=%q)",
@@ -58,12 +62,12 @@ func stationRespondsToReset(
 	station := args.String("station")
 	status := args.String("status")
 
-	uniqueID, err := popCSMSCallID(state, station, "Reset")
+	uniqueID, err := popCSMSCallID(state, station, actionReset)
 	if err != nil {
 		return err
 	}
 
-	if err := sendCSMSResponse(ctx, state, station, uniqueID, map[string]any{"status": status}); err != nil {
+	if err := sendCSMSResponse(ctx, state, station, uniqueID, map[string]any{fieldStatus: status}); err != nil {
 		return err
 	}
 

@@ -24,12 +24,16 @@ func csmsEnqueuesRemoteStart(
 	station := args.String("station")
 	timeout := args.Duration("timeout")
 
-	uniqueID, payload, err := expectCSMSCall(ctx, state, station, "RemoteStartTransaction", timeout)
+	uniqueID, payload, err := expectCSMSCall(ctx, state, station, actionRemoteStartTransaction, timeout)
 	if err != nil {
 		return err
 	}
 
-	gotConnector, _ := payload["connectorId"].(float64)
+	gotConnector, err := payloadNumber(payload, fieldConnectorID, actionRemoteStartTransaction)
+	if err != nil {
+		return err
+	}
+
 	if int(gotConnector) != connectorID {
 		return fmt.Errorf(
 			"ocpp16: station %q: RemoteStartTransaction connectorId: want %d, got %d",
@@ -37,7 +41,11 @@ func csmsEnqueuesRemoteStart(
 		)
 	}
 
-	gotIDTag, _ := payload["idTag"].(string)
+	gotIDTag, err := payloadString(payload, fieldIDTag, actionRemoteStartTransaction)
+	if err != nil {
+		return err
+	}
+
 	if gotIDTag != idTag {
 		return fmt.Errorf(
 			"ocpp16: station %q: RemoteStartTransaction idTag: want %q, got %q",
@@ -45,7 +53,7 @@ func csmsEnqueuesRemoteStart(
 		)
 	}
 
-	state.Stash(csmsCallIDKey(station, "RemoteStartTransaction"), uniqueID)
+	state.Stash(csmsCallIDKey(station, actionRemoteStartTransaction), uniqueID)
 
 	state.Logf(
 		"station %q received RemoteStartTransaction CALL (uniqueID=%s, connector=%d, idTag=%q)",
@@ -69,12 +77,12 @@ func stationRespondsToRemoteStart(
 	station := args.String("station")
 	status := args.String("status")
 
-	uniqueID, err := popCSMSCallID(state, station, "RemoteStartTransaction")
+	uniqueID, err := popCSMSCallID(state, station, actionRemoteStartTransaction)
 	if err != nil {
 		return err
 	}
 
-	if err := sendCSMSResponse(ctx, state, station, uniqueID, map[string]any{"status": status}); err != nil {
+	if err := sendCSMSResponse(ctx, state, station, uniqueID, map[string]any{fieldStatus: status}); err != nil {
 		return err
 	}
 

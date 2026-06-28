@@ -25,10 +25,10 @@ func sendMeterValues(
 	msgID := nextMsgID(state, station, "MeterValues")
 
 	payload := map[string]any{
-		"connectorId": connectorID,
+		fieldConnectorID: connectorID,
 		"meterValue": []any{
 			map[string]any{
-				"timestamp": state.Now().Format("2006-01-02T15:04:05Z"),
+				fieldTimestamp: state.Now().Format(iso8601SecondFormat),
 				"sampledValue": []any{
 					map[string]any{"value": value, "unit": "Wh"},
 				},
@@ -72,7 +72,7 @@ func csmsAcknowledgesMeterValues(
 		return errors.New("ocpp16: no pending MeterValues; call sendMeterValues first")
 	}
 
-	_, payload, err := expectResult(ctx, state, info.station, timeout)
+	payload, err := expectResult(ctx, state, info.station, timeout)
 	if err != nil {
 		return err
 	}

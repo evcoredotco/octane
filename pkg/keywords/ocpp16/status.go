@@ -21,16 +21,16 @@ func sendStatusNotification(
 	args api.Args,
 ) error {
 	station := args.String("station")
-	connectorID := args.Int("connectorId")
+	connectorID := args.Int(fieldConnectorID)
 	status := args.String("status")
 
 	msgID := nextMsgID(state, station, "StatusNotification")
 
 	payload := map[string]any{
-		"connectorId": connectorID,
-		"errorCode":   "NoError",
-		"status":      status,
-		"timestamp":   state.Now().Format("2006-01-02T15:04:05Z"),
+		fieldConnectorID: connectorID,
+		"errorCode":      "NoError",
+		fieldStatus:      status,
+		fieldTimestamp:   state.Now().Format(iso8601SecondFormat),
 	}
 
 	if err := sendCall(ctx, state, station, msgID, "StatusNotification", payload); err != nil {
@@ -76,7 +76,7 @@ func csmsAcknowledgesStatus(
 		return errors.New("ocpp16: no pending StatusNotification; call sendStatusNotification first")
 	}
 
-	_, payload, err := expectResult(ctx, state, info.station, timeout)
+	payload, err := expectResult(ctx, state, info.station, timeout)
 	if err != nil {
 		return err
 	}
@@ -120,7 +120,14 @@ func connectorIsInState(
 	// Re-stash so subsequent checks in the same scenario still see the value.
 	s.Stash(key, val)
 
-	gotState, _ := val.(string)
+	gotState, ok := val.(string)
+	if !ok {
+		return fmt.Errorf(
+			"ocpp16: connector %d of station %q: state stash has unexpected type %T",
+			connectorID, station, val,
+		)
+	}
+
 	if gotState != expectedState {
 		return fmt.Errorf(
 			"ocpp16: connector %d of station %q: want state %q, got %q",

@@ -23,12 +23,16 @@ func csmsEnqueuesCancelReservation(
 	station := args.String("station")
 	timeout := args.Duration("timeout")
 
-	uniqueID, payload, err := expectCSMSCall(ctx, state, station, "CancelReservation", timeout)
+	uniqueID, payload, err := expectCSMSCall(ctx, state, station, actionCancelReservation, timeout)
 	if err != nil {
 		return err
 	}
 
-	gotResID, _ := payload["reservationId"].(float64)
+	gotResID, err := payloadNumber(payload, "reservationId", actionCancelReservation)
+	if err != nil {
+		return err
+	}
+
 	if int(gotResID) != reservationID {
 		return fmt.Errorf(
 			"ocpp16: station %q: CancelReservation reservationId: want %d, got %d",
@@ -36,7 +40,7 @@ func csmsEnqueuesCancelReservation(
 		)
 	}
 
-	state.Stash(csmsCallIDKey(station, "CancelReservation"), uniqueID)
+	state.Stash(csmsCallIDKey(station, actionCancelReservation), uniqueID)
 
 	state.Logf(
 		"station %q received CancelReservation CALL (uniqueID=%s, reservationId=%d)",
@@ -60,12 +64,12 @@ func stationRespondsToCancelReservation(
 	station := args.String("station")
 	status := args.String("status")
 
-	uniqueID, err := popCSMSCallID(state, station, "CancelReservation")
+	uniqueID, err := popCSMSCallID(state, station, actionCancelReservation)
 	if err != nil {
 		return err
 	}
 
-	if err := sendCSMSResponse(ctx, state, station, uniqueID, map[string]any{"status": status}); err != nil {
+	if err := sendCSMSResponse(ctx, state, station, uniqueID, map[string]any{fieldStatus: status}); err != nil {
 		return err
 	}
 

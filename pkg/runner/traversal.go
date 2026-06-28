@@ -207,7 +207,7 @@ func (ss *schedulerState) skipDependents(
 				{
 					Message: "skipped: prerequisite " +
 						originResult.TestID + " failed",
-					Severity: "error",
+					Severity: severityError,
 				},
 			},
 			Trace:      nil,

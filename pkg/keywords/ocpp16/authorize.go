@@ -63,7 +63,7 @@ func csmsRespondsToAuthorize(
 		return errors.New("ocpp16: no pending Authorize; call sendAuthorize first")
 	}
 
-	_, payload, err := expectResult(ctx, state, info.station, timeout)
+	payload, err := expectResult(ctx, state, info.station, timeout)
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,11 @@ func csmsRespondsToAuthorize(
 		)
 	}
 
-	gotStatus, _ := tagInfo["status"].(string)
+	gotStatus, err := payloadString(tagInfo, fieldStatus, "Authorize.conf idTagInfo")
+	if err != nil {
+		return err
+	}
+
 	if gotStatus != expectedStatus {
 		return fmt.Errorf(
 			"ocpp16: station %q: Authorize.conf idTagInfo.status: want %q, got %q",

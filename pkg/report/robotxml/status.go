@@ -8,7 +8,10 @@ import (
 
 // robotTimeLayout is the Robot Framework datetime format.
 // Example: "20260426 08:00:01.000"
-const robotTimeLayout = "20060102 15:04:05.000"
+const (
+	robotStatusPass = "PASS"
+	robotTimeLayout = "20060102 15:04:05.000"
+)
 
 // statusString maps an OCTANE story status string to the Robot Framework
 // status attribute value. "passed" → "PASS", "failed" → "FAIL",
@@ -16,7 +19,7 @@ const robotTimeLayout = "20060102 15:04:05.000"
 func statusString(status string) string {
 	switch status {
 	case "passed":
-		return "PASS"
+		return robotStatusPass
 	case "failed":
 		return "FAIL"
 	case "skipped":
@@ -35,7 +38,7 @@ func suiteStatus(stories []model.StoryReport) string {
 		}
 	}
 
-	return "PASS"
+	return robotStatusPass
 }
 
 // robotTime formats a time.Time value for Robot Framework datetime fields.
