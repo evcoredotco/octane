@@ -31,13 +31,13 @@ the OCPP-J wire trace as `trace.json`.
 
 The cache lives at:
 
-```
+```txt
 $XDG_CACHE_HOME/octane/cache/
 ```
 
 When `XDG_CACHE_HOME` is not set, OCTANE falls back to:
 
-```
+```txt
 ~/.cache/octane/cache/
 ```
 
@@ -47,7 +47,7 @@ Override the location with the `OCTANE_CACHE_DIR` environment variable or the
 Inside the cache root, entries are stored under a two-character fanout
 directory that matches the first two hex characters of the key hash:
 
-```
+```txt
 <cache-dir>/results/<ab>/<abcdef...>/result.json
 <cache-dir>/results/<ab>/<abcdef...>/trace.json   # when trace is present
 ```
@@ -116,7 +116,7 @@ all entries.
 `--shard N/M` distributes stories across M parallel CI jobs. Job N (zero-
 based) runs only stories where:
 
-```
+```txt
 binary.BigEndian.Uint64(sha256(test_id)[:8]) % M == N
 ```
 

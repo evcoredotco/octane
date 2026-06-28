@@ -16,7 +16,7 @@ the resolver emits.
 OCTANE organizes keywords into exactly two layers (ADR 0007; constitution
 principle XII):
 
-```
+```txt
 Layer 2  Domain keywords    pkg/keywords/domain/v16/
                             pkg/keywords/domain/
                             pkg/keywords/domain/v21/
@@ -88,21 +88,21 @@ the step text that can be coerced to the declared type.
 
 Patterns are strings containing literal text and typed placeholders:
 
-```
+```txt
 station {station:station} sends BootNotification with reason {reason:string}
 ```
 
 ### Supported types
 
-| Type       | Go type         | Accepts in step text |
-|------------|-----------------|----------------------|
-| `string`   | `string`        | any whitespace-delimited token |
-| `int`      | `int`           | base-10 integer (no fraction) |
-| `float`    | `float64`       | decimal number |
-| `bool`     | `bool`          | `true` or `false` (case-insensitive) |
-| `duration` | `time.Duration` | Go duration string: `30s`, `1m30s`, `500ms` |
+| Type       | Go type         | Accepts in step text                                                                             |
+|------------|-----------------|--------------------------------------------------------------------------------------------------|
+| `string`   | `string`        | any whitespace-delimited token                                                                   |
+| `int`      | `int`           | base-10 integer (no fraction)                                                                    |
+| `float`    | `float64`       | decimal number                                                                                   |
+| `bool`     | `bool`          | `true` or `false` (case-insensitive)                                                             |
+| `duration` | `time.Duration` | Go duration string: `30s`, `1m30s`, `500ms`                                                      |
 | `station`  | `string`        | station handle; semantically distinct from `string` — the resolver can validate handle existence |
-| `any`      | `string`        | any token, stored as a raw string without further coercion |
+| `any`      | `string`        | any token, stored as a raw string without further coercion                                       |
 
 ### Rules
 

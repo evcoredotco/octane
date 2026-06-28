@@ -3,7 +3,7 @@
 OCTANE writes two report files at the end of every `octane run` invocation.
 Both files are placed under a run-specific subdirectory:
 
-```
+```txt
 <report-dir>/<run-id>/
   octane.json   — OCTANE-native JSON report
   output.xml    — Robot Framework 7.x output.xml
@@ -22,43 +22,43 @@ written with 2-space indentation and uses `schema_version: 1`.
 
 ### Top-level fields
 
-| Field            | Type     | Description                                                          |
-|------------------|----------|----------------------------------------------------------------------|
-| `schema_version` | integer  | Always `1` for this generation of the report format.                |
-| `octane_version` | string   | Version string of the `octane` binary; `"dev"` in local builds.     |
-| `run_id`         | string   | ULID for this run.                                                   |
-| `started_at`     | string   | RFC 3339 timestamp when the run began.                               |
-| `finished_at`    | string   | RFC 3339 timestamp when the run completed.                           |
-| `summary`        | object   | Aggregate counts (see below).                                        |
-| `stories`        | array    | Per-story results sorted by `(test_id, scope_key)`.                  |
+| Field            | Type    | Description                                                     |
+|------------------|---------|-----------------------------------------------------------------|
+| `schema_version` | integer | Always `1` for this generation of the report format.            |
+| `octane_version` | string  | Version string of the `octane` binary; `"dev"` in local builds. |
+| `run_id`         | string  | ULID for this run.                                              |
+| `started_at`     | string  | RFC 3339 timestamp when the run began.                          |
+| `finished_at`    | string  | RFC 3339 timestamp when the run completed.                      |
+| `summary`        | object  | Aggregate counts (see below).                                   |
+| `stories`        | array   | Per-story results sorted by `(test_id, scope_key)`.             |
 
 ### `summary` object
 
-| Field        | Type    | Description                                        |
-|--------------|---------|----------------------------------------------------|
-| `total`      | integer | Total stories in the resolved dependency graph.    |
-| `passed`     | integer | Stories that passed.                               |
-| `failed`     | integer | Stories that failed.                               |
-| `skipped`    | integer | Stories skipped due to a prerequisite failure.     |
-| `cache_hits` | integer | Stories served from the result cache.              |
+| Field        | Type    | Description                                     |
+|--------------|---------|-------------------------------------------------|
+| `total`      | integer | Total stories in the resolved dependency graph. |
+| `passed`     | integer | Stories that passed.                            |
+| `failed`     | integer | Stories that failed.                            |
+| `skipped`    | integer | Stories skipped due to a prerequisite failure.  |
+| `cache_hits` | integer | Stories served from the result cache.           |
 
 ### `stories` array entries
 
-| Field           | Type    | Description                                                           |
-|-----------------|---------|-----------------------------------------------------------------------|
-| `test_id`       | string  | Stable snake_case identifier of the story.                            |
-| `scope_key`     | string  | Execution scope instance (station handle or run-ID).                  |
-| `ocpp_version`  | string  | OCPP version declared by the story.                                   |
-| `status`        | string  | `"passed"`, `"failed"`, or `"skipped"`.                               |
-| `cache_status`  | string  | `"hit-pass"`, `"hit-skip"`, `"miss"`, or `"bypassed"`.               |
-| `started_at`    | string  | RFC 3339 story start time.                                            |
-| `finished_at`   | string  | RFC 3339 story end time.                                              |
-| `duration_ms`   | integer | Execution duration in milliseconds.                                   |
-| `findings`      | array   | Diagnostic messages; sorted by `(severity desc, message asc)`.       |
-| `trace_present` | boolean | `true` when wire trace data was captured for this story.              |
-| `trace`         | object  | Wire-level OCPP-J frames; omitted when `trace_present` is `false`.    |
-| `cause`         | string  | Prerequisite whose failure triggered a skip (empty otherwise).        |
-| `cause_chain`   | array   | Transitive chain of prerequisite failures (empty otherwise).          |
+| Field           | Type    | Description                                                        |
+|-----------------|---------|--------------------------------------------------------------------|
+| `test_id`       | string  | Stable snake_case identifier of the story.                         |
+| `scope_key`     | string  | Execution scope instance (station handle or run-ID).               |
+| `ocpp_version`  | string  | OCPP version declared by the story.                                |
+| `status`        | string  | `"passed"`, `"failed"`, or `"skipped"`.                            |
+| `cache_status`  | string  | `"hit-pass"`, `"hit-skip"`, `"miss"`, or `"bypassed"`.             |
+| `started_at`    | string  | RFC 3339 story start time.                                         |
+| `finished_at`   | string  | RFC 3339 story end time.                                           |
+| `duration_ms`   | integer | Execution duration in milliseconds.                                |
+| `findings`      | array   | Diagnostic messages; sorted by `(severity desc, message asc)`.     |
+| `trace_present` | boolean | `true` when wire trace data was captured for this story.           |
+| `trace`         | object  | Wire-level OCPP-J frames; omitted when `trace_present` is `false`. |
+| `cause`         | string  | Prerequisite whose failure triggered a skip (empty otherwise).     |
+| `cause_chain`   | array   | Transitive chain of prerequisite failures (empty otherwise).       |
 
 ### Realistic example
 
@@ -186,13 +186,13 @@ do not need to enumerate credential field names.
 The following HTTP headers are redacted wherever they appear in captured
 frames:
 
-| Header name            |
-|------------------------|
-| `Authorization`        |
-| `Cookie`               |
-| `Set-Cookie`           |
-| `X-Api-Key`            |
-| `Proxy-Authorization`  |
+| Header name           |
+|-----------------------|
+| `Authorization`       |
+| `Cookie`              |
+| `Set-Cookie`          |
+| `X-Api-Key`           |
+| `Proxy-Authorization` |
 
 Header name matching is case-insensitive. Any header not in this list passes
 through unmodified.
