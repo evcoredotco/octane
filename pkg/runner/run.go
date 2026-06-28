@@ -108,17 +108,25 @@ type runnerState struct {
 
 	// logLines accumulates log output from api.State.Logf.
 	logLines []string
+
+	// csmsBaseURL is the base WebSocket URL of the CSMS under test,
+	// sourced from Config.CSMSEndpoint. Exposed via CSMSBaseURL() to
+	// lifecycle domain keywords.
+	csmsBaseURL string
 }
 
 // newRunnerState creates a fresh runnerState backed by the given
-// clock. The clock must be non-nil; use clock.Real() in production.
-func newRunnerState(clk clock.Clock) *runnerState {
+// clock and CSMS base URL. The clock must be non-nil; use clock.Real()
+// in production. csmsBaseURL may be empty if no CSMS endpoint is
+// configured (lifecycle keywords will return a descriptive error).
+func newRunnerState(clk clock.Clock, csmsBaseURL string) *runnerState {
 	return &runnerState{
-		mu:       sync.Mutex{},
-		stations: make(map[string]api.Station),
-		clk:      clk,
-		stash:    make(map[string]any),
-		logLines: nil,
+		mu:          sync.Mutex{},
+		stations:    make(map[string]api.Station),
+		clk:         clk,
+		stash:       make(map[string]any),
+		logLines:    nil,
+		csmsBaseURL: csmsBaseURL,
 	}
 }
 
@@ -195,6 +203,12 @@ func (rs *runnerState) Logf(format string, args ...any) {
 	defer rs.mu.Unlock()
 
 	rs.logLines = append(rs.logLines, fmt.Sprintf(format, args...))
+}
+
+// CSMSBaseURL implements api.State. It returns the base WebSocket URL of
+// the CSMS under test, as sourced from Config.CSMSEndpoint at run time.
+func (rs *runnerState) CSMSBaseURL() string {
+	return rs.csmsBaseURL
 }
 
 // Run is the single public entry point for the runner.
@@ -750,7 +764,7 @@ func executeStory(
 	cfg Config,
 	clk clock.Clock,
 ) StoryResult {
-	state := newRunnerState(clk)
+	state := newRunnerState(clk, cfg.CSMSEndpoint)
 
 	ocppVer := resolveOCPPVersion(storyNodeVal.story.Meta.Tags, cfg.OCPPVersion)
 

@@ -39,6 +39,7 @@ type runFlagsT struct {
 	failOn             string
 	reportDir          string
 	noTraceOnPass      bool
+	csmsEndpoint       string
 }
 
 const (
@@ -151,6 +152,13 @@ func registerRunExecutionFlags(cmd *cobra.Command, flags *runFlagsT) {
 		false,
 		"disable TLS certificate verification (WARNING: insecure)",
 	)
+
+	cmdFlags.StringVar(
+		&flags.csmsEndpoint,
+		"csms-endpoint",
+		emptyFlagValue,
+		`base WebSocket URL of the CSMS under test (e.g. "ws://localhost:9210")`,
+	)
 }
 
 // registerRunOutputFlags registers the output and reporting flags for
@@ -207,6 +215,7 @@ func runStories(
 		NoTraceOnPass:      flags.noTraceOnPass,
 		OCPPVersion:        cfg.OCPPVersion,
 		InsecureSkipVerify: cfg.InsecureSkipVerify,
+		CSMSEndpoint:       flags.csmsEndpoint,
 	}
 
 	result, runErr := runner.Run(context.Background(), runnerCfg)
