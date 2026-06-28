@@ -427,7 +427,7 @@ func ensureNodeExists(
 // inShardFilter returns true when the story should be included in
 // the current shard, or when sharding is disabled (shardTotal == 0).
 //
-// The filter implements spec 005 §10 "Sharding contract":
+// The filter implements spec 005 -10 "Sharding contract":
 //
 //	binary.BigEndian.Uint64(sha256(test_id)[:8]) % shardTotal == shardIndex
 func inShardFilter(testID string, shardIndex, shardTotal int) bool {

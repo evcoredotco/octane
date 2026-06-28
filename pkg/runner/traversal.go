@@ -1,7 +1,7 @@
 // T-005-41: scope-aware traversal.
 //
 // This file implements the scheduler's eligibility computation and
-// the scope-aware deduplication logic described in ADR 0019 §
+// the scope-aware deduplication logic described in ADR 0019 -
 // "Eligible-set computation". It operates on nodeID strings, not
 // story ASTs, so that the same traversal logic works for all three
 // scope types (per-station, per-run, global).
@@ -105,7 +105,7 @@ func newSchedulerState(
 // eligibleNodes returns the slice of pending node IDs whose every
 // prerequisite has a terminal status of passed or cached-hit.
 // The returned slice is sorted by nodeID for deterministic dispatch
-// (ADR 0019 §"Dispatch order and determinism").
+// (ADR 0019 -"Dispatch order and determinism").
 func (ss *schedulerState) eligibleNodes() []string {
 	eligible := make([]string, emptySliceLen, len(ss.order))
 
@@ -162,7 +162,7 @@ func isPassingStatus(status Status, cacheStatus CacheStatus) bool {
 // StatusSkipped (recursively) and returns the list of newly-skipped
 // node IDs.
 //
-// The Cause and CauseChain fields are populated per spec 005 §10
+// The Cause and CauseChain fields are populated per spec 005 -10
 // "Failure propagation".
 func (ss *schedulerState) propagateFailures(
 	failedNodeID string,

@@ -1,5 +1,5 @@
 // Package primitive_test exercises the send primitive keywords
-// (spec 004 §10, items 4–5) against mock.MockState and mock.MockStation.
+// (spec 004 -10, items 4–5) against mock.MockState and mock.MockStation.
 //
 // Task: T-004-14
 // AC2: "send raw frame {frame:any} on station {station:string}" encodes the

@@ -19,7 +19,7 @@ const (
 
 // TestExitCodesUnique asserts that each exit code constant is a
 // distinct value, exists with its expected numeric value, and that
-// the full set matches spec 006 §10.
+// the full set matches spec 006 -10.
 func TestExitCodesUnique(t *testing.T) {
 	t.Parallel()
 

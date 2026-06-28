@@ -1,5 +1,5 @@
 // Package primitive_test exercises the wait primitive keyword
-// (spec 004 §10, item 8) against a [clock.DeterministicClock].
+// (spec 004 -10, item 8) against a [clock.DeterministicClock].
 //
 // Task: T-004-21
 // AC5: Given a primitive keyword "wait {duration:duration}", when the

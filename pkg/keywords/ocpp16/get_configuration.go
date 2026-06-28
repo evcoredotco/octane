@@ -12,7 +12,7 @@ import (
 //	the CSMS sends GetConfiguration to station {station:string} within {timeout:duration}
 //
 // It waits for an inbound GetConfiguration CALL and stashes the uniqueID
-// for the subsequent response keyword. Per OCPP 1.6 §5.7 the keys list
+// for the subsequent response keyword. Per OCPP 1.6 -5.7 the keys list
 // in the request is optional; no payload fields are validated.
 func csmsEnqueuesGetConfiguration(
 	ctx context.Context,

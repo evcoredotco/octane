@@ -58,7 +58,7 @@ func sendMeterValues(
 //
 //	the CSMS acknowledges MeterValues within {timeout:duration}
 //
-// It waits for the MeterValues.conf CALLRESULT. Per OCPP 1.6 §4.7 the
+// It waits for the MeterValues.conf CALLRESULT. Per OCPP 1.6 -4.7 the
 // confirmation payload is empty; success means the frame arrived without error.
 func csmsAcknowledgesMeterValues(
 	ctx context.Context,

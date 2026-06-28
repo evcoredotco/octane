@@ -1,6 +1,6 @@
 package exitcode
 
-// Process exit codes used by the octane CLI (spec 006 §10).
+// Process exit codes used by the octane CLI (spec 006 -10).
 //
 // OK (0) and TestFailed (1) follow universal CI convention.
 // Code 3 is reserved.
@@ -25,7 +25,7 @@ const (
 
 	// CacheLockTimeout is the exit code used when cache lock
 	// contention is not resolved within the duration specified by
-	// --lock-timeout. See spec 006 §10.
+	// --lock-timeout. See spec 006 -10.
 	CacheLockTimeout = 9
 
 	// ConfigError is the exit code used when the configuration
