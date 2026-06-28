@@ -38,7 +38,7 @@ operate on the same `RunResult` data model from spec 005.
 
 ### JSON schema
 
-Defined in spec 007 §10. Top-level fields: `schema_version: 1`,
+Defined in spec 007 -10. Top-level fields: `schema_version: 1`,
 `octane_version`, `run_id`, `started_at`, `finished_at`,
 `summary`, `stories`. Stories sorted by `test_id`. Findings
 within a story sorted by `(severity_desc, message)`. Trace
@@ -47,7 +47,7 @@ frames in temporal order.
 ### Robot XML schema
 
 Robot Framework 7.x `output.xml` format. The mapping table from
-spec 007 §10 is the contract. `rebot --report report.html
+spec 007 -10 is the contract. `rebot --report report.html
 output.xml` MUST produce a clean HTML report (AC4).
 
 ### Redaction contract
@@ -103,7 +103,7 @@ No new ADRs needed.
 | Robot XML schema drift between Robot 7.x and our generator | Medium | Medium | Pin Robot version in the integration test; bump deliberately |
 | `encoding/json` map iteration leaks non-determinism | Medium | High | Forbid map serialization; use sorted slices; review pass + lint rule |
 | Redaction misses a credential field added later | Medium | High | Redaction is a deny-by-default with an allowlist of preserved fields; new auth fields automatically inherit redaction |
-| Robot XML is verbose for large traces | Low | Medium | Configure trace inclusion; large traces can use `--trace-files-separate` per spec 007 §10 |
+| Robot XML is verbose for large traces | Low | Medium | Configure trace inclusion; large traces can use `--trace-files-separate` per spec 007 -10 |
 | Cause chain walking has edge cases for diamond-shaped graphs | Medium | Medium | Property test against random DAGs |
 
 ## 9. Effort Estimate

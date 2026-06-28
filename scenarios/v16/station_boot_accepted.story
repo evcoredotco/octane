@@ -7,7 +7,7 @@
 # OCPP scenario assumes a station that has booted and been accepted.
 #
 # Helper stories carry no Spec-Ref. The boot behavior they exercise
-# IS specified in OCPP-J 1.6 §6.5 BootNotification, but the
+# IS specified in OCPP-J 1.6 -6.5 BootNotification, but the
 # conformance assertion for that section lives in the dedicated
 # boot_notification_accepted story; this helper merely needs the
 # state and trusts that the conformance test verifies it elsewhere.

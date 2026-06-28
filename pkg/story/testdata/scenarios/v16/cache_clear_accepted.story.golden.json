@@ -3,7 +3,7 @@
   "meta": {
     "name": "Authorization cache clear accepted",
     "id": "cache_clear_accepted",
-    "specRef": "OCPP-J 1.6 §5.4 ClearCache",
+    "specRef": "OCPP-J 1.6 -5.4 ClearCache",
     "tags": [
       "cache",
       "csms-initiated",

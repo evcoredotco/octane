@@ -1,11 +1,11 @@
 # Transaction stop accepted.
 #
-# Validates that a CSMS implementing OCPP-J 1.6 §6.47 StopTransaction
+# Validates that a CSMS implementing OCPP-J 1.6 -6.47 StopTransaction
 # correctly processes a StopTransaction.req sent by the station and
 # responds with a StopTransaction.conf acknowledging the request.
 #
 # The station reports reason "Local" (driver-initiated stop). Per
-# OCPP-J 1.6 §6.47 the confirmation payload is an acknowledgement
+# OCPP-J 1.6 -6.47 the confirmation payload is an acknowledgement
 # with an optional idTagInfo; OCTANE only verifies that a well-formed
 # response arrives within the allowed timeout.
 #
@@ -15,7 +15,7 @@
 Meta
     Name:        Transaction stop accepted
     Id:          transaction_stop_accepted
-    Spec-Ref:    OCPP-J 1.6 §6.47 StopTransaction
+    Spec-Ref:    OCPP-J 1.6 -6.47 StopTransaction
     Tags:        transaction, charging, wire-only
     Stations:    1
     Timeout:     60s

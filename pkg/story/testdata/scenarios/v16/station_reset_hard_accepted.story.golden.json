@@ -3,7 +3,7 @@
   "meta": {
     "name": "Station reset hard accepted",
     "id": "station_reset_hard_accepted",
-    "specRef": "OCPP-J 1.6 §5.13 Reset",
+    "specRef": "OCPP-J 1.6 -5.13 Reset",
     "tags": [
       "station",
       "csms-initiated",

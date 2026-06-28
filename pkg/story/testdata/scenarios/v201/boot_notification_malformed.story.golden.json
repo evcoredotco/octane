@@ -3,7 +3,7 @@
   "Meta": {
     "Name": "Malformed boot notification rejected",
     "ID": "boot_notification_malformed",
-    "SpecRef": "OCPP-J 2.0.1 §3 Wire Protocol",
+    "SpecRef": "OCPP-J 2.0.1 -3 Wire Protocol",
     "Tags": [
       "core",
       "boot",

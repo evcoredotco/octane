@@ -61,7 +61,7 @@ Per ADR 0016: SHA-256 of the colon-joined tuple of `test_id`,
 
 ### result.json schema
 
-The schema in ADR 0016 §"Result file schema". `schema_version: 1`.
+The schema in ADR 0016 -"Result file schema". `schema_version: 1`.
 
 ### RunResult shape
 

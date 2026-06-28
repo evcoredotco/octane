@@ -3,7 +3,7 @@
   "meta": {
     "name": "Connector availability operative",
     "id": "connector_availability_operative",
-    "specRef": "OCPP-J 1.6 §5.2 ChangeAvailability",
+    "specRef": "OCPP-J 1.6 -5.2 ChangeAvailability",
     "tags": [
       "connector",
       "csms-initiated",

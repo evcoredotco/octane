@@ -1,6 +1,6 @@
 # Station reset hard accepted.
 #
-# Validates that a CSMS implementing OCPP-J 1.6 §5.13 Reset sends a
+# Validates that a CSMS implementing OCPP-J 1.6 -5.13 Reset sends a
 # well-formed Reset.req CALL with type "Hard" to the station and that
 # the station can respond with status "Accepted".
 #
@@ -11,7 +11,7 @@
 Meta
     Name:        Station reset hard accepted
     Id:          station_reset_hard_accepted
-    Spec-Ref:    OCPP-J 1.6 §5.13 Reset
+    Spec-Ref:    OCPP-J 1.6 -5.13 Reset
     Tags:        station, csms-initiated, wire-only
     Stations:    1
     Timeout:     30s

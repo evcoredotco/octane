@@ -3,7 +3,7 @@
   "meta": {
     "name": "Transaction remote start accepted",
     "id": "transaction_remotestart_accepted",
-    "specRef": "OCPP-J 1.6 §5.11 RemoteStartTransaction",
+    "specRef": "OCPP-J 1.6 -5.11 RemoteStartTransaction",
     "tags": [
       "transaction",
       "csms-initiated",

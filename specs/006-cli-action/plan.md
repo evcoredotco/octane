@@ -38,8 +38,8 @@ inputs to CLI flags.
 | `octane keywords resolve --story <path>` | new command | initial |
 | `octane cache info`/`prune`/`clear`/`key`/`show`/`trace` | new commands | initial |
 | `octane completion <shell>` | new command (cobra-stock) | initial |
-| Exit codes per spec 006 §10 | new contract | initial |
-| Env vars `OCTANE_*` per spec 006 §11 | new contract | initial |
+| Exit codes per spec 006 -10 | new contract | initial |
+| Env vars `OCTANE_*` per spec 006 -11 | new contract | initial |
 
 The CLI is a public contract from day one; flag and env names
 follow semver from the first tagged release.

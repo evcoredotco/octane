@@ -58,7 +58,7 @@ case-insensitively.
 
 ### State interface
 
-The interface defined in spec 003 §10. Unmodified.
+The interface defined in spec 003 -10. Unmodified.
 
 ### Resolution rules
 

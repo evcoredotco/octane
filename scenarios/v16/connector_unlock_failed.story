@@ -1,6 +1,6 @@
 # Connector unlock failed.
 #
-# Validates that a CSMS implementing OCPP-J 1.6 §5.15 UnlockConnector
+# Validates that a CSMS implementing OCPP-J 1.6 -5.15 UnlockConnector
 # correctly handles a station response of status "UnlockFailed". This
 # occurs when the station cannot physically release the connector lock
 # (e.g., the lock mechanism is stuck or the cable is under tension).
@@ -12,7 +12,7 @@
 Meta
     Name:        Connector unlock failed
     Id:          connector_unlock_failed
-    Spec-Ref:    OCPP-J 1.6 §5.15 UnlockConnector
+    Spec-Ref:    OCPP-J 1.6 -5.15 UnlockConnector
     Tags:        connector, csms-initiated, wire-only
     Stations:    1
     Timeout:     30s

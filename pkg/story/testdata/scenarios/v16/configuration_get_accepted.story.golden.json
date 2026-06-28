@@ -3,7 +3,7 @@
   "meta": {
     "name": "Configuration get accepted",
     "id": "configuration_get_accepted",
-    "specRef": "OCPP-J 1.6 §5.7 GetConfiguration",
+    "specRef": "OCPP-J 1.6 -5.7 GetConfiguration",
     "tags": [
       "configuration",
       "csms-initiated",

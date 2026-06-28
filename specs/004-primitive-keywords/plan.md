@@ -9,7 +9,7 @@
 ## 1. Summary
 
 Implement the small set of transport-level primitive keywords
-listed in spec 004 §10. Each keyword is a function plus a
+listed in spec 004 -10. Each keyword is a function plus a
 `registry.Register(api.Keyword{...})` call in `init()`. No
 business logic; the keywords are thin glue between the keyword
 API and the wire engine.
@@ -37,7 +37,7 @@ keyword pattern strings.
 
 ## 4. Data Contracts
 
-The 10 patterns from spec 004 §10. Each pattern's argument
+The 10 patterns from spec 004 -10. Each pattern's argument
 types are explicit; the resolver coerces step text into
 `Args` per spec 003.
 
@@ -73,7 +73,7 @@ Errors returned from primitive keywords:
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
-| Primitive layer grows beyond 10–15 keywords | Medium | Medium | Adding a primitive requires amending spec 004 §10; reviewer enforces |
+| Primitive layer grows beyond 10–15 keywords | Medium | Medium | Adding a primitive requires amending spec 004 -10; reviewer enforces |
 | Primitives leak OCPP semantics | Low | High | Reviewer agent flags any reference to OCPP message names in primitive code |
 | `wait` keyword interaction with deterministic clock subtle | Medium | Medium | Integration test exercises the keyword against both clock implementations |
 

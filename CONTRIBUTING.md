@@ -111,7 +111,7 @@ outcome category (`success`, `failure`).
 Meta
     Name:        <human-readable name in your own words>
     Id:          <snake_case slug matching filename>
-    Spec-Ref:    OCPP <version> §<section> <message-or-behavior>
+    Spec-Ref:    OCPP <version> -<section> <message-or-behavior>
     Tags:        <comma list, must include one of:
                   wire-only | multi-station | operator-assisted>
     Stations:    <integer >= 1>
@@ -123,9 +123,9 @@ Meta
 `Spec-Ref` MUST cite the OCPP specification, not a third-party
 testing tool. The format is one of:
 
-- `OCPP 1.6 §B01 BootNotification`
-- `OCPP-J 1.6 §6.40 ReserveNow`
-- `OCPP 1.6 §C01 Authorize`
+- `OCPP 1.6 -B01 BootNotification`
+- `OCPP-J 1.6 -6.40 ReserveNow`
+- `OCPP 1.6 -C01 Authorize`
 
 ### Required prose comment block
 
@@ -137,7 +137,7 @@ own words. Do not copy from any third-party source.
 Example:
 
 ```
-# Validates that a CSMS implementing OCPP 1.6 §B01 BootNotification
+# Validates that a CSMS implementing OCPP 1.6 -B01 BootNotification
 # replies to a well-formed BootNotification.req with a
 # BootNotificationResponse carrying status "Accepted" and a
 # heartbeatInterval within the spec-permitted range.

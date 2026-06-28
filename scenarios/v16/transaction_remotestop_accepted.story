@@ -1,6 +1,6 @@
 # Transaction remote stop accepted.
 #
-# Validates that a CSMS implementing OCPP-J 1.6 §5.12
+# Validates that a CSMS implementing OCPP-J 1.6 -5.12
 # RemoteStopTransaction sends a well-formed RemoteStopTransaction.req
 # CALL to the station and that the station can respond with status
 # "Accepted".
@@ -13,7 +13,7 @@
 Meta
     Name:        Transaction remote stop accepted
     Id:          transaction_remotestop_accepted
-    Spec-Ref:    OCPP-J 1.6 §5.12 RemoteStopTransaction
+    Spec-Ref:    OCPP-J 1.6 -5.12 RemoteStopTransaction
     Tags:        transaction, csms-initiated, wire-only
     Stations:    1
     Timeout:     60s

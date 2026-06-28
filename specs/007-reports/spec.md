@@ -250,5 +250,5 @@ into a `RunResult` is not in scope.
 - [x] Maintainer review
 
 > **Note:** This spec depends on the `RunResult` shape from
-> spec 005. The detailed mapping in §10 may need revision once
+> spec 005. The detailed mapping in -10 may need revision once
 > spec 005 lands. Marked Approved Provisional.
