@@ -1,0 +1,6 @@
+# OCTANE configuration — adjust csmsEndpoint before running.
+# Run: go run ./cmd/octane run --csms-endpoint ws://localhost:9210
+
+storiesDir:  scenarios/v16
+ocppVersion: "1.6"
+maxParallel: 1
