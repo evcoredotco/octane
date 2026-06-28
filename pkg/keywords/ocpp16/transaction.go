@@ -99,6 +99,12 @@ func csmsRespondsToStartTransaction(
 		)
 	}
 
+	if rawTxID, exists := payload["transactionId"]; exists {
+		if txID, ok := rawTxID.(float64); ok && txID > 0 {
+			state.Stash(transactionIDKey, int(txID))
+		}
+	}
+
 	state.Logf(
 		"station %q received StartTransaction.conf idTagInfo.status=%q",
 		info.station, gotStatus,

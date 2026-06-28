@@ -88,6 +88,78 @@ func expectResult(
 	return result, payload, nil
 }
 
+// expectCSMSCall waits for a CALL frame sent by the CSMS on the station's
+// connection, validates that the action matches, and returns the uniqueID
+// and decoded payload map. The caller must stash the uniqueID for the
+// subsequent response keyword.
+func expectCSMSCall(
+	ctx context.Context,
+	state api.State,
+	station, action string,
+	timeout time.Duration,
+) (string, map[string]any, error) {
+	sv, err := state.Station(station)
+	if err != nil {
+		return "", nil, fmt.Errorf("ocpp16: station %q: not connected: %w", station, err)
+	}
+
+	subCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	frame, err := sv.Expect(subCtx)
+	if err != nil {
+		return "", nil, fmt.Errorf("ocpp16: station %q: expect %s CALL: %w", station, action, err)
+	}
+
+	call, err := wire.ParseCall(frame)
+	if err != nil {
+		return "", nil, fmt.Errorf("ocpp16: station %q: parse inbound CALL: %w", station, err)
+	}
+
+	if call.Action != action {
+		return "", nil, fmt.Errorf(
+			"ocpp16: station %q: expected %s CALL, got action %q",
+			station, action, call.Action,
+		)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(call.Payload, &payload); err != nil {
+		return "", nil, fmt.Errorf("ocpp16: station %q: unmarshal %s payload: %w", station, action, err)
+	}
+	if payload == nil {
+		payload = map[string]any{}
+	}
+
+	return call.UniqueID, payload, nil
+}
+
+// sendCSMSResponse sends a CALLRESULT back to the CSMS in response to
+// a CSMS-initiated CALL with the given uniqueID.
+func sendCSMSResponse(
+	ctx context.Context,
+	state api.State,
+	station, uniqueID string,
+	payload map[string]any,
+) error {
+	sv, err := state.Station(station)
+	if err != nil {
+		return fmt.Errorf("ocpp16: station %q: not connected: %w", station, err)
+	}
+
+	frame := []any{
+		float64(wire.MessageTypeResult),
+		uniqueID,
+		payload,
+	}
+
+	if err := sv.Send(ctx, frame); err != nil {
+		return fmt.Errorf("ocpp16: station %q: send CALLRESULT: %w", station, err)
+	}
+
+	return nil
+}
+
 // peekPayload retrieves the most recently stashed CALLRESULT payload
 // without consuming it, so that multiple assertion keywords can inspect
 // the same response. It re-stashes the value after popping it.
@@ -102,6 +174,23 @@ func peekPayload(state api.State) (map[string]any, bool) {
 	payload, _ := val.(map[string]any)
 
 	return payload, payload != nil
+}
+
+// popCSMSCallID retrieves and removes the uniqueID stashed by a
+// CSMS-initiated CALL keyword (expectCSMSCall). Returns the uniqueID
+// and nil, or an empty string and an error if the key is absent.
+func popCSMSCallID(state api.State, station, action string) (string, error) {
+	val, ok := state.Pop(csmsCallIDKey(station, action))
+	if !ok {
+		return "", fmt.Errorf(
+			"ocpp16: station %q: no %s uniqueID stashed; call the CSMS-send keyword first",
+			station, action,
+		)
+	}
+
+	uid, _ := val.(string)
+
+	return uid, nil
 }
 
 // popPending retrieves and removes the *pendingInfo stashed by the

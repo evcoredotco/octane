@@ -1,0 +1,102 @@
+{
+  "path": "../../scenarios/v16/connector_cancelreservation_accepted.story",
+  "meta": {
+    "name": "Connector cancel reservation accepted",
+    "id": "connector_cancelreservation_accepted",
+    "specRef": "OCPP-J 1.6 §5.17 CancelReservation",
+    "tags": [
+      "reservation",
+      "csms-initiated",
+      "wire-only"
+    ],
+    "stations": 1,
+    "timeout": 30000000000,
+    "parameters": [
+      "connectorId",
+      "idTag",
+      "reservationId"
+    ],
+    "depends": [
+      {
+        "id": "connector_reservation_faulted",
+        "scope": 1,
+        "position": {
+          "line": 23,
+          "column": 7
+        }
+      }
+    ],
+    "position": {
+      "line": 14,
+      "column": 1
+    }
+  },
+  "background": [
+    {
+      "kind": 1,
+      "text": "the CSMS is reachable",
+      "position": {
+        "line": 27,
+        "column": 5
+      }
+    },
+    {
+      "kind": 4,
+      "text": "station \"CP01\" is registered to the CSMS",
+      "position": {
+        "line": 28,
+        "column": 5
+      }
+    }
+  ],
+  "setup": null,
+  "scenarios": [
+    {
+      "name": "CSMS cancels a reservation; station accepts",
+      "steps": [
+        {
+          "kind": 2,
+          "text": "the CSMS sends CancelReservation with reservationId {reservationId}",
+          "position": {
+            "line": 31,
+            "column": 5
+          }
+        },
+        {
+          "kind": 6,
+          "text": "to station \"CP01\" within 30 seconds",
+          "position": {
+            "line": 32,
+            "column": 11
+          }
+        },
+        {
+          "kind": 3,
+          "text": "station \"CP01\" responds to CancelReservation with status \"Accepted\"",
+          "position": {
+            "line": 33,
+            "column": 5
+          }
+        }
+      ],
+      "position": {
+        "line": 30,
+        "column": 1
+      }
+    }
+  ],
+  "teardown": [
+    {
+      "kind": 6,
+      "text": "Disconnect station \"CP01\"",
+      "position": {
+        "line": 36,
+        "column": 5
+      }
+    }
+  ],
+  "position": {
+    "line": 14,
+    "column": 1
+  }
+}

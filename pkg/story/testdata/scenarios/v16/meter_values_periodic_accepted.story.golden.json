@@ -1,0 +1,102 @@
+{
+  "path": "../../scenarios/v16/meter_values_periodic_accepted.story",
+  "meta": {
+    "name": "Meter values periodic accepted",
+    "id": "meter_values_periodic_accepted",
+    "specRef": "OCPP-J 1.6 §4.7 MeterValues",
+    "tags": [
+      "metering",
+      "wire-only"
+    ],
+    "stations": 1,
+    "timeout": 60000000000,
+    "parameters": [
+      "connectorId",
+      "idTag",
+      "meterStart",
+      "meterValue"
+    ],
+    "depends": [
+      {
+        "id": "transaction_pluginfirst_accepted",
+        "scope": 1,
+        "position": {
+          "line": 23,
+          "column": 7
+        }
+      }
+    ],
+    "position": {
+      "line": 14,
+      "column": 1
+    }
+  },
+  "background": [
+    {
+      "kind": 1,
+      "text": "the CSMS is reachable",
+      "position": {
+        "line": 27,
+        "column": 5
+      }
+    },
+    {
+      "kind": 4,
+      "text": "the operator has provisioned id token \"{idTag}\" with status \"Accepted\"",
+      "position": {
+        "line": 28,
+        "column": 5
+      }
+    }
+  ],
+  "setup": null,
+  "scenarios": [
+    {
+      "name": "Station sends a periodic MeterValues message; CSMS acknowledges",
+      "steps": [
+        {
+          "kind": 2,
+          "text": "station \"CP01\" sends MeterValues for connector {connectorId}",
+          "position": {
+            "line": 31,
+            "column": 5
+          }
+        },
+        {
+          "kind": 6,
+          "text": "with sampled value \"{meterValue}\"",
+          "position": {
+            "line": 32,
+            "column": 11
+          }
+        },
+        {
+          "kind": 3,
+          "text": "the CSMS acknowledges MeterValues within 10 seconds",
+          "position": {
+            "line": 33,
+            "column": 5
+          }
+        }
+      ],
+      "position": {
+        "line": 30,
+        "column": 1
+      }
+    }
+  ],
+  "teardown": [
+    {
+      "kind": 6,
+      "text": "Disconnect station \"CP01\"",
+      "position": {
+        "line": 36,
+        "column": 5
+      }
+    }
+  ],
+  "position": {
+    "line": 14,
+    "column": 1
+  }
+}

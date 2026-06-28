@@ -1,0 +1,96 @@
+{
+  "path": "../../scenarios/v16/transaction_stop_accepted.story",
+  "meta": {
+    "name": "Transaction stop accepted",
+    "id": "transaction_stop_accepted",
+    "specRef": "OCPP-J 1.6 §6.47 StopTransaction",
+    "tags": [
+      "transaction",
+      "charging",
+      "wire-only"
+    ],
+    "stations": 1,
+    "timeout": 60000000000,
+    "parameters": [
+      "connectorId",
+      "idTag",
+      "meterStart",
+      "transactionId",
+      "meterStop"
+    ],
+    "depends": [
+      {
+        "id": "transaction_pluginfirst_accepted",
+        "scope": 1,
+        "position": {
+          "line": 24,
+          "column": 7
+        }
+      }
+    ],
+    "position": {
+      "line": 15,
+      "column": 1
+    }
+  },
+  "background": [
+    {
+      "kind": 1,
+      "text": "the CSMS is reachable",
+      "position": {
+        "line": 28,
+        "column": 5
+      }
+    },
+    {
+      "kind": 4,
+      "text": "the operator has provisioned id token \"{idTag}\" with status \"Accepted\"",
+      "position": {
+        "line": 29,
+        "column": 5
+      }
+    }
+  ],
+  "setup": null,
+  "scenarios": [
+    {
+      "name": "Station stops an accepted transaction; CSMS acknowledges",
+      "steps": [
+        {
+          "kind": 2,
+          "text": "station \"CP01\" stops transaction {transactionId} with meterStop {meterStop} and reason \"Local\"",
+          "position": {
+            "line": 32,
+            "column": 5
+          }
+        },
+        {
+          "kind": 3,
+          "text": "the CSMS accepts StopTransaction within 30 seconds",
+          "position": {
+            "line": 33,
+            "column": 5
+          }
+        }
+      ],
+      "position": {
+        "line": 31,
+        "column": 1
+      }
+    }
+  ],
+  "teardown": [
+    {
+      "kind": 6,
+      "text": "Disconnect station \"CP01\"",
+      "position": {
+        "line": 36,
+        "column": 5
+      }
+    }
+  ],
+  "position": {
+    "line": 15,
+    "column": 1
+  }
+}

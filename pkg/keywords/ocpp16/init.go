@@ -16,6 +16,17 @@ func Register() {
 	registerAuthorizeKeywords()
 	registerTransactionKeywords()
 	registerReserveKeywords()
+	registerStopTransactionKeywords()
+	registerMeterValuesKeywords()
+	registerRemoteStartKeywords()
+	registerRemoteStopKeywords()
+	registerResetKeywords()
+	registerUnlockKeywords()
+	registerAvailabilityKeywords()
+	registerGetConfigurationKeywords()
+	registerChangeConfigurationKeywords()
+	registerClearCacheKeywords()
+	registerCancelReservationKeywords()
 }
 
 func registerPreconditionKeywords() {
@@ -197,5 +208,191 @@ func registerReserveKeywords() {
 		Layer:       api.LayerDomain,
 		OCPPVersion: api.OCPP16,
 		Func:        csmsAcceptsReserveResponse,
+	})
+}
+
+func registerStopTransactionKeywords() {
+	registry.Register(api.Keyword{
+		Pattern: "station {station:string} stops transaction {transactionId:int}" +
+			" with meterStop {meterStop:int} and reason {reason:string}",
+		Layer:       api.LayerDomain,
+		OCPPVersion: api.OCPP16,
+		Func:        sendStopTransaction,
+	})
+
+	registry.Register(api.Keyword{
+		Pattern:     "the CSMS accepts StopTransaction within {timeout:duration}",
+		Layer:       api.LayerDomain,
+		OCPPVersion: api.OCPP16,
+		Func:        csmsAcceptsStopTransaction,
+	})
+}
+
+func registerMeterValuesKeywords() {
+	registry.Register(api.Keyword{
+		Pattern: "station {station:string} sends MeterValues for connector" +
+			" {connectorId:int} with sampled value {value:string}",
+		Layer:       api.LayerDomain,
+		OCPPVersion: api.OCPP16,
+		Func:        sendMeterValues,
+	})
+
+	registry.Register(api.Keyword{
+		Pattern:     "the CSMS acknowledges MeterValues within {timeout:duration}",
+		Layer:       api.LayerDomain,
+		OCPPVersion: api.OCPP16,
+		Func:        csmsAcknowledgesMeterValues,
+	})
+}
+
+func registerRemoteStartKeywords() {
+	registry.Register(api.Keyword{
+		Pattern: "the CSMS sends RemoteStartTransaction with connectorId {connectorId:int}" +
+			" and idTag {idTag:string} to station {station:string} within {timeout:duration}",
+		Layer:       api.LayerDomain,
+		OCPPVersion: api.OCPP16,
+		Func:        csmsEnqueuesRemoteStart,
+	})
+
+	registry.Register(api.Keyword{
+		Pattern:     "station {station:string} responds to RemoteStartTransaction with status {status:string}",
+		Layer:       api.LayerDomain,
+		OCPPVersion: api.OCPP16,
+		Func:        stationRespondsToRemoteStart,
+	})
+}
+
+func registerRemoteStopKeywords() {
+	registry.Register(api.Keyword{
+		Pattern: "the CSMS sends RemoteStopTransaction with transactionId {transactionId:int}" +
+			" to station {station:string} within {timeout:duration}",
+		Layer:       api.LayerDomain,
+		OCPPVersion: api.OCPP16,
+		Func:        csmsEnqueuesRemoteStop,
+	})
+
+	registry.Register(api.Keyword{
+		Pattern:     "station {station:string} responds to RemoteStopTransaction with status {status:string}",
+		Layer:       api.LayerDomain,
+		OCPPVersion: api.OCPP16,
+		Func:        stationRespondsToRemoteStop,
+	})
+}
+
+func registerResetKeywords() {
+	registry.Register(api.Keyword{
+		Pattern: "the CSMS sends Reset with type {resetType:string}" +
+			" to station {station:string} within {timeout:duration}",
+		Layer:       api.LayerDomain,
+		OCPPVersion: api.OCPP16,
+		Func:        csmsEnqueuesReset,
+	})
+
+	registry.Register(api.Keyword{
+		Pattern:     "station {station:string} responds to Reset with status {status:string}",
+		Layer:       api.LayerDomain,
+		OCPPVersion: api.OCPP16,
+		Func:        stationRespondsToReset,
+	})
+}
+
+func registerUnlockKeywords() {
+	registry.Register(api.Keyword{
+		Pattern: "the CSMS sends UnlockConnector with connectorId {connectorId:int}" +
+			" to station {station:string} within {timeout:duration}",
+		Layer:       api.LayerDomain,
+		OCPPVersion: api.OCPP16,
+		Func:        csmsEnqueuesUnlockConnector,
+	})
+
+	registry.Register(api.Keyword{
+		Pattern:     "station {station:string} responds to UnlockConnector with status {status:string}",
+		Layer:       api.LayerDomain,
+		OCPPVersion: api.OCPP16,
+		Func:        stationRespondsToUnlockConnector,
+	})
+}
+
+func registerAvailabilityKeywords() {
+	registry.Register(api.Keyword{
+		Pattern: "the CSMS sends ChangeAvailability with connectorId {connectorId:int}" +
+			" and type {availType:string} to station {station:string} within {timeout:duration}",
+		Layer:       api.LayerDomain,
+		OCPPVersion: api.OCPP16,
+		Func:        csmsEnqueuesChangeAvailability,
+	})
+
+	registry.Register(api.Keyword{
+		Pattern:     "station {station:string} responds to ChangeAvailability with status {status:string}",
+		Layer:       api.LayerDomain,
+		OCPPVersion: api.OCPP16,
+		Func:        stationRespondsToChangeAvailability,
+	})
+}
+
+func registerGetConfigurationKeywords() {
+	registry.Register(api.Keyword{
+		Pattern:     "the CSMS sends GetConfiguration to station {station:string} within {timeout:duration}",
+		Layer:       api.LayerDomain,
+		OCPPVersion: api.OCPP16,
+		Func:        csmsEnqueuesGetConfiguration,
+	})
+
+	registry.Register(api.Keyword{
+		Pattern: "station {station:string} responds to GetConfiguration" +
+			" with {count:int} configuration keys",
+		Layer:       api.LayerDomain,
+		OCPPVersion: api.OCPP16,
+		Func:        stationRespondsWithGetConfiguration,
+	})
+}
+
+func registerChangeConfigurationKeywords() {
+	registry.Register(api.Keyword{
+		Pattern: "the CSMS sends ChangeConfiguration with key {key:string}" +
+			" and value {value:string} to station {station:string} within {timeout:duration}",
+		Layer:       api.LayerDomain,
+		OCPPVersion: api.OCPP16,
+		Func:        csmsEnqueuesChangeConfiguration,
+	})
+
+	registry.Register(api.Keyword{
+		Pattern:     "station {station:string} responds to ChangeConfiguration with status {status:string}",
+		Layer:       api.LayerDomain,
+		OCPPVersion: api.OCPP16,
+		Func:        stationRespondsToChangeConfiguration,
+	})
+}
+
+func registerClearCacheKeywords() {
+	registry.Register(api.Keyword{
+		Pattern:     "the CSMS sends ClearCache to station {station:string} within {timeout:duration}",
+		Layer:       api.LayerDomain,
+		OCPPVersion: api.OCPP16,
+		Func:        csmsEnqueuesClearCache,
+	})
+
+	registry.Register(api.Keyword{
+		Pattern:     "station {station:string} responds to ClearCache with status {status:string}",
+		Layer:       api.LayerDomain,
+		OCPPVersion: api.OCPP16,
+		Func:        stationRespondsToClearCache,
+	})
+}
+
+func registerCancelReservationKeywords() {
+	registry.Register(api.Keyword{
+		Pattern: "the CSMS sends CancelReservation with reservationId {reservationId:int}" +
+			" to station {station:string} within {timeout:duration}",
+		Layer:       api.LayerDomain,
+		OCPPVersion: api.OCPP16,
+		Func:        csmsEnqueuesCancelReservation,
+	})
+
+	registry.Register(api.Keyword{
+		Pattern:     "station {station:string} responds to CancelReservation with status {status:string}",
+		Layer:       api.LayerDomain,
+		OCPPVersion: api.OCPP16,
+		Func:        stationRespondsToCancelReservation,
 	})
 }
