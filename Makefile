@@ -23,6 +23,8 @@ GOLANGCI_LINT ?= golangci-lint
 GOFUMPT       ?= gofumpt
 GOLINES       ?= golines
 GCI           ?= gci
+DOCS_HOST     ?= 127.0.0.1
+DOCS_PORT     ?= 3000
 
 PKG    := ./...
 BIN    := ./bin/octane
@@ -146,11 +148,11 @@ completions: build ## Generate shell completion scripts (bash, zsh).
 
 .PHONY: docs-html
 docs-html: ## Build the Docusaurus website into website/build.
-	cd website && npm ci && npm run build
+	cd website && pnpm install && pnpm run build
 
 .PHONY: docs-serve
-docs-serve: ## Run the Docusaurus dev server on http://localhost:3000.
-	cd website && npm ci && npm run start
+docs-serve: ## Run the Docusaurus dev server on http://127.0.0.1:3000.
+	cd website && pnpm install && pnpm run start --host $(DOCS_HOST) --port $(DOCS_PORT) --no-open
 
 # ----------------------------------------------------------------------
 # Packaging
