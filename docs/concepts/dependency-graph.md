@@ -34,9 +34,9 @@ Meta:
 
 Each entry has two fields:
 
-| Field   | Required | Description                              |
-|---------|----------|------------------------------------------|
-| `id`    | yes      | The `Id` value of the prerequisite story |
+| Field   | Required | Description                               |
+|---------|----------|-------------------------------------------|
+| `id`    | yes      | The `Id` value of the prerequisite story  |
 | `scope` | yes      | One of `per-station`, `per-run`, `global` |
 
 ## Scope types
@@ -84,7 +84,7 @@ that are genuinely idempotent and whose results do not change between runs.
 If the `Depends:` declarations form a cycle, `runner.Run` returns
 `runner.ErrCycle`. The error message names the story IDs involved:
 
-```
+```txt
 runner: dependency cycle detected: a → b → a
 ```
 

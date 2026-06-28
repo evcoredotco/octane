@@ -10,7 +10,7 @@ state, and the Gherkin-style steps that exercise the CSMS wire behavior.
 
 A `.story` file follows this section order:
 
-```
+```text
 [comments]
 Meta
     <key-value entries>
@@ -32,6 +32,7 @@ Scenario: <title>
 ```
 
 Rules:
+
 - **Meta** is the only mandatory section and must come first (after optional
   file-level comments).
 - At least one **Scenario** is required.
@@ -64,22 +65,22 @@ indented with exactly four spaces and uses the form `Key: value`.
 
 ### Required keys
 
-| Key        | Type           | Description |
-|------------|----------------|-------------|
-| `Name`     | free text      | Human-readable name for the test (displayed in reports). |
-| `Id`       | `snake_case`   | Stable identifier used in `Depends` references. Must be unique across the test suite. |
-| `Tags`     | CSV            | Comma-separated list of tags. At least one is required. The `helper` tag is structural (see Spec-Ref rules). |
-| `Stations` | integer >= 1   | Number of charging-station handles the test requires. |
+| Key        | Type         | Description                                                                                                  |
+|------------|--------------|--------------------------------------------------------------------------------------------------------------|
+| `Name`     | free text    | Human-readable name for the test (displayed in reports).                                                     |
+| `Id`       | `snake_case` | Stable identifier used in `Depends` references. Must be unique across the test suite.                        |
+| `Tags`     | CSV          | Comma-separated list of tags. At least one is required. The `helper` tag is structural (see Spec-Ref rules). |
+| `Stations` | integer >= 1 | Number of charging-station handles the test requires.                                                        |
 
 ### Optional keys
 
-| Key          | Type             | Default          | Description |
-|--------------|------------------|------------------|-------------|
-| `Spec-Ref`   | free text        | (none)           | OCPP specification section reference (e.g. `OCPP 1.6 -B01 BootNotification`). Required for conformance stories; forbidden for helper stories. |
-| `Timeout`    | Go duration      | global default   | Per-step timeout (e.g. `30s`, `2m`). |
-| `Parameters` | CSV identifiers  | (none)           | Comma-separated list of parameter names that the story accepts from `octane.yml`. |
-| `Cache-TTL`  | Go duration      | 1h (helpers) / ∞ | Cache validity window for this story's result. |
-| `Depends`    | YAML list        | (none)           | Prerequisite stories (see Depends block). |
+| Key          | Type            | Default          | Description                                                                                                                                   |
+|--------------|-----------------|------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
+| `Spec-Ref`   | free text       | (none)           | OCPP specification section reference (e.g. `OCPP 1.6 -B01 BootNotification`). Required for conformance stories; forbidden for helper stories. |
+| `Timeout`    | Go duration     | global default   | Per-step timeout (e.g. `30s`, `2m`).                                                                                                          |
+| `Parameters` | CSV identifiers | (none)           | Comma-separated list of parameter names that the story accepts from `octane.yml`.                                                             |
+| `Cache-TTL`  | Go duration     | 1h (helpers) / ∞ | Cache validity window for this story's result.                                                                                                |
+| `Depends`    | YAML list       | (none)           | Prerequisite stories (see Depends block).                                                                                                     |
 
 ### Spec-Ref and helper-tag rules
 
@@ -124,12 +125,13 @@ entry is a bullet starting with `- id:` indented at eight spaces (two levels).
 
 ### Depends entry fields
 
-| Field   | Required | Values                              | Default       |
-|---------|----------|-------------------------------------|---------------|
-| `id`    | yes      | `snake_case` story identifier       | —             |
-| `scope` | no       | `per-station`, `per-run`, `global`  | `per-station` |
+| Field   | Required | Values                             | Default       |
+|---------|----------|------------------------------------|---------------|
+| `id`    | yes      | `snake_case` story identifier      | —             |
+| `scope` | no       | `per-station`, `per-run`, `global` | `per-station` |
 
 Scope meanings:
+
 - `per-station` — prerequisite runs once per station handle in the test.
 - `per-run` — prerequisite runs once per `octane run` invocation.
 - `global` — prerequisite runs once within the result cache validity window.
@@ -141,13 +143,13 @@ Scope meanings:
 Steps inside Background, Setup, Scenario, and Teardown sections use standard
 Gherkin keywords, indented with four spaces:
 
-| Keyword | Meaning |
-|---------|---------|
-| `Given` | Establishes a precondition. |
-| `When`  | Describes an action or event. |
-| `Then`  | Asserts an expected outcome. |
+| Keyword | Meaning                                   |
+|---------|-------------------------------------------|
+| `Given` | Establishes a precondition.               |
+| `When`  | Describes an action or event.             |
+| `Then`  | Asserts an expected outcome.              |
 | `And`   | Continues the preceding keyword's intent. |
-| `But`   | Introduces a negative continuation. |
+| `But`   | Introduces a negative continuation.       |
 
 Teardown sections may also use bare action lines (no keyword prefix) for
 cleanup commands such as `Disconnect station "CP01"`.
