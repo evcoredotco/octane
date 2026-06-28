@@ -82,6 +82,10 @@
   margin-top: 2rem;
 }
 
+.ctaRowCenter {
+  justify-content: center;
+}
+
 .btnPrimary,
 .btnGhost {
   display: inline-flex;
@@ -186,10 +190,39 @@
 
 .termBody {
   padding: 1rem 1.1rem 1.2rem;
-  font-size: 0.82rem;
-  line-height: 1.75;
-  white-space: pre;
-  overflow-x: auto;
+  font-size: 0.8rem;
+  line-height: 1.8;
+}
+
+.termLine {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.termRow {
+  display: grid;
+  grid-template-columns: 1.4em minmax(0, 1fr) 4.5rem auto;
+  column-gap: 0.5rem;
+}
+
+.sym {
+  text-align: center;
+}
+
+.rname {
+  color: var(--octane-term-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rtime {
+  color: var(--octane-term-comment);
+  text-align: right;
+}
+
+.spacer {
+  height: 0.8rem;
 }
 
 .termBody .cmd { color: #f4f8fb; }
@@ -367,8 +400,11 @@
   font-size: 0.8rem;
   line-height: 1.7;
   color: var(--octane-term-text);
-  white-space: pre;
   overflow-x: auto;
+}
+
+.codeLine {
+  white-space: pre;
 }
 
 .codePanelBody .kw { color: var(--octane-green-bright); }

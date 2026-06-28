@@ -22,10 +22,6 @@ const RESULTS: ResultRow[] = [
   {sym: '✓', symClass: styles.ok, name: 'connector_reservation_faulted', status: 'PASS', statusClass: styles.pass, time: '37ms'},
 ];
 
-function pad(value: string, width: number): string {
-  return value.length >= width ? value + ' ' : value.padEnd(width);
-}
-
 function Terminal(): ReactNode {
   return (
     <div className={styles.terminal}>
@@ -35,27 +31,27 @@ function Terminal(): ReactNode {
         <span className={`${styles.dot} ${styles.dotG}`} />
         <span className={styles.termTitle}>octane@csms — conformance run</span>
       </div>
-      <code className={styles.termBody}>
-        <div>
+      <div className={styles.termBody}>
+        <div className={styles.termLine}>
           <span className={styles.prompt}>$ </span>
           <span className={styles.cmd}>octane run scenarios/v16 --csms-endpoint ws://localhost:9210</span>
         </div>
-        <div>
+        <div className={styles.termLine}>
           <span className={styles.muted}>resolving dependency graph · 21 stories · topological order</span>
         </div>
         {RESULTS.map((r) => (
-          <div key={r.name}>
-            <span className={r.symClass}>{r.sym}</span>
-            {' ' + pad(r.name, 34)}
-            <span className={r.statusClass}>{pad(r.status, 8)}</span>
-            <span className={styles.muted}>{r.time}</span>
+          <div className={styles.termRow} key={r.name}>
+            <span className={`${styles.sym} ${r.symClass}`}>{r.sym}</span>
+            <span className={styles.rname}>{r.name}</span>
+            <span className={r.statusClass}>{r.status}</span>
+            <span className={styles.rtime}>{r.time}</span>
           </div>
         ))}
-        <div>
-          <span className={styles.muted}>  … 14 more stories</span>
+        <div className={styles.termLine}>
+          <span className={styles.muted}>… 14 more stories</span>
         </div>
-        <div>{' '}</div>
-        <div>
+        <div className={styles.spacer} />
+        <div className={styles.termLine}>
           <span className={styles.summary}>passed=</span>
           <span className={styles.pass}>21</span>
           <span className={styles.summary}> failed=</span>
@@ -65,12 +61,12 @@ function Terminal(): ReactNode {
           <span className={styles.summary}> cache-hits=</span>
           <span className={styles.cached}>6</span>
         </div>
-        <div>
+        <div className={styles.termLine}>
           <span className={styles.muted}>report-dir=</span>
           <span className={styles.path}>reports/run-20260628-1/</span>
           <span className={styles.cursor} />
         </div>
-      </code>
+      </div>
     </div>
   );
 }
@@ -234,6 +230,25 @@ function HowItWorks(): ReactNode {
   );
 }
 
+type StoryLine = {indent?: number; parts: {text: string; cls?: string}[]};
+
+const STORY_LINES: StoryLine[] = [
+  {parts: [{text: 'Meta', cls: styles.key}]},
+  {indent: 4, parts: [{text: 'Id:        ', cls: styles.key}, {text: 'boot_sequence_accepted'}]},
+  {indent: 4, parts: [{text: 'Spec-Ref:  ', cls: styles.key}, {text: 'OCPP-J 1.6 §6.5 BootNotification'}]},
+  {indent: 4, parts: [{text: 'Stations:  ', cls: styles.key}, {text: '1'}]},
+  {indent: 4, parts: [{text: 'Depends:', cls: styles.key}]},
+  {indent: 6, parts: [{text: '- id: station_connection_established'}]},
+  {parts: [{text: ' '}]},
+  {parts: [{text: 'Scenario', cls: styles.kw}, {text: ': Cold-boot registration sequence'}]},
+  {indent: 4, parts: [{text: 'When', cls: styles.kw}, {text: '  station '}, {text: '"CP01"', cls: styles.str}, {text: ' sends BootNotification'}]},
+  {indent: 10, parts: [{text: 'with reason '}, {text: '"PowerUp"', cls: styles.str}]},
+  {indent: 4, parts: [{text: 'Then', cls: styles.kw}, {text: '  the CSMS responds with status '}, {text: '"Accepted"', cls: styles.str}]},
+  {indent: 10, parts: [{text: 'within 30 seconds'}]},
+  {indent: 4, parts: [{text: 'And', cls: styles.kw}, {text: '   the response includes a heartbeatInterval'}]},
+  {indent: 10, parts: [{text: 'between 30 and 86400'}]},
+];
+
 const ASSERTIONS: string[] = [
   'BootNotification is answered with status "Accepted" within 30 seconds',
   'The advertised heartbeatInterval falls between 30 and 86400 seconds',
@@ -253,22 +268,22 @@ function Showcase(): ReactNode {
         </p>
         <div className={styles.showcase}>
           <div className={styles.codePanel}>
-            <code className={styles.codePanelBody}>
-              <span className={styles.key}>Meta</span>{'\n'}
-              {'    '}<span className={styles.key}>Id:</span>{'        boot_sequence_accepted\n'}
-              {'    '}<span className={styles.key}>Spec-Ref:</span>{'  OCPP-J 1.6 §6.5 BootNotification\n'}
-              {'    '}<span className={styles.key}>Stations:</span>{'  1\n'}
-              {'    '}<span className={styles.key}>Depends:</span>{'\n'}
-              {'      - id: station_connection_established\n'}
-              {'\n'}
-              <span className={styles.kw}>Scenario</span>{': Cold-boot registration sequence\n'}
-              {'    '}<span className={styles.kw}>When</span>{'  station '}<span className={styles.str}>"CP01"</span>{' sends BootNotification\n'}
-              {'          with reason '}<span className={styles.str}>"PowerUp"</span>{'\n'}
-              {'    '}<span className={styles.kw}>Then</span>{'  the CSMS responds with status '}<span className={styles.str}>"Accepted"</span>{'\n'}
-              {'          within 30 seconds\n'}
-              {'    '}<span className={styles.kw}>And</span>{'   the response includes a heartbeatInterval\n'}
-              {'          between 30 and 86400\n'}
-            </code>
+            <div className={styles.termBar}>
+              <span className={`${styles.dot} ${styles.dotR}`} />
+              <span className={`${styles.dot} ${styles.dotY}`} />
+              <span className={`${styles.dot} ${styles.dotG}`} />
+              <span className={styles.termTitle}>boot_sequence_accepted.story</span>
+            </div>
+            <div className={styles.codePanelBody}>
+              {STORY_LINES.map((line, i) => (
+                <div className={styles.codeLine} key={i}>
+                  {line.indent ? ' '.repeat(line.indent) : ''}
+                  {line.parts.map((p, j) => (
+                    <span className={p.cls} key={j}>{p.text}</span>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
           <ul className={styles.assertList}>
             {ASSERTIONS.map((a) => (
@@ -318,7 +333,7 @@ function FinalCta(): ReactNode {
         Point OCTANE at a CSMS endpoint, run the suite locally or in CI, and read a
         deterministic report. No mocks, no vendor adapters, no excuses.
       </p>
-      <div className={styles.ctaRow} style={{justifyContent: 'center'}}>
+      <div className={`${styles.ctaRow} ${styles.ctaRowCenter}`}>
         <Link className={styles.btnPrimary} to="/docs/getting-started">
           Get started →
         </Link>
