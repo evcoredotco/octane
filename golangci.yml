@@ -1,50 +1,131 @@
 version: "2"
+
 formatters:
   enable:
     - gci
-    - gofmt
     - gofumpt
-    - goimports
     - golines
-linters:
-  default: all
-  disable:
-    - wsl
-    - testpackage
-    - godot
-  enable:
-    - wsl_v5
   settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/evcoreco/octane)
+      custom-order: true
+    gofumpt:
+      extra-rules: true
+    golines:
+      max-len: 120
+
+linters:
+  default: none
+  enable:
+    # --- Bugs / correctness ---
+    - govet
+    - staticcheck
+    - errcheck
+    - ineffassign
+    - unused
+    - bodyclose
+    - contextcheck
+    - errorlint
+    - nilerr
+    - noctx
+    - rowserrcheck
+    - sqlclosecheck
+    - durationcheck
+    - makezero
+    - reassign
+    - bidichk
+    # --- Security ---
+    - gosec
+    # --- Complexity / size ---
+    - cyclop
+    - funlen
+    - gocognit
+    - gocyclo
+    - maintidx
+    - nestif
+    # --- Style / correctness-adjacent ---
+    - revive
+    - misspell
+    - unconvert
+    - unparam
+    - wastedassign
+    - prealloc
+    - copyloopvar
+    - goconst
+    - gocritic
+    - predeclared
+    - usestdlibvars
+    - intrange
+    # --- Imports / dependencies ---
+    - depguard
+    # --- Whitespace / layout ---
+    - wsl_v5
+
+  settings:
+    cyclop:
+      max-complexity: 15
+    funlen:
+      lines: 80
+      statements: 50
+    gocognit:
+      min-complexity: 20
+    gocyclo:
+      min-complexity: 15
+    nestif:
+      min-complexity: 5
+
     wsl_v5:
       allow-first-in-block: true
       allow-whole-block: false
       branch-max-lines: 2
+
     revive:
       enable-all-rules: true
       rules:
+        # Line length is enforced by the golines formatter (max-len: 120).
+        - name: line-length-limit
+          disabled: true
         - name: package-directory-mismatch
           disabled: true
         - name: var-naming
           arguments:
-            - [ID] # allowlist - empty means use defaults
-            - [] # denylist - empty means use defaults
+            - []  # allowlist  (empty = defaults)
+            - []  # denylist   (empty = defaults)
             - - skipPackageNameChecks: true
-        # - name: import-alias-naming
-        #   arguments:
-        #     - allow-regex: "^[a-z]+(?:[A-Z][a-z0-9]*)*$"
+
     depguard:
       rules:
         main:
           allow:
             - $gostd
+            # This module.
             - github.com/evcoreco/octane
-
+            # Approved direct third-party dependencies (see go.mod). Add new
+            # direct deps here, otherwise depguard will reject their imports.
             - github.com/coder/websocket
-            - github.com/evcoreco/ocpp16j
-            - github.com/evcoreco/ocpp16messages
             - github.com/spf13/cobra
             - github.com/spf13/cobra/doc
             - go.yaml.in/yaml/v3
+
+  exclusions:
+    generated: strict
+    warn-unused: true
+    presets:
+      - comments
+      - std-error-handling
+      - common-false-positives
+    rules:
+      - path: '(.+)_test\.go'
+        linters:
+          - cyclop
+          - funlen
+          - gocognit
+          - gocyclo
+          - goconst
+          - maintidx
 
 output:
   formats:
