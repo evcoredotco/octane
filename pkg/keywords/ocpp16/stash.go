@@ -39,6 +39,11 @@ const (
 	// after the station sends its ReserveNow.conf CALLRESULT. Popped
 	// by "the CSMS accepts the response without error".
 	reserveWaitingKey = "ocpp16:reserve_waiting"
+
+	// transactionIDKey is the stash key holding the transactionId int
+	// assigned by the CSMS in StartTransaction.conf; set by
+	// csmsRespondsToStartTransaction, consumed by sendStopTransaction.
+	transactionIDKey = "ocpp16:transaction_id"
 )
 
 // registeredKey returns the per-station stash key that records whether
@@ -66,4 +71,11 @@ func msgCounterKey(station string) string {
 // "station responds with ReserveNow.conf".
 func reserveCallIDKey(station string) string {
 	return "ocpp16:reserve_call_id:" + station
+}
+
+// csmsCallIDKey returns the per-station, per-action stash key holding the
+// uniqueID of any CSMS-initiated CALL. Set by expectCSMSCall helpers;
+// consumed by the corresponding response keyword.
+func csmsCallIDKey(station, action string) string {
+	return fmt.Sprintf("ocpp16:csms_call:%s:%s", station, action)
 }

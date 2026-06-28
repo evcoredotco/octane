@@ -1,0 +1,101 @@
+{
+  "path": "../../scenarios/v16/configuration_change_accepted.story",
+  "meta": {
+    "name": "Configuration change accepted",
+    "id": "configuration_change_accepted",
+    "specRef": "OCPP-J 1.6 §5.3 ChangeConfiguration",
+    "tags": [
+      "configuration",
+      "csms-initiated",
+      "wire-only"
+    ],
+    "stations": 1,
+    "timeout": 30000000000,
+    "parameters": [
+      "key",
+      "value"
+    ],
+    "depends": [
+      {
+        "id": "station_boot_accepted",
+        "scope": 1,
+        "position": {
+          "line": 21,
+          "column": 7
+        }
+      }
+    ],
+    "position": {
+      "line": 12,
+      "column": 1
+    }
+  },
+  "background": [
+    {
+      "kind": 1,
+      "text": "the CSMS is reachable",
+      "position": {
+        "line": 25,
+        "column": 5
+      }
+    },
+    {
+      "kind": 4,
+      "text": "station \"CP01\" is registered to the CSMS",
+      "position": {
+        "line": 26,
+        "column": 5
+      }
+    }
+  ],
+  "setup": null,
+  "scenarios": [
+    {
+      "name": "CSMS changes a configuration parameter; station accepts",
+      "steps": [
+        {
+          "kind": 2,
+          "text": "the CSMS sends ChangeConfiguration with key \"{key}\"",
+          "position": {
+            "line": 29,
+            "column": 5
+          }
+        },
+        {
+          "kind": 6,
+          "text": "and value \"{value}\" to station \"CP01\" within 30 seconds",
+          "position": {
+            "line": 30,
+            "column": 11
+          }
+        },
+        {
+          "kind": 3,
+          "text": "station \"CP01\" responds to ChangeConfiguration with status \"Accepted\"",
+          "position": {
+            "line": 31,
+            "column": 5
+          }
+        }
+      ],
+      "position": {
+        "line": 28,
+        "column": 1
+      }
+    }
+  ],
+  "teardown": [
+    {
+      "kind": 6,
+      "text": "Disconnect station \"CP01\"",
+      "position": {
+        "line": 34,
+        "column": 5
+      }
+    }
+  ],
+  "position": {
+    "line": 12,
+    "column": 1
+  }
+}

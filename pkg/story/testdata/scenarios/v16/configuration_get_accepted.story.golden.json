@@ -1,0 +1,90 @@
+{
+  "path": "../../scenarios/v16/configuration_get_accepted.story",
+  "meta": {
+    "name": "Configuration get accepted",
+    "id": "configuration_get_accepted",
+    "specRef": "OCPP-J 1.6 §5.7 GetConfiguration",
+    "tags": [
+      "configuration",
+      "csms-initiated",
+      "wire-only"
+    ],
+    "stations": 1,
+    "timeout": 30000000000,
+    "parameters": null,
+    "depends": [
+      {
+        "id": "station_boot_accepted",
+        "scope": 1,
+        "position": {
+          "line": 21,
+          "column": 7
+        }
+      }
+    ],
+    "position": {
+      "line": 13,
+      "column": 1
+    }
+  },
+  "background": [
+    {
+      "kind": 1,
+      "text": "the CSMS is reachable",
+      "position": {
+        "line": 25,
+        "column": 5
+      }
+    },
+    {
+      "kind": 4,
+      "text": "station \"CP01\" is registered to the CSMS",
+      "position": {
+        "line": 26,
+        "column": 5
+      }
+    }
+  ],
+  "setup": null,
+  "scenarios": [
+    {
+      "name": "CSMS retrieves station configuration; station responds with one key",
+      "steps": [
+        {
+          "kind": 2,
+          "text": "the CSMS sends GetConfiguration to station \"CP01\" within 30 seconds",
+          "position": {
+            "line": 29,
+            "column": 5
+          }
+        },
+        {
+          "kind": 3,
+          "text": "station \"CP01\" responds to GetConfiguration with 1 configuration keys",
+          "position": {
+            "line": 30,
+            "column": 5
+          }
+        }
+      ],
+      "position": {
+        "line": 28,
+        "column": 1
+      }
+    }
+  ],
+  "teardown": [
+    {
+      "kind": 6,
+      "text": "Disconnect station \"CP01\"",
+      "position": {
+        "line": 33,
+        "column": 5
+      }
+    }
+  ],
+  "position": {
+    "line": 13,
+    "column": 1
+  }
+}

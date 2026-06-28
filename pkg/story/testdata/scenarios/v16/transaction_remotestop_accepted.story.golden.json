@@ -1,0 +1,103 @@
+{
+  "path": "../../scenarios/v16/transaction_remotestop_accepted.story",
+  "meta": {
+    "name": "Transaction remote stop accepted",
+    "id": "transaction_remotestop_accepted",
+    "specRef": "OCPP-J 1.6 §5.12 RemoteStopTransaction",
+    "tags": [
+      "transaction",
+      "csms-initiated",
+      "wire-only"
+    ],
+    "stations": 1,
+    "timeout": 60000000000,
+    "parameters": [
+      "connectorId",
+      "idTag",
+      "meterStart",
+      "transactionId"
+    ],
+    "depends": [
+      {
+        "id": "transaction_pluginfirst_accepted",
+        "scope": 1,
+        "position": {
+          "line": 22,
+          "column": 7
+        }
+      }
+    ],
+    "position": {
+      "line": 13,
+      "column": 1
+    }
+  },
+  "background": [
+    {
+      "kind": 1,
+      "text": "the CSMS is reachable",
+      "position": {
+        "line": 26,
+        "column": 5
+      }
+    },
+    {
+      "kind": 4,
+      "text": "station \"CP01\" is registered to the CSMS",
+      "position": {
+        "line": 27,
+        "column": 5
+      }
+    }
+  ],
+  "setup": null,
+  "scenarios": [
+    {
+      "name": "CSMS remotely stops a running transaction; station accepts",
+      "steps": [
+        {
+          "kind": 2,
+          "text": "the CSMS sends RemoteStopTransaction with transactionId {transactionId}",
+          "position": {
+            "line": 30,
+            "column": 5
+          }
+        },
+        {
+          "kind": 6,
+          "text": "to station \"CP01\" within 30 seconds",
+          "position": {
+            "line": 31,
+            "column": 11
+          }
+        },
+        {
+          "kind": 3,
+          "text": "station \"CP01\" responds to RemoteStopTransaction with status \"Accepted\"",
+          "position": {
+            "line": 32,
+            "column": 5
+          }
+        }
+      ],
+      "position": {
+        "line": 29,
+        "column": 1
+      }
+    }
+  ],
+  "teardown": [
+    {
+      "kind": 6,
+      "text": "Disconnect station \"CP01\"",
+      "position": {
+        "line": 35,
+        "column": 5
+      }
+    }
+  ],
+  "position": {
+    "line": 13,
+    "column": 1
+  }
+}
