@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*'
+
+permissions:
+  contents: write      # publish GitHub release and upload assets
+  id-token: write      # cosign keyless signing via GitHub OIDC
+
+jobs:
+  release:
+    name: GoReleaser
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # GoReleaser needs the full tag history for the changelog
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install scdoc
+        run: sudo apt-get install -y scdoc
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      # gen-manpages.sh and gen-completions.sh (run by goreleaser before.hooks)
+      # both need a working binary at bin/octane. Build it here without ldflags
+      # so the hooks can generate artifacts; goreleaser then builds the real
+      # versioned binaries.
+      - name: Pre-build binary for hooks
+        run: go build -o bin/octane ./cmd/octane
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Required when brews: is active and the homebrew tap is a separate
+          # repository. Create a fine-grained PAT with Contents: write on
+          # evcoreco/homebrew-octane and add it as HOMEBREW_TAP_GITHUB_TOKEN.
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
