@@ -12,6 +12,23 @@ import (
 // ── named constants ──────────────────────────────────────────────────────────
 
 const (
+	sentFrameCount       = 1
+	firstFrameIndex      = 0
+	frameTypeIndex       = 0
+	uniqueIDIndex        = 1
+	actionIndex          = 2
+	payloadIndex         = 3
+	emptyCollectionCount = 0
+	testNowYear          = 2024
+	testNowMonth         = 1
+	testNowDay           = 1
+	testNowHour          = 12
+	testNowMinute        = 0
+	testNowSecond        = 0
+	testNowNanosecond    = 0
+
+	lastPayloadKeyTest = "ocpp16:last_payload"
+
 	// stationHandle is the station handle used across ocpp16 tests.
 	stationHandle = "CP01"
 
@@ -90,26 +107,11 @@ const (
 	// sampledValue is the meter value string used in MeterValues tests.
 	sampledValue = "123.4"
 
-	// reservationIDValue is the reservation ID used in cancel-reservation tests.
-	reservationIDValue = 7
-
-	// reservationIDOther is a different reservation ID for mismatch tests.
-	reservationIDOther = 9
-
 	// reasonNormal is the reason label for boot/stop transaction tests.
 	reasonNormal = "PowerUp"
 
 	// stopReasonNormal is the reason for stop transaction.
 	stopReasonNormal = "Local"
-
-	// configKeyName is a configuration key for ChangeConfiguration tests.
-	configKeyName = "HeartbeatInterval"
-
-	// configKeyValue is a configuration value for ChangeConfiguration tests.
-	configKeyValue = "300"
-
-	// configKeyValueOther is a different configuration value for mismatch tests.
-	configKeyValueOther = "600"
 
 	// msgTypeCall is the OCPP-J message type for CALL frames.
 	msgTypeCall = float64(2)
@@ -155,65 +157,59 @@ const (
 
 	// actionRemoteStopTransaction is the OCPP action name for RemoteStopTransaction.
 	actionRemoteStopTransaction = "RemoteStopTransaction"
-
-	// actionCancelReservation is the OCPP action name for CancelReservation.
-	actionCancelReservation = "CancelReservation"
 )
 
 // ── keyword pattern constants ─────────────────────────────────────────────────
 
 const (
-	patternSendBoot         = "station {station:string} sends BootNotification with reason {reason:string}"
-	patternCSMSResponds     = "the CSMS responds with status {status:string} within {timeout:duration}"
+	patternSendBoot          = "station {station:string} sends BootNotification with reason {reason:string}"
+	patternCSMSResponds      = "the CSMS responds with status {status:string} within {timeout:duration}"
 	patternStationRegistered = "station {station:string} is in the registered state"
-	patternHBInterval       = "the response includes a heartbeatInterval between {min:int} and {max:int}"
-	patternCurrentTime      = "the response includes a currentTime in ISO-8601 format"
+	patternHBInterval        = "the response includes a heartbeatInterval between {min:int} and {max:int}"
+	patternCurrentTime       = "the response includes a currentTime in ISO-8601 format"
 
-	patternSendStatus      = "station {station:string} sends StatusNotification for connector {connectorId:int} with status {status:string}"
-	patternCSMSAcksStatus  = "the CSMS acknowledges the status within {timeout:duration}"
-	patternConnectorState  = "connector {connectorId:int} of station {station:string} is in state {state:string}"
+	patternSendStatus     = "station {station:string} sends StatusNotification for connector {connectorId:int} with status {status:string}"
+	patternCSMSAcksStatus = "the CSMS acknowledges the status within {timeout:duration}"
+	patternConnectorState = "connector {connectorId:int} of station {station:string} is in state {state:string}"
 
-	patternSendHeartbeat   = "station {station:string} sends Heartbeat"
-	patternCSMSRespondsHB  = "the CSMS responds to the Heartbeat within {timeout:duration}"
-	patternHBCurrentTime   = "the Heartbeat response includes a currentTime in ISO-8601 format"
+	patternSendHeartbeat  = "station {station:string} sends Heartbeat"
+	patternCSMSRespondsHB = "the CSMS responds to the Heartbeat within {timeout:duration}"
+	patternHBCurrentTime  = "the Heartbeat response includes a currentTime in ISO-8601 format"
 
-	patternSendAuthorize      = "station {station:string} sends Authorize with idTag {idTag:string}"
-	patternCSMSRespondsAuth   = "the CSMS responds to Authorize with idTagInfo.status {status:string} within {timeout:duration}"
+	patternSendAuthorize    = "station {station:string} sends Authorize with idTag {idTag:string}"
+	patternCSMSRespondsAuth = "the CSMS responds to Authorize with idTagInfo.status {status:string} within {timeout:duration}"
 
-	patternSendStartTx        = "station {station:string} starts a transaction on connector {connectorId:int} with idTag {idTag:string} and meterStart {meterStart:int}"
+	patternSendStartTx         = "station {station:string} starts a transaction on connector {connectorId:int} with idTag {idTag:string} and meterStart {meterStart:int}"
 	patternCSMSRespondsStartTx = "the CSMS responds to StartTransaction with idTagInfo.status {status:string} within {timeout:duration}"
-	patternPositiveTxID       = "the StartTransaction response assigns a positive transactionId"
+	patternPositiveTxID        = "the StartTransaction response assigns a positive transactionId"
 
 	patternSendStopTx      = "station {station:string} stops transaction {transactionId:int} with meterStop {meterStop:int} and reason {reason:string}"
 	patternCSMSAcceptsStop = "the CSMS accepts StopTransaction within {timeout:duration}"
 
-	patternSendMeterValues   = "station {station:string} sends MeterValues for connector {connectorId:int} with sampled value {value:string}"
-	patternCSMSAcksMeter     = "the CSMS acknowledges MeterValues within {timeout:duration}"
+	patternSendMeterValues = "station {station:string} sends MeterValues for connector {connectorId:int} with sampled value {value:string}"
+	patternCSMSAcksMeter   = "the CSMS acknowledges MeterValues within {timeout:duration}"
 
-	patternCSMSSendReset      = "the CSMS sends Reset with type {resetType:string} to station {station:string} within {timeout:duration}"
+	patternCSMSSendReset        = "the CSMS sends Reset with type {resetType:string} to station {station:string} within {timeout:duration}"
 	patternStationRespondsReset = "station {station:string} responds to Reset with status {status:string}"
 
-	patternCSMSSendAvail      = "the CSMS sends ChangeAvailability with connectorId {connectorId:int} and type {availType:string} to station {station:string} within {timeout:duration}"
+	patternCSMSSendAvail        = "the CSMS sends ChangeAvailability with connectorId {connectorId:int} and type {availType:string} to station {station:string} within {timeout:duration}"
 	patternStationRespondsAvail = "station {station:string} responds to ChangeAvailability with status {status:string}"
 
-	patternCSMSSendClearCache      = "the CSMS sends ClearCache to station {station:string} within {timeout:duration}"
+	patternCSMSSendClearCache        = "the CSMS sends ClearCache to station {station:string} within {timeout:duration}"
 	patternStationRespondsClearCache = "station {station:string} responds to ClearCache with status {status:string}"
 
-	patternCSMSSendUnlock      = "the CSMS sends UnlockConnector with connectorId {connectorId:int} to station {station:string} within {timeout:duration}"
+	patternCSMSSendUnlock        = "the CSMS sends UnlockConnector with connectorId {connectorId:int} to station {station:string} within {timeout:duration}"
 	patternStationRespondsUnlock = "station {station:string} responds to UnlockConnector with status {status:string}"
 
-	patternCSMSSendRemoteStart      = "the CSMS sends RemoteStartTransaction with connectorId {connectorId:int} and idTag {idTag:string} to station {station:string} within {timeout:duration}"
+	patternCSMSSendRemoteStart        = "the CSMS sends RemoteStartTransaction with connectorId {connectorId:int} and idTag {idTag:string} to station {station:string} within {timeout:duration}"
 	patternStationRespondsRemoteStart = "station {station:string} responds to RemoteStartTransaction with status {status:string}"
 
-	patternCSMSSendRemoteStop      = "the CSMS sends RemoteStopTransaction with transactionId {transactionId:int} to station {station:string} within {timeout:duration}"
+	patternCSMSSendRemoteStop        = "the CSMS sends RemoteStopTransaction with transactionId {transactionId:int} to station {station:string} within {timeout:duration}"
 	patternStationRespondsRemoteStop = "station {station:string} responds to RemoteStopTransaction with status {status:string}"
 
-	patternCSMSReachable     = "the CSMS is reachable"
+	patternCSMSReachable       = "the CSMS is reachable"
 	patternOperatorProvisioned = "the operator has provisioned id token {idTag:string} with status {status:string}"
 	patternStationIsRegistered = "station {station:string} is registered to the CSMS"
-
-	patternCSMSSendCancelRes      = "the CSMS sends CancelReservation with reservationId {reservationId:int} to station {station:string} within {timeout:duration}"
-	patternStationRespondsCancelRes = "station {station:string} responds to CancelReservation with status {status:string}"
 )
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -240,7 +236,87 @@ func newState(t *testing.T, station *mock.Station) *mock.State {
 
 	state := mock.NewMockState()
 	state.RegisterStation(stationHandle, station)
-	state.SetNow(time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC))
+	state.SetNow(time.Date(
+		testNowYear,
+		testNowMonth,
+		testNowDay,
+		testNowHour,
+		testNowMinute,
+		testNowSecond,
+		testNowNanosecond,
+		time.UTC,
+	))
 
 	return state
+}
+
+func requireSentCallPayload(
+	t *testing.T,
+	station *mock.Station,
+	operation string,
+	action string,
+) map[string]any {
+	t.Helper()
+
+	frames := station.SentFrames()
+	if len(frames) != sentFrameCount {
+		t.Fatalf("%s: want 1 sent frame, got %d", operation, len(frames))
+	}
+
+	frame := frames[firstFrameIndex]
+	if frame[frameTypeIndex] != msgTypeCall {
+		t.Errorf(
+			"frame[0]: want %v (CALL), got %v",
+			msgTypeCall,
+			frame[frameTypeIndex],
+		)
+	}
+
+	if frame[actionIndex] != action {
+		t.Errorf("frame[2]: want %q, got %v", action, frame[actionIndex])
+	}
+
+	payload, ok := frame[payloadIndex].(map[string]any)
+	if !ok {
+		t.Fatalf("frame[3]: want map[string]any, got %T", frame[payloadIndex])
+	}
+
+	return payload
+}
+
+func requireSentCallResultPayload(
+	t *testing.T,
+	station *mock.Station,
+	operation string,
+) map[string]any {
+	t.Helper()
+
+	frames := station.SentFrames()
+	if len(frames) != sentFrameCount {
+		t.Fatalf("%s: want 1 sent frame, got %d", operation, len(frames))
+	}
+
+	frame := frames[firstFrameIndex]
+	if frame[frameTypeIndex] != msgTypeCallResult {
+		t.Errorf(
+			"frame[0]: want %v (CALLRESULT), got %v",
+			msgTypeCallResult,
+			frame[frameTypeIndex],
+		)
+	}
+
+	if frame[uniqueIDIndex] != csmsUniqueID {
+		t.Errorf(
+			"frame[1]: want %q, got %v",
+			csmsUniqueID,
+			frame[uniqueIDIndex],
+		)
+	}
+
+	payload, ok := frame[actionIndex].(map[string]any)
+	if !ok {
+		t.Fatalf("frame[2]: want map[string]any, got %T", frame[actionIndex])
+	}
+
+	return payload
 }

@@ -23,12 +23,22 @@ func csmsEnqueuesCancelReservation(
 	station := args.String("station")
 	timeout := args.Duration("timeout")
 
-	uniqueID, payload, err := expectCSMSCall(ctx, state, station, actionCancelReservation, timeout)
+	uniqueID, payload, err := expectCSMSCall(
+		ctx,
+		state,
+		station,
+		actionCancelReservation,
+		timeout,
+	)
 	if err != nil {
 		return err
 	}
 
-	gotResID, err := payloadNumber(payload, "reservationId", actionCancelReservation)
+	gotResID, err := payloadNumber(
+		payload,
+		"reservationId",
+		actionCancelReservation,
+	)
 	if err != nil {
 		return err
 	}
@@ -36,7 +46,9 @@ func csmsEnqueuesCancelReservation(
 	if int(gotResID) != reservationID {
 		return fmt.Errorf(
 			"ocpp16: station %q: CancelReservation reservationId: want %d, got %d",
-			station, reservationID, int(gotResID),
+			station,
+			reservationID,
+			int(gotResID),
 		)
 	}
 
@@ -44,7 +56,9 @@ func csmsEnqueuesCancelReservation(
 
 	state.Logf(
 		"station %q received CancelReservation CALL (uniqueID=%s, reservationId=%d)",
-		station, uniqueID, reservationID,
+		station,
+		uniqueID,
+		reservationID,
 	)
 
 	return nil

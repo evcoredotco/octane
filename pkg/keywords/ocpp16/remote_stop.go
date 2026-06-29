@@ -23,12 +23,22 @@ func csmsEnqueuesRemoteStop(
 	station := args.String("station")
 	timeout := args.Duration("timeout")
 
-	uniqueID, payload, err := expectCSMSCall(ctx, state, station, actionRemoteStopTransaction, timeout)
+	uniqueID, payload, err := expectCSMSCall(
+		ctx,
+		state,
+		station,
+		actionRemoteStopTransaction,
+		timeout,
+	)
 	if err != nil {
 		return err
 	}
 
-	gotTxID, err := payloadNumber(payload, "transactionId", actionRemoteStopTransaction)
+	gotTxID, err := payloadNumber(
+		payload,
+		"transactionId",
+		actionRemoteStopTransaction,
+	)
 	if err != nil {
 		return err
 	}
@@ -36,7 +46,9 @@ func csmsEnqueuesRemoteStop(
 	if int(gotTxID) != transactionID {
 		return fmt.Errorf(
 			"ocpp16: station %q: RemoteStopTransaction transactionId: want %d, got %d",
-			station, transactionID, int(gotTxID),
+			station,
+			transactionID,
+			int(gotTxID),
 		)
 	}
 
@@ -44,7 +56,9 @@ func csmsEnqueuesRemoteStop(
 
 	state.Logf(
 		"station %q received RemoteStopTransaction CALL (uniqueID=%s, transactionId=%d)",
-		station, uniqueID, transactionID,
+		station,
+		uniqueID,
+		transactionID,
 	)
 
 	return nil

@@ -3,11 +3,12 @@ package ocpp16_test
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/evcoreco/octane/pkg/keywords/api"
 	"github.com/evcoreco/octane/pkg/keywords/api/mock"
 )
+
+const sendBootNotificationFailure = "sendBootNotification: %v"
 
 // ── sendBootNotification tests ───────────────────────────────────────────────
 
@@ -38,25 +39,12 @@ func Test_sendBootNotification_sendsCALLFrame(t *testing.T) {
 		t.Fatalf("sendBootNotification: unexpected error: %v", err)
 	}
 
-	frames := station.SentFrames()
-	if len(frames) != 1 {
-		t.Fatalf("sendBootNotification: want 1 sent frame, got %d", len(frames))
-	}
-
-	frame := frames[0]
-	if frame[0] != msgTypeCall {
-		t.Errorf("frame[0]: want %v (CALL), got %v", msgTypeCall, frame[0])
-	}
-
-	if frame[2] != actionBootNotification {
-		t.Errorf("frame[2]: want %q, got %v", actionBootNotification, frame[2])
-	}
-
-	payload, ok := frame[3].(map[string]any)
-	if !ok {
-		t.Fatalf("frame[3]: want map[string]any, got %T", frame[3])
-	}
-
+	payload := requireSentCallPayload(
+		t,
+		station,
+		"sendBootNotification",
+		actionBootNotification,
+	)
 	if _, exists := payload["chargePointVendor"]; !exists {
 		t.Error("payload missing chargePointVendor field")
 	}
@@ -77,7 +65,9 @@ func Test_sendBootNotification_errorOnMissingStation(t *testing.T) {
 
 	defer func() {
 		if r := recover(); r == nil {
-			t.Error("sendBootNotification: expected panic on unregistered station, got none")
+			t.Error(
+				"sendBootNotification: expected panic on unregistered station, got none",
+			)
 		}
 	}()
 
@@ -108,8 +98,9 @@ func Test_csmsRespondsWithStatus_acceptsMatchingStatus(t *testing.T) {
 		"station": stationHandle,
 		"reason":  reasonNormal,
 	})
+
 	if err := sendFn(context.Background(), state, sendArgs); err != nil {
-		t.Fatalf("sendBootNotification: %v", err)
+		t.Fatalf(sendBootNotificationFailure, err)
 	}
 
 	respondFn := resolveFunc(t, patternCSMSResponds)
@@ -146,8 +137,9 @@ func Test_csmsRespondsWithStatus_errorOnWrongStatus(t *testing.T) {
 		"station": stationHandle,
 		"reason":  reasonNormal,
 	})
+
 	if err := sendFn(context.Background(), state, sendArgs); err != nil {
-		t.Fatalf("sendBootNotification: %v", err)
+		t.Fatalf(sendBootNotificationFailure, err)
 	}
 
 	respondFn := resolveFunc(t, patternCSMSResponds)
@@ -178,7 +170,9 @@ func Test_csmsRespondsWithStatus_errorWithNoPending(t *testing.T) {
 
 	err := fn(context.Background(), state, args)
 	if err == nil {
-		t.Error("csmsRespondsWithStatus: want error without prior send, got nil")
+		t.Error(
+			"csmsRespondsWithStatus: want error without prior send, got nil",
+		)
 	}
 }
 
@@ -215,7 +209,9 @@ func Test_stationIsInRegisteredState_failsWhenNotRegistered(t *testing.T) {
 
 	err := fn(context.Background(), state, args)
 	if err == nil {
-		t.Error("stationIsInRegisteredState: want error when not registered, got nil")
+		t.Error(
+			"stationIsInRegisteredState: want error when not registered, got nil",
+		)
 	}
 }
 
@@ -228,7 +224,7 @@ func Test_responseIncludesHeartbeatInterval_passesInRange(t *testing.T) {
 
 	station := mock.NewMockStation()
 	state := newState(t, station)
-	state.Stash("ocpp16:last_payload", map[string]any{
+	state.Stash(lastPayloadKeyTest, map[string]any{
 		"heartbeatInterval": float64(heartbeatIntervalInRange),
 	})
 
@@ -251,7 +247,7 @@ func Test_responseIncludesHeartbeatInterval_failsOutOfRange(t *testing.T) {
 
 	station := mock.NewMockStation()
 	state := newState(t, station)
-	state.Stash("ocpp16:last_payload", map[string]any{
+	state.Stash(lastPayloadKeyTest, map[string]any{
 		"heartbeatInterval": float64(heartbeatIntervalTooLow),
 	})
 
@@ -263,7 +259,9 @@ func Test_responseIncludesHeartbeatInterval_failsOutOfRange(t *testing.T) {
 
 	err := fn(context.Background(), state, args)
 	if err == nil {
-		t.Error("responseIncludesHeartbeatInterval: want error for out-of-range interval, got nil")
+		t.Error(
+			"responseIncludesHeartbeatInterval: want error for out-of-range interval, got nil",
+		)
 	}
 }
 
@@ -276,7 +274,7 @@ func Test_responseIncludesCurrentTime_passesValidISO8601(t *testing.T) {
 
 	station := mock.NewMockStation()
 	state := newState(t, station)
-	state.Stash("ocpp16:last_payload", map[string]any{
+	state.Stash(lastPayloadKeyTest, map[string]any{
 		"currentTime": currentTimeValid,
 	})
 
@@ -296,7 +294,7 @@ func Test_responseIncludesCurrentTime_failsInvalidFormat(t *testing.T) {
 
 	station := mock.NewMockStation()
 	state := newState(t, station)
-	state.Stash("ocpp16:last_payload", map[string]any{
+	state.Stash(lastPayloadKeyTest, map[string]any{
 		"currentTime": currentTimeInvalid,
 	})
 
@@ -305,7 +303,9 @@ func Test_responseIncludesCurrentTime_failsInvalidFormat(t *testing.T) {
 
 	err := fn(context.Background(), state, args)
 	if err == nil {
-		t.Error("responseIncludesCurrentTime: want error for invalid format, got nil")
+		t.Error(
+			"responseIncludesCurrentTime: want error for invalid format, got nil",
+		)
 	}
 }
 
@@ -331,8 +331,9 @@ func Test_csmsRespondsWithStatus_setsRegisteredFlag(t *testing.T) {
 		"station": stationHandle,
 		"reason":  reasonNormal,
 	})
+
 	if err := sendFn(context.Background(), state, sendArgs); err != nil {
-		t.Fatalf("sendBootNotification: %v", err)
+		t.Fatalf(sendBootNotificationFailure, err)
 	}
 
 	respondFn := resolveFunc(t, patternCSMSResponds)
@@ -340,6 +341,7 @@ func Test_csmsRespondsWithStatus_setsRegisteredFlag(t *testing.T) {
 		"status":  statusAccepted,
 		"timeout": defaultTimeout,
 	})
+
 	if err := respondFn(context.Background(), state, respondArgs); err != nil {
 		t.Fatalf("csmsRespondsWithStatus: %v", err)
 	}
@@ -349,9 +351,9 @@ func Test_csmsRespondsWithStatus_setsRegisteredFlag(t *testing.T) {
 
 	err := registeredFn(context.Background(), state, registeredArgs)
 	if err != nil {
-		t.Errorf("stationIsInRegisteredState: want nil after Accepted boot, got %v", err)
+		t.Errorf(
+			"stationIsInRegisteredState: want nil after Accepted boot, got %v",
+			err,
+		)
 	}
 }
-
-// Ensure time import is used (for defaultTimeout declared in helpers).
-var _ = time.Second

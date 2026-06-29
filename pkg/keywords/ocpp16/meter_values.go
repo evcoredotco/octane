@@ -69,7 +69,9 @@ func csmsAcknowledgesMeterValues(
 
 	info, ok := popPending(state)
 	if !ok {
-		return errors.New("ocpp16: no pending MeterValues; call sendMeterValues first")
+		return errors.New(
+			"ocpp16: no pending MeterValues; call sendMeterValues first",
+		)
 	}
 
 	payload, err := expectResult(ctx, state, info.station, timeout)

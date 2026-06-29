@@ -38,7 +38,12 @@ func sendAuthorize(
 		action:  "Authorize",
 	})
 
-	state.Logf("station %q sent Authorize (idTag=%q, msgID=%s)", station, idTag, msgID)
+	state.Logf(
+		"station %q sent Authorize (idTag=%q, msgID=%s)",
+		station,
+		idTag,
+		msgID,
+	)
 
 	return nil
 }
@@ -60,7 +65,9 @@ func csmsRespondsToAuthorize(
 
 	info, ok := popPending(state)
 	if !ok {
-		return errors.New("ocpp16: no pending Authorize; call sendAuthorize first")
+		return errors.New(
+			"ocpp16: no pending Authorize; call sendAuthorize first",
+		)
 	}
 
 	payload, err := expectResult(ctx, state, info.station, timeout)
@@ -72,7 +79,9 @@ func csmsRespondsToAuthorize(
 
 	rawTagInfo, exists := payload["idTagInfo"]
 	if !exists {
-		return errors.New("ocpp16: Authorize.conf payload missing idTagInfo field")
+		return errors.New(
+			"ocpp16: Authorize.conf payload missing idTagInfo field",
+		)
 	}
 
 	tagInfo, ok := rawTagInfo.(map[string]any)
@@ -83,7 +92,11 @@ func csmsRespondsToAuthorize(
 		)
 	}
 
-	gotStatus, err := payloadString(tagInfo, fieldStatus, "Authorize.conf idTagInfo")
+	gotStatus, err := payloadString(
+		tagInfo,
+		fieldStatus,
+		"Authorize.conf idTagInfo",
+	)
 	if err != nil {
 		return err
 	}
@@ -91,7 +104,9 @@ func csmsRespondsToAuthorize(
 	if gotStatus != expectedStatus {
 		return fmt.Errorf(
 			"ocpp16: station %q: Authorize.conf idTagInfo.status: want %q, got %q",
-			info.station, expectedStatus, gotStatus,
+			info.station,
+			expectedStatus,
+			gotStatus,
 		)
 	}
 

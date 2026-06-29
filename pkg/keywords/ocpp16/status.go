@@ -73,7 +73,9 @@ func csmsAcknowledgesStatus(
 
 	info, ok := popPending(state)
 	if !ok {
-		return errors.New("ocpp16: no pending StatusNotification; call sendStatusNotification first")
+		return errors.New(
+			"ocpp16: no pending StatusNotification; call sendStatusNotification first",
+		)
 	}
 
 	payload, err := expectResult(ctx, state, info.station, timeout)
@@ -124,7 +126,9 @@ func connectorIsInState(
 	if !ok {
 		return fmt.Errorf(
 			"ocpp16: connector %d of station %q: state stash has unexpected type %T",
-			connectorID, station, val,
+			connectorID,
+			station,
+			val,
 		)
 	}
 

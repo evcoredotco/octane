@@ -23,7 +23,13 @@ func csmsEnqueuesChangeConfiguration(
 	station := args.String("station")
 	timeout := args.Duration("timeout")
 
-	uniqueID, payload, err := expectCSMSCall(ctx, state, station, actionChangeConfiguration, timeout)
+	uniqueID, payload, err := expectCSMSCall(
+		ctx,
+		state,
+		station,
+		actionChangeConfiguration,
+		timeout,
+	)
 	if err != nil {
 		return err
 	}
@@ -56,7 +62,10 @@ func csmsEnqueuesChangeConfiguration(
 
 	state.Logf(
 		"station %q received ChangeConfiguration CALL (uniqueID=%s, key=%q, value=%q)",
-		station, uniqueID, key, value,
+		station,
+		uniqueID,
+		key,
+		value,
 	)
 
 	return nil

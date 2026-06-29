@@ -568,7 +568,13 @@ func execStoryNode(ctx context.Context, params execParams) StoryResult {
 	cacheKey := buildCacheKey(params.storyNode, params.cfg, params.runID)
 
 	if params.cfg.NoCache {
-		result := executeStory(ctx, params.storyNode, params.cfg, params.clk, params.storyIdx)
+		result := executeStory(
+			ctx,
+			params.storyNode,
+			params.cfg,
+			params.clk,
+			params.storyIdx,
+		)
 		result.StartedAt = startedAt
 		result.FinishedAt = params.clk.Now()
 		result.CacheStatus = CacheBypassed
@@ -617,7 +623,13 @@ func execWithDedup(
 	}
 
 	// Cache miss even after the Once: execute fresh.
-	result := executeStory(ctx, params.storyNode, params.cfg, params.clk, params.storyIdx)
+	result := executeStory(
+		ctx,
+		params.storyNode,
+		params.cfg,
+		params.clk,
+		params.storyIdx,
+	)
 	result.StartedAt = startedAt
 	result.FinishedAt = params.clk.Now()
 

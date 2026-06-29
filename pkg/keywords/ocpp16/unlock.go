@@ -22,12 +22,22 @@ func csmsEnqueuesUnlockConnector(
 	station := args.String("station")
 	timeout := args.Duration("timeout")
 
-	uniqueID, payload, err := expectCSMSCall(ctx, state, station, actionUnlockConnector, timeout)
+	uniqueID, payload, err := expectCSMSCall(
+		ctx,
+		state,
+		station,
+		actionUnlockConnector,
+		timeout,
+	)
 	if err != nil {
 		return err
 	}
 
-	gotConnector, err := payloadNumber(payload, fieldConnectorID, actionUnlockConnector)
+	gotConnector, err := payloadNumber(
+		payload,
+		fieldConnectorID,
+		actionUnlockConnector,
+	)
 	if err != nil {
 		return err
 	}

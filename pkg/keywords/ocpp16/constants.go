@@ -32,10 +32,17 @@ const (
 
 const stationNotConnectedFormat = "ocpp16: station %q: not connected: %w"
 
-func payloadString(payload map[string]any, field, context string) (string, error) {
+func payloadString(
+	payload map[string]any,
+	field, context string,
+) (string, error) {
 	raw, exists := payload[field]
 	if !exists {
-		return "", fmt.Errorf("ocpp16: %s payload missing %s field", context, field)
+		return "", fmt.Errorf(
+			"ocpp16: %s payload missing %s field",
+			context,
+			field,
+		)
 	}
 
 	value, ok := raw.(string)
@@ -49,10 +56,17 @@ func payloadString(payload map[string]any, field, context string) (string, error
 	return value, nil
 }
 
-func payloadNumber(payload map[string]any, field, context string) (float64, error) {
+func payloadNumber(
+	payload map[string]any,
+	field, context string,
+) (float64, error) {
 	raw, exists := payload[field]
 	if !exists {
-		return noNumericPayloadValue, fmt.Errorf("ocpp16: %s payload missing %s field", context, field)
+		return noNumericPayloadValue, fmt.Errorf(
+			"ocpp16: %s payload missing %s field",
+			context,
+			field,
+		)
 	}
 
 	value, ok := raw.(float64)

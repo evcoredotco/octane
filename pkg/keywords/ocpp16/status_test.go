@@ -34,31 +34,26 @@ func Test_sendStatusNotification_sendsCALLFrame(t *testing.T) {
 		t.Fatalf("sendStatusNotification: unexpected error: %v", err)
 	}
 
-	frames := station.SentFrames()
-	if len(frames) != 1 {
-		t.Fatalf("sendStatusNotification: want 1 sent frame, got %d", len(frames))
-	}
-
-	frame := frames[0]
-	if frame[0] != msgTypeCall {
-		t.Errorf("frame[0]: want %v (CALL), got %v", msgTypeCall, frame[0])
-	}
-
-	if frame[2] != actionStatusNotification {
-		t.Errorf("frame[2]: want %q, got %v", actionStatusNotification, frame[2])
-	}
-
-	payload, ok := frame[3].(map[string]any)
-	if !ok {
-		t.Fatalf("frame[3]: want map[string]any, got %T", frame[3])
-	}
-
+	payload := requireSentCallPayload(
+		t,
+		station,
+		"sendStatusNotification",
+		actionStatusNotification,
+	)
 	if payload["connectorId"] != connectorIDOne {
-		t.Errorf("payload.connectorId: want %d, got %v", connectorIDOne, payload["connectorId"])
+		t.Errorf(
+			"payload.connectorId: want %d, got %v",
+			connectorIDOne,
+			payload["connectorId"],
+		)
 	}
 
 	if payload["status"] != statusAvailable {
-		t.Errorf("payload.status: want %q, got %v", statusAvailable, payload["status"])
+		t.Errorf(
+			"payload.status: want %q, got %v",
+			statusAvailable,
+			payload["status"],
+		)
 	}
 
 	if _, exists := payload["errorCode"]; !exists {
@@ -91,6 +86,7 @@ func Test_csmsAcknowledgesStatus_passesOnEmptyPayload(t *testing.T) {
 		"connectorId": connectorIDOne,
 		"status":      statusAvailable,
 	})
+
 	if err := sendFn(context.Background(), state, sendArgs); err != nil {
 		t.Fatalf("sendStatusNotification: %v", err)
 	}
@@ -170,12 +166,14 @@ func Test_connectorIsInState_setsStateFromSendPair(t *testing.T) {
 		"connectorId": connectorIDOne,
 		"status":      statusAvailable,
 	})
+
 	if err := sendFn(context.Background(), state, sendArgs); err != nil {
 		t.Fatalf("sendStatusNotification: %v", err)
 	}
 
 	ackFn := resolveFunc(t, patternCSMSAcksStatus)
 	ackArgs := api.NewArgs(map[string]any{"timeout": defaultTimeout})
+
 	if err := ackFn(context.Background(), state, ackArgs); err != nil {
 		t.Fatalf("csmsAcknowledgesStatus: %v", err)
 	}

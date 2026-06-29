@@ -22,7 +22,13 @@ func csmsEnqueuesGetConfiguration(
 	station := args.String("station")
 	timeout := args.Duration("timeout")
 
-	uniqueID, _, err := expectCSMSCall(ctx, state, station, actionGetConfiguration, timeout)
+	uniqueID, _, err := expectCSMSCall(
+		ctx,
+		state,
+		station,
+		actionGetConfiguration,
+		timeout,
+	)
 	if err != nil {
 		return err
 	}

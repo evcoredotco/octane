@@ -121,6 +121,7 @@ func Test_stationRespondsToReset_sendsCALLRESULT(t *testing.T) {
 		"station":   stationHandle,
 		"timeout":   defaultTimeout,
 	})
+
 	if err := enqueueFn(context.Background(), state, enqueueArgs); err != nil {
 		t.Fatalf("csmsEnqueuesReset: %v", err)
 	}
@@ -139,27 +140,17 @@ func Test_stationRespondsToReset_sendsCALLRESULT(t *testing.T) {
 		t.Fatalf("stationRespondsToReset: want nil, got %v", err)
 	}
 
-	frames := station.SentFrames()
-	if len(frames) != 1 {
-		t.Fatalf("stationRespondsToReset: want 1 sent frame, got %d", len(frames))
-	}
-
-	frame := frames[0]
-	if frame[0] != msgTypeCallResult {
-		t.Errorf("frame[0]: want %v (CALLRESULT), got %v", msgTypeCallResult, frame[0])
-	}
-
-	if frame[1] != csmsUniqueID {
-		t.Errorf("frame[1]: want %q, got %v", csmsUniqueID, frame[1])
-	}
-
-	respPayload, ok := frame[2].(map[string]any)
-	if !ok {
-		t.Fatalf("frame[2]: want map[string]any, got %T", frame[2])
-	}
-
+	respPayload := requireSentCallResultPayload(
+		t,
+		station,
+		"stationRespondsToReset",
+	)
 	if respPayload["status"] != statusAccepted {
-		t.Errorf("payload.status: want %q, got %v", statusAccepted, respPayload["status"])
+		t.Errorf(
+			"payload.status: want %q, got %v",
+			statusAccepted,
+			respPayload["status"],
+		)
 	}
 }
 
@@ -179,6 +170,8 @@ func Test_stationRespondsToReset_errorWithNoStash(t *testing.T) {
 
 	err := fn(context.Background(), state, args)
 	if err == nil {
-		t.Error("stationRespondsToReset: want error without prior enqueue, got nil")
+		t.Error(
+			"stationRespondsToReset: want error without prior enqueue, got nil",
+		)
 	}
 }
