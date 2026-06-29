@@ -35,35 +35,34 @@ func Test_sendStopTransaction_sendsCALLFrameWithAllFields(t *testing.T) {
 		t.Fatalf("sendStopTransaction: unexpected error: %v", err)
 	}
 
-	frames := station.SentFrames()
-	if len(frames) != 1 {
-		t.Fatalf("sendStopTransaction: want 1 sent frame, got %d", len(frames))
-	}
-
-	frame := frames[0]
-	if frame[0] != msgTypeCall {
-		t.Errorf("frame[0]: want %v (CALL), got %v", msgTypeCall, frame[0])
-	}
-
-	if frame[2] != actionStopTransaction {
-		t.Errorf("frame[2]: want %q, got %v", actionStopTransaction, frame[2])
-	}
-
-	payload, ok := frame[3].(map[string]any)
-	if !ok {
-		t.Fatalf("frame[3]: want map[string]any, got %T", frame[3])
-	}
-
+	payload := requireSentCallPayload(
+		t,
+		station,
+		"sendStopTransaction",
+		actionStopTransaction,
+	)
 	if payload["transactionId"] != transactionIDPositive {
-		t.Errorf("payload.transactionId: want %d, got %v", transactionIDPositive, payload["transactionId"])
+		t.Errorf(
+			"payload.transactionId: want %d, got %v",
+			transactionIDPositive,
+			payload["transactionId"],
+		)
 	}
 
 	if payload["meterStop"] != meterStopValue {
-		t.Errorf("payload.meterStop: want %d, got %v", meterStopValue, payload["meterStop"])
+		t.Errorf(
+			"payload.meterStop: want %d, got %v",
+			meterStopValue,
+			payload["meterStop"],
+		)
 	}
 
 	if payload["reason"] != stopReasonNormal {
-		t.Errorf("payload.reason: want %q, got %v", stopReasonNormal, payload["reason"])
+		t.Errorf(
+			"payload.reason: want %q, got %v",
+			stopReasonNormal,
+			payload["reason"],
+		)
 	}
 
 	if _, exists := payload["timestamp"]; !exists {
@@ -93,6 +92,7 @@ func Test_csmsAcceptsStopTransaction_passesOnEmptyConf(t *testing.T) {
 		"meterStop":     meterStopValue,
 		"reason":        stopReasonNormal,
 	})
+
 	if err := sendFn(context.Background(), state, sendArgs); err != nil {
 		t.Fatalf("sendStopTransaction: %v", err)
 	}
@@ -119,6 +119,8 @@ func Test_csmsAcceptsStopTransaction_errorWithNoPending(t *testing.T) {
 
 	err := fn(context.Background(), state, args)
 	if err == nil {
-		t.Error("csmsAcceptsStopTransaction: want error without prior send, got nil")
+		t.Error(
+			"csmsAcceptsStopTransaction: want error without prior send, got nil",
+		)
 	}
 }

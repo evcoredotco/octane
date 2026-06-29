@@ -70,26 +70,16 @@ func Test_stationRespondsToClearCache_sendsCALLRESULT(t *testing.T) {
 		t.Fatalf("stationRespondsToClearCache: want nil, got %v", err)
 	}
 
-	frames := station.SentFrames()
-	if len(frames) != 1 {
-		t.Fatalf("stationRespondsToClearCache: want 1 sent frame, got %d", len(frames))
-	}
-
-	frame := frames[0]
-	if frame[0] != msgTypeCallResult {
-		t.Errorf("frame[0]: want %v (CALLRESULT), got %v", msgTypeCallResult, frame[0])
-	}
-
-	if frame[1] != csmsUniqueID {
-		t.Errorf("frame[1]: want %q, got %v", csmsUniqueID, frame[1])
-	}
-
-	respPayload, ok := frame[2].(map[string]any)
-	if !ok {
-		t.Fatalf("frame[2]: want map[string]any, got %T", frame[2])
-	}
-
+	respPayload := requireSentCallResultPayload(
+		t,
+		station,
+		"stationRespondsToClearCache",
+	)
 	if respPayload["status"] != statusAccepted {
-		t.Errorf("payload.status: want %q, got %v", statusAccepted, respPayload["status"])
+		t.Errorf(
+			"payload.status: want %q, got %v",
+			statusAccepted,
+			respPayload["status"],
+		)
 	}
 }

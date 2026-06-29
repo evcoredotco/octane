@@ -38,27 +38,18 @@ func Test_sendStartTransaction_sendsCALLFrameWithAllFields(t *testing.T) {
 		t.Fatalf("sendStartTransaction: unexpected error: %v", err)
 	}
 
-	frames := station.SentFrames()
-	if len(frames) != 1 {
-		t.Fatalf("sendStartTransaction: want 1 sent frame, got %d", len(frames))
-	}
-
-	frame := frames[0]
-	if frame[0] != msgTypeCall {
-		t.Errorf("frame[0]: want %v (CALL), got %v", msgTypeCall, frame[0])
-	}
-
-	if frame[2] != actionStartTransaction {
-		t.Errorf("frame[2]: want %q, got %v", actionStartTransaction, frame[2])
-	}
-
-	payload, ok := frame[3].(map[string]any)
-	if !ok {
-		t.Fatalf("frame[3]: want map[string]any, got %T", frame[3])
-	}
-
+	payload := requireSentCallPayload(
+		t,
+		station,
+		"sendStartTransaction",
+		actionStartTransaction,
+	)
 	if payload["connectorId"] != connectorIDOne {
-		t.Errorf("payload.connectorId: want %d, got %v", connectorIDOne, payload["connectorId"])
+		t.Errorf(
+			"payload.connectorId: want %d, got %v",
+			connectorIDOne,
+			payload["connectorId"],
+		)
 	}
 
 	if payload["idTag"] != idTagValue {
@@ -66,7 +57,11 @@ func Test_sendStartTransaction_sendsCALLFrameWithAllFields(t *testing.T) {
 	}
 
 	if payload["meterStart"] != meterStartValue {
-		t.Errorf("payload.meterStart: want %d, got %v", meterStartValue, payload["meterStart"])
+		t.Errorf(
+			"payload.meterStart: want %d, got %v",
+			meterStartValue,
+			payload["meterStart"],
+		)
 	}
 
 	if _, exists := payload["timestamp"]; !exists {
@@ -99,6 +94,7 @@ func Test_csmsRespondsToStartTransaction_acceptsAccepted(t *testing.T) {
 		"idTag":       idTagValue,
 		"meterStart":  meterStartValue,
 	})
+
 	if err := sendFn(context.Background(), state, sendArgs); err != nil {
 		t.Fatalf("sendStartTransaction: %v", err)
 	}
@@ -138,6 +134,7 @@ func Test_csmsRespondsToStartTransaction_stashesTransactionId(t *testing.T) {
 		"idTag":       idTagValue,
 		"meterStart":  meterStartValue,
 	})
+
 	if err := sendFn(context.Background(), state, sendArgs); err != nil {
 		t.Fatalf("sendStartTransaction: %v", err)
 	}
@@ -147,6 +144,7 @@ func Test_csmsRespondsToStartTransaction_stashesTransactionId(t *testing.T) {
 		"status":  statusAccepted,
 		"timeout": defaultTimeout,
 	})
+
 	if err := respondFn(context.Background(), state, respondArgs); err != nil {
 		t.Fatalf("csmsRespondsToStartTransaction: %v", err)
 	}
@@ -163,7 +161,11 @@ func Test_csmsRespondsToStartTransaction_stashesTransactionId(t *testing.T) {
 	}
 
 	if txID != transactionIDPositive {
-		t.Errorf("transactionId stash: want %d, got %d", transactionIDPositive, txID)
+		t.Errorf(
+			"transactionId stash: want %d, got %d",
+			transactionIDPositive,
+			txID,
+		)
 	}
 }
 
@@ -171,12 +173,14 @@ func Test_csmsRespondsToStartTransaction_stashesTransactionId(t *testing.T) {
 
 // Test_startTransactionAssignsPositiveTransactionID_passesPositive verifies
 // that the keyword passes when the stashed payload has a positive transactionId.
-func Test_startTransactionAssignsPositiveTransactionID_passesPositive(t *testing.T) {
+func Test_startTransactionAssignsPositiveTransactionID_passesPositive(
+	t *testing.T,
+) {
 	t.Parallel()
 
 	station := mock.NewMockStation()
 	state := newState(t, station)
-	state.Stash("ocpp16:last_payload", map[string]any{
+	state.Stash(lastPayloadKeyTest, map[string]any{
 		"transactionId": float64(transactionIDPositive),
 		"idTagInfo":     map[string]any{"status": statusAccepted},
 	})
@@ -186,7 +190,10 @@ func Test_startTransactionAssignsPositiveTransactionID_passesPositive(t *testing
 
 	err := fn(context.Background(), state, args)
 	if err != nil {
-		t.Errorf("startTransactionAssignsPositiveTransactionID: want nil, got %v", err)
+		t.Errorf(
+			"startTransactionAssignsPositiveTransactionID: want nil, got %v",
+			err,
+		)
 	}
 }
 
@@ -197,7 +204,7 @@ func Test_startTransactionAssignsPositiveTransactionID_failsZero(t *testing.T) {
 
 	station := mock.NewMockStation()
 	state := newState(t, station)
-	state.Stash("ocpp16:last_payload", map[string]any{
+	state.Stash(lastPayloadKeyTest, map[string]any{
 		"transactionId": float64(transactionIDZero),
 		"idTagInfo":     map[string]any{"status": statusAccepted},
 	})
@@ -207,18 +214,22 @@ func Test_startTransactionAssignsPositiveTransactionID_failsZero(t *testing.T) {
 
 	err := fn(context.Background(), state, args)
 	if err == nil {
-		t.Error("startTransactionAssignsPositiveTransactionID: want error for zero id, got nil")
+		t.Error(
+			"startTransactionAssignsPositiveTransactionID: want error for zero id, got nil",
+		)
 	}
 }
 
 // Test_startTransactionAssignsPositiveTransactionID_failsMissing verifies that
 // the keyword returns an error when transactionId is absent from the payload.
-func Test_startTransactionAssignsPositiveTransactionID_failsMissing(t *testing.T) {
+func Test_startTransactionAssignsPositiveTransactionID_failsMissing(
+	t *testing.T,
+) {
 	t.Parallel()
 
 	station := mock.NewMockStation()
 	state := newState(t, station)
-	state.Stash("ocpp16:last_payload", map[string]any{
+	state.Stash(lastPayloadKeyTest, map[string]any{
 		"idTagInfo": map[string]any{"status": statusAccepted},
 	})
 
@@ -227,6 +238,8 @@ func Test_startTransactionAssignsPositiveTransactionID_failsMissing(t *testing.T
 
 	err := fn(context.Background(), state, args)
 	if err == nil {
-		t.Error("startTransactionAssignsPositiveTransactionID: want error for missing id, got nil")
+		t.Error(
+			"startTransactionAssignsPositiveTransactionID: want error for missing id, got nil",
+		)
 	}
 }

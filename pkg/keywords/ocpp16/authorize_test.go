@@ -8,6 +8,8 @@ import (
 	"github.com/evcoreco/octane/pkg/keywords/api/mock"
 )
 
+const sendAuthorizeFailure = "sendAuthorize: %v"
+
 // ── sendAuthorize tests ───────────────────────────────────────────────────────
 
 // Test_sendAuthorize_sendsCALLFrameWithIdTag verifies that the keyword sends a
@@ -35,25 +37,12 @@ func Test_sendAuthorize_sendsCALLFrameWithIdTag(t *testing.T) {
 		t.Fatalf("sendAuthorize: unexpected error: %v", err)
 	}
 
-	frames := station.SentFrames()
-	if len(frames) != 1 {
-		t.Fatalf("sendAuthorize: want 1 sent frame, got %d", len(frames))
-	}
-
-	frame := frames[0]
-	if frame[0] != msgTypeCall {
-		t.Errorf("frame[0]: want %v (CALL), got %v", msgTypeCall, frame[0])
-	}
-
-	if frame[2] != actionAuthorize {
-		t.Errorf("frame[2]: want %q, got %v", actionAuthorize, frame[2])
-	}
-
-	payload, ok := frame[3].(map[string]any)
-	if !ok {
-		t.Fatalf("frame[3]: want map[string]any, got %T", frame[3])
-	}
-
+	payload := requireSentCallPayload(
+		t,
+		station,
+		"sendAuthorize",
+		actionAuthorize,
+	)
 	if payload["idTag"] != idTagValue {
 		t.Errorf("payload.idTag: want %q, got %v", idTagValue, payload["idTag"])
 	}
@@ -81,8 +70,9 @@ func Test_csmsRespondsToAuthorize_acceptsMatchingStatus(t *testing.T) {
 		"station": stationHandle,
 		"idTag":   idTagValue,
 	})
+
 	if err := sendFn(context.Background(), state, sendArgs); err != nil {
-		t.Fatalf("sendAuthorize: %v", err)
+		t.Fatalf(sendAuthorizeFailure, err)
 	}
 
 	respondFn := resolveFunc(t, patternCSMSRespondsAuth)
@@ -117,8 +107,9 @@ func Test_csmsRespondsToAuthorize_errorOnRejectedStatus(t *testing.T) {
 		"station": stationHandle,
 		"idTag":   idTagValue,
 	})
+
 	if err := sendFn(context.Background(), state, sendArgs); err != nil {
-		t.Fatalf("sendAuthorize: %v", err)
+		t.Fatalf(sendAuthorizeFailure, err)
 	}
 
 	respondFn := resolveFunc(t, patternCSMSRespondsAuth)
@@ -129,7 +120,9 @@ func Test_csmsRespondsToAuthorize_errorOnRejectedStatus(t *testing.T) {
 
 	err := respondFn(context.Background(), state, respondArgs)
 	if err == nil {
-		t.Error("csmsRespondsToAuthorize: want error for rejected status, got nil")
+		t.Error(
+			"csmsRespondsToAuthorize: want error for rejected status, got nil",
+		)
 	}
 }
 
@@ -153,8 +146,9 @@ func Test_csmsRespondsToAuthorize_errorOnMalformedIdTagInfo(t *testing.T) {
 		"station": stationHandle,
 		"idTag":   idTagValue,
 	})
+
 	if err := sendFn(context.Background(), state, sendArgs); err != nil {
-		t.Fatalf("sendAuthorize: %v", err)
+		t.Fatalf(sendAuthorizeFailure, err)
 	}
 
 	respondFn := resolveFunc(t, patternCSMSRespondsAuth)
@@ -165,6 +159,8 @@ func Test_csmsRespondsToAuthorize_errorOnMalformedIdTagInfo(t *testing.T) {
 
 	err := respondFn(context.Background(), state, respondArgs)
 	if err == nil {
-		t.Error("csmsRespondsToAuthorize: want error for malformed idTagInfo, got nil")
+		t.Error(
+			"csmsRespondsToAuthorize: want error for malformed idTagInfo, got nil",
+		)
 	}
 }

@@ -114,7 +114,9 @@ func Test_lifecycle_connect_errorWhenNoEndpoint(t *testing.T) {
 
 	err := fn(context.Background(), state, args)
 	if err == nil {
-		t.Fatal("connect keyword: want error when CSMSBaseURL is empty, got nil")
+		t.Fatal(
+			"connect keyword: want error when CSMSBaseURL is empty, got nil",
+		)
 	}
 }
 
@@ -161,11 +163,18 @@ func Test_lifecycle_connect_registersStationOnSuccess(t *testing.T) {
 
 	sta, lookupErr := state.Station(stationHandle)
 	if lookupErr != nil {
-		t.Fatalf("Station(%q) after connect: unexpected error: %v", stationHandle, lookupErr)
+		t.Fatalf(
+			"Station(%q) after connect: unexpected error: %v",
+			stationHandle,
+			lookupErr,
+		)
 	}
 
 	if !sta.IsOpen() {
-		t.Errorf("Station(%q).IsOpen(): want true after connect, got false", stationHandle)
+		t.Errorf(
+			"Station(%q).IsOpen(): want true after connect, got false",
+			stationHandle,
+		)
 	}
 }
 
@@ -191,12 +200,19 @@ func Test_lifecycle_connect_stashesHandleForHandshakeStep(t *testing.T) {
 
 	stashedAny, ok := state.Pop(connectingStashKey)
 	if !ok {
-		t.Fatalf("Stash(%q): want value after connect, got none", connectingStashKey)
+		t.Fatalf(
+			"Stash(%q): want value after connect, got none",
+			connectingStashKey,
+		)
 	}
 
 	stashedHandle, ok := stashedAny.(string)
 	if !ok {
-		t.Fatalf("Stash(%q): want string, got %T", connectingStashKey, stashedAny)
+		t.Fatalf(
+			"Stash(%q): want string, got %T",
+			connectingStashKey,
+			stashedAny,
+		)
 	}
 
 	if stashedHandle != stationHandle {
@@ -225,7 +241,9 @@ func Test_lifecycle_handshake_errorWithoutPriorConnect(t *testing.T) {
 
 	err := fn(context.Background(), state, args)
 	if err == nil {
-		t.Fatal("handshake keyword: want error without prior connect step, got nil")
+		t.Fatal(
+			"handshake keyword: want error without prior connect step, got nil",
+		)
 	}
 }
 
@@ -309,7 +327,10 @@ func Test_lifecycle_status_passesForOpenStation(t *testing.T) {
 
 	err := fn(context.Background(), state, args)
 	if err != nil {
-		t.Errorf("connected-state keyword: want nil for open station, got %v", err)
+		t.Errorf(
+			"connected-state keyword: want nil for open station, got %v",
+			err,
+		)
 	}
 }
 
@@ -328,6 +349,8 @@ func Test_lifecycle_status_failsForClosedStation(t *testing.T) {
 
 	err := fn(context.Background(), state, args)
 	if err == nil {
-		t.Fatal("connected-state keyword: want error for closed station, got nil")
+		t.Fatal(
+			"connected-state keyword: want error for closed station, got nil",
+		)
 	}
 }

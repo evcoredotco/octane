@@ -32,7 +32,12 @@ func sendCall(
 	}
 
 	if err := sv.Send(ctx, frame); err != nil {
-		return fmt.Errorf("ocpp16: station %q: send %s: %w", station, action, err)
+		return fmt.Errorf(
+			"ocpp16: station %q: send %s: %w",
+			station,
+			action,
+			err,
+		)
 	}
 
 	return nil
@@ -100,7 +105,11 @@ func expectCSMSCall(
 ) (string, map[string]any, error) {
 	sv, err := state.Station(station)
 	if err != nil {
-		return emptyUniqueID, nil, fmt.Errorf(stationNotConnectedFormat, station, err)
+		return emptyUniqueID, nil, fmt.Errorf(
+			stationNotConnectedFormat,
+			station,
+			err,
+		)
 	}
 
 	subCtx, cancel := context.WithTimeout(ctx, timeout)
@@ -108,12 +117,21 @@ func expectCSMSCall(
 
 	frame, err := sv.Expect(subCtx)
 	if err != nil {
-		return emptyUniqueID, nil, fmt.Errorf("ocpp16: station %q: expect %s CALL: %w", station, action, err)
+		return emptyUniqueID, nil, fmt.Errorf(
+			"ocpp16: station %q: expect %s CALL: %w",
+			station,
+			action,
+			err,
+		)
 	}
 
 	call, err := wire.ParseCall(frame)
 	if err != nil {
-		return emptyUniqueID, nil, fmt.Errorf("ocpp16: station %q: parse inbound CALL: %w", station, err)
+		return emptyUniqueID, nil, fmt.Errorf(
+			"ocpp16: station %q: parse inbound CALL: %w",
+			station,
+			err,
+		)
 	}
 
 	if call.Action != action {
@@ -125,7 +143,12 @@ func expectCSMSCall(
 
 	var payload map[string]any
 	if err := json.Unmarshal(call.Payload, &payload); err != nil {
-		return emptyUniqueID, nil, fmt.Errorf("ocpp16: station %q: unmarshal %s payload: %w", station, action, err)
+		return emptyUniqueID, nil, fmt.Errorf(
+			"ocpp16: station %q: unmarshal %s payload: %w",
+			station,
+			action,
+			err,
+		)
 	}
 
 	if payload == nil {
@@ -155,7 +178,11 @@ func sendCSMSResponse(
 	}
 
 	if err := sv.Send(ctx, frame); err != nil {
-		return fmt.Errorf("ocpp16: station %q: send CALLRESULT: %w", station, err)
+		return fmt.Errorf(
+			"ocpp16: station %q: send CALLRESULT: %w",
+			station,
+			err,
+		)
 	}
 
 	return nil
@@ -188,7 +215,8 @@ func popCSMSCallID(state api.State, station, action string) (string, error) {
 	if !ok {
 		return emptyUniqueID, fmt.Errorf(
 			"ocpp16: station %q: no %s uniqueID stashed; call the CSMS-send keyword first",
-			station, action,
+			station,
+			action,
 		)
 	}
 

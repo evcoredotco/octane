@@ -30,26 +30,13 @@ func Test_sendHeartbeat_sendsCALLFrame(t *testing.T) {
 		t.Fatalf("sendHeartbeat: unexpected error: %v", err)
 	}
 
-	frames := station.SentFrames()
-	if len(frames) != 1 {
-		t.Fatalf("sendHeartbeat: want 1 sent frame, got %d", len(frames))
-	}
-
-	frame := frames[0]
-	if frame[0] != msgTypeCall {
-		t.Errorf("frame[0]: want %v (CALL), got %v", msgTypeCall, frame[0])
-	}
-
-	if frame[2] != actionHeartbeat {
-		t.Errorf("frame[2]: want %q, got %v", actionHeartbeat, frame[2])
-	}
-
-	payload, ok := frame[3].(map[string]any)
-	if !ok {
-		t.Fatalf("frame[3]: want map[string]any, got %T", frame[3])
-	}
-
-	if len(payload) != 0 {
+	payload := requireSentCallPayload(
+		t,
+		station,
+		"sendHeartbeat",
+		actionHeartbeat,
+	)
+	if len(payload) != emptyCollectionCount {
 		t.Errorf("Heartbeat payload: want empty map, got %v", payload)
 	}
 }
@@ -71,6 +58,7 @@ func Test_csmsRespondsToHeartbeat_passesOnValidResponse(t *testing.T) {
 
 	sendFn := resolveFunc(t, patternSendHeartbeat)
 	sendArgs := api.NewArgs(map[string]any{"station": stationHandle})
+
 	if err := sendFn(context.Background(), state, sendArgs); err != nil {
 		t.Fatalf("sendHeartbeat: %v", err)
 	}
@@ -93,7 +81,7 @@ func Test_heartbeatResponseIncludesCurrentTime_passesValid(t *testing.T) {
 
 	station := mock.NewMockStation()
 	state := newState(t, station)
-	state.Stash("ocpp16:last_payload", map[string]any{
+	state.Stash(lastPayloadKeyTest, map[string]any{
 		"currentTime": currentTimeValid,
 	})
 
@@ -113,13 +101,15 @@ func Test_heartbeatResponseIncludesCurrentTime_failsMissing(t *testing.T) {
 
 	station := mock.NewMockStation()
 	state := newState(t, station)
-	state.Stash("ocpp16:last_payload", map[string]any{})
+	state.Stash(lastPayloadKeyTest, map[string]any{})
 
 	fn := resolveFunc(t, patternHBCurrentTime)
 	args := api.NewArgs(map[string]any{})
 
 	err := fn(context.Background(), state, args)
 	if err == nil {
-		t.Error("heartbeatResponseIncludesCurrentTime: want error for missing currentTime, got nil")
+		t.Error(
+			"heartbeatResponseIncludesCurrentTime: want error for missing currentTime, got nil",
+		)
 	}
 }

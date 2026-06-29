@@ -51,7 +51,12 @@ func sendBootNotification(
 		action:  actionBootNotification,
 	})
 
-	state.Logf("station %q sent BootNotification (reason=%q, msgID=%s)", station, reason, msgID)
+	state.Logf(
+		"station %q sent BootNotification (reason=%q, msgID=%s)",
+		station,
+		reason,
+		msgID,
+	)
 
 	return nil
 }
@@ -75,7 +80,9 @@ func csmsRespondsWithStatus(
 
 	info, ok := popPending(state)
 	if !ok {
-		return errors.New("ocpp16: no pending BootNotification; call sendBootNotification first")
+		return errors.New(
+			"ocpp16: no pending BootNotification; call sendBootNotification first",
+		)
 	}
 
 	payload, err := expectResult(ctx, state, info.station, timeout)
@@ -83,7 +90,11 @@ func csmsRespondsWithStatus(
 		return err
 	}
 
-	gotStatus, err := payloadString(payload, fieldStatus, "BootNotification.conf")
+	gotStatus, err := payloadString(
+		payload,
+		fieldStatus,
+		"BootNotification.conf",
+	)
 	if err != nil {
 		return err
 	}
@@ -149,12 +160,16 @@ func responseIncludesHeartbeatInterval(
 
 	payload, ok := peekPayload(state)
 	if !ok {
-		return errors.New("ocpp16: no CALLRESULT payload stashed; call a response keyword first")
+		return errors.New(
+			"ocpp16: no CALLRESULT payload stashed; call a response keyword first",
+		)
 	}
 
 	rawInterval, exists := payload["heartbeatInterval"]
 	if !exists {
-		return errors.New("ocpp16: BootNotification.conf payload missing heartbeatInterval field")
+		return errors.New(
+			"ocpp16: BootNotification.conf payload missing heartbeatInterval field",
+		)
 	}
 
 	interval, ok := rawInterval.(float64)
@@ -189,7 +204,9 @@ func responseIncludesCurrentTime(
 ) error {
 	payload, ok := peekPayload(state)
 	if !ok {
-		return errors.New("ocpp16: no CALLRESULT payload stashed; call a response keyword first")
+		return errors.New(
+			"ocpp16: no CALLRESULT payload stashed; call a response keyword first",
+		)
 	}
 
 	rawTime, exists := payload["currentTime"]

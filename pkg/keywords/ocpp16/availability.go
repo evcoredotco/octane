@@ -24,12 +24,22 @@ func csmsEnqueuesChangeAvailability(
 	station := args.String("station")
 	timeout := args.Duration("timeout")
 
-	uniqueID, payload, err := expectCSMSCall(ctx, state, station, actionChangeAvailability, timeout)
+	uniqueID, payload, err := expectCSMSCall(
+		ctx,
+		state,
+		station,
+		actionChangeAvailability,
+		timeout,
+	)
 	if err != nil {
 		return err
 	}
 
-	gotConnector, err := payloadNumber(payload, fieldConnectorID, actionChangeAvailability)
+	gotConnector, err := payloadNumber(
+		payload,
+		fieldConnectorID,
+		actionChangeAvailability,
+	)
 	if err != nil {
 		return err
 	}
@@ -37,7 +47,9 @@ func csmsEnqueuesChangeAvailability(
 	if int(gotConnector) != connectorID {
 		return fmt.Errorf(
 			"ocpp16: station %q: ChangeAvailability connectorId: want %d, got %d",
-			station, connectorID, int(gotConnector),
+			station,
+			connectorID,
+			int(gotConnector),
 		)
 	}
 
@@ -57,7 +69,10 @@ func csmsEnqueuesChangeAvailability(
 
 	state.Logf(
 		"station %q received ChangeAvailability CALL (uniqueID=%s, connector=%d, type=%q)",
-		station, uniqueID, connectorID, availType,
+		station,
+		uniqueID,
+		connectorID,
+		availType,
 	)
 
 	return nil

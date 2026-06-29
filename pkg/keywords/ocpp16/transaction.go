@@ -45,7 +45,11 @@ func sendStartTransaction(
 
 	state.Logf(
 		"station %q sent StartTransaction (connector=%d, idTag=%q, meterStart=%d, msgID=%s)",
-		station, connectorID, idTag, meterStart, msgID,
+		station,
+		connectorID,
+		idTag,
+		meterStart,
+		msgID,
 	)
 
 	return nil
@@ -68,7 +72,9 @@ func csmsRespondsToStartTransaction(
 
 	info, ok := popPending(state)
 	if !ok {
-		return errors.New("ocpp16: no pending StartTransaction; call sendStartTransaction first")
+		return errors.New(
+			"ocpp16: no pending StartTransaction; call sendStartTransaction first",
+		)
 	}
 
 	payload, err := expectResult(ctx, state, info.station, timeout)
@@ -86,7 +92,9 @@ func csmsRespondsToStartTransaction(
 	if gotStatus != expectedStatus {
 		return fmt.Errorf(
 			"ocpp16: station %q: StartTransaction.conf idTagInfo.status: want %q, got %q",
-			info.station, expectedStatus, gotStatus,
+			info.station,
+			expectedStatus,
+			gotStatus,
 		)
 	}
 
@@ -103,7 +111,9 @@ func csmsRespondsToStartTransaction(
 func startTransactionIDTagStatus(payload map[string]any) (string, error) {
 	rawTagInfo, exists := payload["idTagInfo"]
 	if !exists {
-		return "", errors.New("ocpp16: StartTransaction.conf payload missing idTagInfo field")
+		return "", errors.New(
+			"ocpp16: StartTransaction.conf payload missing idTagInfo field",
+		)
 	}
 
 	tagInfo, ok := rawTagInfo.(map[string]any)
@@ -114,7 +124,11 @@ func startTransactionIDTagStatus(payload map[string]any) (string, error) {
 		)
 	}
 
-	return payloadString(tagInfo, fieldStatus, "StartTransaction.conf idTagInfo")
+	return payloadString(
+		tagInfo,
+		fieldStatus,
+		"StartTransaction.conf idTagInfo",
+	)
 }
 
 func stashPositiveTransactionID(state api.State, payload map[string]any) {
@@ -142,12 +156,16 @@ func startTransactionAssignsPositiveTransactionID(
 ) error {
 	payload, ok := peekPayload(state)
 	if !ok {
-		return errors.New("ocpp16: no StartTransaction.conf payload stashed; call csmsRespondsToStartTransaction first")
+		return errors.New(
+			"ocpp16: no StartTransaction.conf payload stashed; call csmsRespondsToStartTransaction first",
+		)
 	}
 
 	rawID, exists := payload["transactionId"]
 	if !exists {
-		return errors.New("ocpp16: StartTransaction.conf payload missing transactionId field")
+		return errors.New(
+			"ocpp16: StartTransaction.conf payload missing transactionId field",
+		)
 	}
 
 	txID, ok := rawID.(float64)

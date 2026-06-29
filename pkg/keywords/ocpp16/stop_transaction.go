@@ -51,7 +51,11 @@ func sendStopTransaction(
 
 	state.Logf(
 		"station %q sent StopTransaction (transactionId=%d, meterStop=%d, reason=%q, msgID=%s)",
-		station, transactionID, meterStop, reason, msgID,
+		station,
+		transactionID,
+		meterStop,
+		reason,
+		msgID,
 	)
 
 	return nil
@@ -73,7 +77,9 @@ func csmsAcceptsStopTransaction(
 
 	info, ok := popPending(state)
 	if !ok {
-		return errors.New("ocpp16: no pending StopTransaction; call sendStopTransaction first")
+		return errors.New(
+			"ocpp16: no pending StopTransaction; call sendStopTransaction first",
+		)
 	}
 
 	payload, err := expectResult(ctx, state, info.station, timeout)

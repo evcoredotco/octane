@@ -21,7 +21,13 @@ func csmsEnqueuesClearCache(
 	station := args.String("station")
 	timeout := args.Duration("timeout")
 
-	uniqueID, _, err := expectCSMSCall(ctx, state, station, actionClearCache, timeout)
+	uniqueID, _, err := expectCSMSCall(
+		ctx,
+		state,
+		station,
+		actionClearCache,
+		timeout,
+	)
 	if err != nil {
 		return err
 	}

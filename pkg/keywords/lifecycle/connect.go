@@ -37,7 +37,11 @@ func connectToCSMS(
 
 	baseURL := state.CSMSBaseURL()
 	if baseURL == "" {
-		return fmt.Errorf("lifecycle: station %q: %w", handle, errNoCSMSEndpoint)
+		return fmt.Errorf(
+			"lifecycle: station %q: %w",
+			handle,
+			errNoCSMSEndpoint,
+		)
 	}
 
 	stationURL := strings.TrimRight(baseURL, "/") + "/" + handle

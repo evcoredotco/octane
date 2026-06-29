@@ -54,7 +54,9 @@ func csmsRespondsToHeartbeat(
 
 	info, ok := popPending(state)
 	if !ok {
-		return errors.New("ocpp16: no pending Heartbeat; call sendHeartbeat first")
+		return errors.New(
+			"ocpp16: no pending Heartbeat; call sendHeartbeat first",
+		)
 	}
 
 	payload, err := expectResult(ctx, state, info.station, timeout)
@@ -82,12 +84,16 @@ func heartbeatResponseIncludesCurrentTime(
 ) error {
 	payload, ok := peekPayload(state)
 	if !ok {
-		return errors.New("ocpp16: no Heartbeat.conf payload stashed; call csmsRespondsToHeartbeat first")
+		return errors.New(
+			"ocpp16: no Heartbeat.conf payload stashed; call csmsRespondsToHeartbeat first",
+		)
 	}
 
 	rawTime, exists := payload["currentTime"]
 	if !exists {
-		return errors.New("ocpp16: Heartbeat.conf payload missing currentTime field")
+		return errors.New(
+			"ocpp16: Heartbeat.conf payload missing currentTime field",
+		)
 	}
 
 	timeStr, ok := rawTime.(string)
@@ -101,7 +107,8 @@ func heartbeatResponseIncludesCurrentTime(
 	if _, err := time.Parse(time.RFC3339, timeStr); err != nil {
 		return fmt.Errorf(
 			"ocpp16: Heartbeat.conf currentTime %q is not valid ISO-8601 / RFC 3339: %w",
-			timeStr, err,
+			timeStr,
+			err,
 		)
 	}
 

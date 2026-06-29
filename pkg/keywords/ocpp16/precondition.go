@@ -54,7 +54,8 @@ func operatorProvisionedIDTag(
 
 	state.Logf(
 		"precondition: operator must provision idTag %q with status %q in the CSMS",
-		idTag, status,
+		idTag,
+		status,
 	)
 
 	return nil
@@ -81,7 +82,11 @@ func stationIsRegistered(
 	}
 
 	if !sv.IsOpen() {
-		return fmt.Errorf("ocpp16: station %q: %w", handle, errStationNotRegistered)
+		return fmt.Errorf(
+			"ocpp16: station %q: %w",
+			handle,
+			errStationNotRegistered,
+		)
 	}
 
 	return nil

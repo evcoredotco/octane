@@ -39,7 +39,9 @@ func Test_csmsEnqueuesRemoteStop_stashesCallID(t *testing.T) {
 		t.Errorf("csmsEnqueuesRemoteStop: want nil, got %v", err)
 	}
 
-	val, ok := state.Pop("ocpp16:csms_call:" + stationHandle + ":RemoteStopTransaction")
+	val, ok := state.Pop(
+		"ocpp16:csms_call:" + stationHandle + ":RemoteStopTransaction",
+	)
 	if !ok {
 		t.Fatal("csmsEnqueuesRemoteStop: want stashed uniqueID, got nothing")
 	}
@@ -75,7 +77,9 @@ func Test_csmsEnqueuesRemoteStop_errorOnWrongTransactionId(t *testing.T) {
 
 	err := fn(context.Background(), state, args)
 	if err == nil {
-		t.Error("csmsEnqueuesRemoteStop: want error for wrong transactionId, got nil")
+		t.Error(
+			"csmsEnqueuesRemoteStop: want error for wrong transactionId, got nil",
+		)
 	}
 }
 
@@ -88,7 +92,10 @@ func Test_stationRespondsToRemoteStop_sendsAccepted(t *testing.T) {
 
 	station := mock.NewMockStation()
 	state := newState(t, station)
-	state.Stash("ocpp16:csms_call:"+stationHandle+":RemoteStopTransaction", csmsUniqueID)
+	state.Stash(
+		"ocpp16:csms_call:"+stationHandle+":RemoteStopTransaction",
+		csmsUniqueID,
+	)
 
 	fn := resolveFunc(t, patternStationRespondsRemoteStop)
 	args := api.NewArgs(map[string]any{
@@ -101,26 +108,16 @@ func Test_stationRespondsToRemoteStop_sendsAccepted(t *testing.T) {
 		t.Fatalf("stationRespondsToRemoteStop: want nil, got %v", err)
 	}
 
-	frames := station.SentFrames()
-	if len(frames) != 1 {
-		t.Fatalf("stationRespondsToRemoteStop: want 1 sent frame, got %d", len(frames))
-	}
-
-	frame := frames[0]
-	if frame[0] != msgTypeCallResult {
-		t.Errorf("frame[0]: want %v (CALLRESULT), got %v", msgTypeCallResult, frame[0])
-	}
-
-	if frame[1] != csmsUniqueID {
-		t.Errorf("frame[1]: want %q, got %v", csmsUniqueID, frame[1])
-	}
-
-	respPayload, ok := frame[2].(map[string]any)
-	if !ok {
-		t.Fatalf("frame[2]: want map[string]any, got %T", frame[2])
-	}
-
+	respPayload := requireSentCallResultPayload(
+		t,
+		station,
+		"stationRespondsToRemoteStop",
+	)
 	if respPayload["status"] != statusAccepted {
-		t.Errorf("payload.status: want %q, got %v", statusAccepted, respPayload["status"])
+		t.Errorf(
+			"payload.status: want %q, got %v",
+			statusAccepted,
+			respPayload["status"],
+		)
 	}
 }

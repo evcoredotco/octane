@@ -77,7 +77,11 @@ func handshakeCompletes(
 		)
 	}
 
-	state.Logf("OCPP-J handshake complete for station %q (within %s)", handle, timeout.Round(time.Millisecond))
+	state.Logf(
+		"OCPP-J handshake complete for station %q (within %s)",
+		handle,
+		timeout.Round(time.Millisecond),
+	)
 
 	return nil
 }

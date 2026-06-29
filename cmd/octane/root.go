@@ -57,7 +57,12 @@ Global flags apply to all subcommands. Use "octane help <command>"
 for subcommand-specific documentation.`,
 	}
 
-	cmd.Version = fmt.Sprintf("%s (commit %.7s, built %s)", version, commit, date)
+	cmd.Version = fmt.Sprintf(
+		"%s (commit %.7s, built %s)",
+		version,
+		commit,
+		date,
+	)
 
 	persistentFlags := cmd.PersistentFlags()
 
