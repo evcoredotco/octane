@@ -166,8 +166,6 @@ func assertSortOrder(t *testing.T, keywords []api.Keyword) {
 // in a pseudo-random sequence; All() is called twice and both results must
 // be identical and correctly sorted (AC1).
 func Test_registry_All_stableSortAfterRandomRegistrations(t *testing.T) {
-	t.Parallel()
-
 	// Isolate this test from any keywords registered by other files.
 	reset()
 
