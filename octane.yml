@@ -7,4 +7,6 @@ maxParallel: 1
 parameters:
   connectorId: "1"
   valid_idTag: "AABBCC"
+  connectionTimeOut: "30s"
   meterStart: "0"
+  meterStop: "1000"
