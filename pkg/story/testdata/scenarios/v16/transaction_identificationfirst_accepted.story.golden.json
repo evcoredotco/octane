@@ -10,24 +10,15 @@
       "wire-only"
     ],
     "stations": 1,
-    "timeout": 60000000000,
+    "timeout": 120000000000,
     "parameters": [
       "connectorId",
       "valid_idTag",
       "meterStart"
     ],
-    "depends": [
-      {
-        "id": "connector_status_available",
-        "scope": 1,
-        "position": {
-          "line": 47,
-          "column": 7
-        }
-      }
-    ],
+    "depends": null,
     "position": {
-      "line": 38,
+      "line": 33,
       "column": 1
     }
   },
@@ -36,7 +27,7 @@
       "kind": 1,
       "text": "the CSMS is reachable",
       "position": {
-        "line": 51,
+        "line": 43,
         "column": 5
       }
     },
@@ -44,7 +35,7 @@
       "kind": 4,
       "text": "the operator has provisioned id token \"{valid_idTag}\" with status \"Accepted\"",
       "position": {
-        "line": 52,
+        "line": 44,
         "column": 5
       }
     }
@@ -56,7 +47,55 @@
       "steps": [
         {
           "kind": 2,
-          "text": "station \"CP01\" sends Authorize with idTag \"{valid_idTag}\"",
+          "text": "station \"CP01\" connects to the CSMS",
+          "position": {
+            "line": 47,
+            "column": 5
+          }
+        },
+        {
+          "kind": 3,
+          "text": "the OCPP-J handshake completes within 5 seconds",
+          "position": {
+            "line": 48,
+            "column": 5
+          }
+        },
+        {
+          "kind": 4,
+          "text": "station \"CP01\" is in the connected state",
+          "position": {
+            "line": 49,
+            "column": 5
+          }
+        },
+        {
+          "kind": 2,
+          "text": "station \"CP01\" sends BootNotification with reason \"PowerUp\"",
+          "position": {
+            "line": 51,
+            "column": 5
+          }
+        },
+        {
+          "kind": 3,
+          "text": "the CSMS responds with status \"Accepted\" within 30 seconds",
+          "position": {
+            "line": 52,
+            "column": 5
+          }
+        },
+        {
+          "kind": 4,
+          "text": "station \"CP01\" is in the registered state",
+          "position": {
+            "line": 53,
+            "column": 5
+          }
+        },
+        {
+          "kind": 2,
+          "text": "station \"CP01\" sends StatusNotification for connector 0 with status \"Available\"",
           "position": {
             "line": 55,
             "column": 5
@@ -64,7 +103,7 @@
         },
         {
           "kind": 3,
-          "text": "the CSMS responds to Authorize with idTagInfo.status \"Accepted\" within 30 seconds",
+          "text": "the CSMS acknowledges the status within 10 seconds",
           "position": {
             "line": 56,
             "column": 5
@@ -72,7 +111,7 @@
         },
         {
           "kind": 2,
-          "text": "station \"CP01\" sends StatusNotification for connector {connectorId} with status \"Preparing\"",
+          "text": "station \"CP01\" sends StatusNotification for connector {connectorId} with status \"Available\"",
           "position": {
             "line": 58,
             "column": 5
@@ -87,24 +126,24 @@
           }
         },
         {
-          "kind": 2,
-          "text": "station \"CP01\" starts a transaction on connector {connectorId} with idTag \"{valid_idTag}\" and meterStart {meterStart}",
+          "kind": 4,
+          "text": "connector {connectorId} of station \"CP01\" is in state \"Available\"",
           "position": {
-            "line": 61,
+            "line": 60,
             "column": 5
           }
         },
         {
-          "kind": 3,
-          "text": "the CSMS responds to StartTransaction with idTagInfo.status \"Accepted\" within 30 seconds",
+          "kind": 2,
+          "text": "station \"CP01\" sends Authorize with idTag \"{valid_idTag}\"",
           "position": {
             "line": 62,
             "column": 5
           }
         },
         {
-          "kind": 4,
-          "text": "the StartTransaction response assigns a positive transactionId",
+          "kind": 3,
+          "text": "the CSMS responds to Authorize with idTagInfo.status \"Accepted\" within 30 seconds",
           "position": {
             "line": 63,
             "column": 5
@@ -112,7 +151,7 @@
         },
         {
           "kind": 2,
-          "text": "station \"CP01\" sends StatusNotification for connector {connectorId} with status \"Charging\"",
+          "text": "station \"CP01\" sends StatusNotification for connector {connectorId} with status \"Preparing\"",
           "position": {
             "line": 65,
             "column": 5
@@ -125,10 +164,50 @@
             "line": 66,
             "column": 5
           }
+        },
+        {
+          "kind": 2,
+          "text": "station \"CP01\" starts a transaction on connector {connectorId} with idTag \"{valid_idTag}\" and meterStart {meterStart}",
+          "position": {
+            "line": 68,
+            "column": 5
+          }
+        },
+        {
+          "kind": 3,
+          "text": "the CSMS responds to StartTransaction with idTagInfo.status \"Accepted\" within 30 seconds",
+          "position": {
+            "line": 69,
+            "column": 5
+          }
+        },
+        {
+          "kind": 4,
+          "text": "the StartTransaction response assigns a positive transactionId",
+          "position": {
+            "line": 70,
+            "column": 5
+          }
+        },
+        {
+          "kind": 2,
+          "text": "station \"CP01\" sends StatusNotification for connector {connectorId} with status \"Charging\"",
+          "position": {
+            "line": 72,
+            "column": 5
+          }
+        },
+        {
+          "kind": 3,
+          "text": "the CSMS acknowledges the status within 10 seconds",
+          "position": {
+            "line": 73,
+            "column": 5
+          }
         }
       ],
       "position": {
-        "line": 54,
+        "line": 46,
         "column": 1
       }
     }
@@ -138,13 +217,13 @@
       "kind": 6,
       "text": "Disconnect station \"CP01\"",
       "position": {
-        "line": 69,
+        "line": 76,
         "column": 5
       }
     }
   ],
   "position": {
-    "line": 38,
+    "line": 33,
     "column": 1
   }
 }
