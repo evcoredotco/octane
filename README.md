@@ -261,7 +261,6 @@ a Robot XML report on completion.
 
 ```
 .
-├── .specify/                    # Spec-Kit scaffolding (constitution, templates, scripts)
 ├── .claude/                     # Claude Code agents and slash commands
 ├── .github/workflows/           # CI: ci.yml, reference.yml, release.yml, docs.yml
 ├── ARCHITECTURE.md              # Full design narrative
