@@ -53,6 +53,7 @@ paths are given, OCTANE uses `storiesDir` from `octane.yml` (default
 | `--lock-timeout` | duration | `60s` | Max wait to acquire a per-cache-key lock. |
 | `--no-wait` | bool | `false` | Fail immediately when a cache lock is busy. |
 | `--insecure-skip-verify` | bool | `false` | Disable TLS verification. Emits a warning; never use in production. |
+| `--param` | stringArray | `` | Story parameter override in `name=value` form. May be repeated. |
 | `--fail-on` | string | `any` | Exit non-zero when reached: `any` (default) or `major`. |
 | `--report-dir` | string | `reports/` | Directory for per-run report subdirectories. |
 | `--no-trace-on-pass` | bool | `false` | Omit wire traces from reports for stories that passed. |
@@ -71,6 +72,7 @@ error · `74` I/O error · `125` internal error. See
 ```bash
 octane run scenarios/v16 --csms-endpoint ws://localhost:9210
 octane run scenarios/v16/station_boot_accepted.story --csms-endpoint ws://localhost:9210
+octane run scenarios/v16/transaction_pluginfirst_accepted.story --param valid_idTag=AABBCC
 octane run scenarios/v16 --csms-endpoint ws://localhost:9210 --shard 1/4 --max-parallel 4
 ```
 

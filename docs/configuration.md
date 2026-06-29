@@ -32,41 +32,48 @@ schema_version: "1"
 
 # Root directory searched for .story files when no paths are given
 # on the command line.
-stories_dir: "scenarios"
+storiesDir: "scenarios"
 
 # Override the cache directory. Leave empty to use the XDG default.
-cache_dir: ""
+cacheDir: ""
 
 # Maximum number of stories that may execute concurrently.
-max_parallel: 1
+maxParallel: 1
 
 # Restrict execution to stories declaring this OCPP version.
 # Valid values: "1.6". Empty means all versions.
-ocpp_version: ""
+ocppVersion: ""
 
 # Maximum time to wait when acquiring a per-cache-key lock.
-lock_timeout: 60s
+lockTimeout: 60s
 
 # Disable TLS certificate verification. Never use in production.
-insecure_skip_verify: false
+insecureSkipVerify: false
 
 # Exit threshold for the run command.
 # "any" (default): exit 1 when any story fails.
 # "major": reserved for future use.
-fail_on: "any"
+failOn: "any"
+
+# Runtime values for placeholders declared in story Meta Parameters.
+parameters:
+  connectorId: "1"
+  valid_idTag: "AABBCC"
+  meterStart: "0"
 ```
 
 **Field reference**
 
 | Field | Type | Default | env var override |
 |---|---|---|---|
-| `stories_dir` | string | `scenarios` | — |
-| `cache_dir` | string | `` (XDG default) | `OCTANE_CACHE_DIR` |
-| `max_parallel` | int | `1` | `OCTANE_MAX_PARALLEL` |
-| `ocpp_version` | string | `` | `OCTANE_OCPP_VERSION` |
-| `lock_timeout` | duration | `60s` | `OCTANE_LOCK_TIMEOUT` |
-| `insecure_skip_verify` | bool | `false` | — |
-| `fail_on` | string | `any` | `OCTANE_FAIL_ON` |
+| `storiesDir` | string | `scenarios` | — |
+| `cacheDir` | string | `` (XDG default) | `OCTANE_CACHE_DIR` |
+| `maxParallel` | int | `1` | `OCTANE_MAX_PARALLEL` |
+| `ocppVersion` | string | `` | `OCTANE_OCPP_VERSION` |
+| `lockTimeout` | duration | `60s` | `OCTANE_LOCK_TIMEOUT` |
+| `insecureSkipVerify` | bool | `false` | `OCTANE_INSECURE_SKIP_VERIFY` |
+| `failOn` | string | `any` | `OCTANE_FAIL_ON` |
+| `parameters` | map | `{}` | `--param name=value` |
 
 ## Environment Variables
 

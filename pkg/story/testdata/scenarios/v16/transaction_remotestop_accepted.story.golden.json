@@ -13,7 +13,7 @@
     "timeout": 60000000000,
     "parameters": [
       "connectorId",
-      "idTag",
+      "valid_idTag",
       "meterStart",
       "transactionId"
     ],

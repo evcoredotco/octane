@@ -68,6 +68,10 @@ Create `octane.yml` in the root of your project:
 storiesDir:  scenarios/v16
 ocppVersion: "1.6"
 maxParallel: 1
+parameters:
+  connectorId: "1"
+  valid_idTag: "AABBCC"
+  meterStart: "0"
 ```
 
 The `--csms-endpoint` flag (or the `OCTANE_CSMS_ENDPOINT` environment

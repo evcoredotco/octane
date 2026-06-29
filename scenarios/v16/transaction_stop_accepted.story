@@ -19,14 +19,14 @@ Meta
     Tags:        transaction, charging, wire-only
     Stations:    1
     Timeout:     60s
-    Parameters:  connectorId, idTag, meterStart, transactionId, meterStop
+    Parameters:  connectorId, valid_idTag, meterStart, transactionId, meterStop
     Depends:
       - id:    transaction_pluginfirst_accepted
         scope: per-station
 
 Background
     Given the CSMS is reachable
-    And   the operator has provisioned id token "{idTag}" with status "Accepted"
+    And   the operator has provisioned id token "{valid_idTag}" with status "Accepted"
 
 Scenario: Station stops an accepted transaction; CSMS acknowledges
     When  station "CP01" stops transaction {transactionId} with meterStop {meterStop} and reason "Local"

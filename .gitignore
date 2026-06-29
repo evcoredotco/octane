@@ -48,3 +48,4 @@ profile.cov
 # Action local test artifacts
 /action/_work/
 .claude/
+specs.pdf
