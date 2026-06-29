@@ -1,68 +1,56 @@
 # OCTANE
 
-**OCPP Conformance Testing & Network Evaluation**
+**OCPP Conformance Testing and Network Evaluation**
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](./LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8.svg)](https://go.dev)
 
-OCTANE is an open-source conformance harness for OCPP 1.6J. It simulates
-one or more charging stations over a WebSocket connection and verifies that
-your Charging Station Management System (CSMS) responds correctly to each
-OCPP 1.6 message type.
+OCTANE is a Go CLI for running declarative `.story` conformance tests against
+a Charging Station Management System (CSMS). It acts from the charging station
+side of an OCPP-J WebSocket connection, drives protocol exchanges, and reports
+whether the CSMS responds as expected on the wire.
 
-The CSMS under test needs no modification. OCTANE speaks OCPP-J natively
-from the charging station side: it dials your endpoint, exchanges messages,
-and asserts wire-level conformance. Tests are declarative `.story` files that
-read like plain English and map directly to sections of the OCPP specification.
+Current implementation status:
 
-> **Status:** pre-alpha. The core is fully implemented and the OCPP 1.6
-> keyword layer covers 17 message types. See [OCPP 1.6 coverage](#ocpp-16-coverage)
-> for the honest inventory. There are no published packages yet; build from
-> source.
+- OCPP 1.6 domain keywords are implemented under `pkg/keywords/ocpp16`.
+- The checked-in suite contains 23 OCPP 1.6 stories under `scenarios/v16`.
+- Stories are parsed into an AST, resolved through dependency ordering, run with
+  optional parallelism, and cached by content-addressed keys.
+- Reports are written as JSON and Robot Framework-compatible XML.
+- The reliable installation path today is building from source in this repo.
 
----
+Last reviewed: 2026-06-29.
 
-## What it does
+## Prerequisites
 
-OCTANE impersonates a charging station over the OCPP-J WebSocket protocol.
-Each `.story` file is a self-contained test scenario: it establishes a
-connection, drives the CSMS through a sequence of OCPP exchanges, and asserts
-the CSMS response at each step. Stories declare their dependencies, and the
-runner resolves those into a DAG so prerequisite scenarios execute first.
+- Go 1.26 or later.
+- A reachable CSMS WebSocket endpoint, for example `ws://localhost:9210`.
+- Optional local tooling for development: `golangci-lint`, `gofumpt`, `golines`,
+  `gci`, `goreleaser`, `nfpm`, Docker, and pnpm.
 
-A content-addressed cache prevents redundant runs: a story that passed
-against the same CSMS build is skipped until the story file or the binary
-itself changes. The cache makes large suites fast in CI without sacrificing
-repeatability.
-
-Reports emit as JSON and Robot Framework-compatible XML, suitable for
-uploading as CI artifacts or feeding into a test-management system.
-
-OCTANE makes no assertion about internal CSMS state. It observes only the
-wire. If the CSMS sends the right bytes in the right order, the story passes.
-
-## Quick start
-
-### Install (build from source)
-
-No packages are published yet. Build from source with the standard Go
-toolchain (Go 1.26+):
+Install the optional Go tools with:
 
 ```bash
-git clone https://github.com/evcoreco/octane
-cd octane
-go build ./cmd/octane
+make install-tools
 ```
 
-Or run without building:
+## Build
+
+Build the CLI into `bin/octane`:
 
 ```bash
-go run ./cmd/octane run --csms-endpoint ws://localhost:9210
+make build
 ```
 
-### Minimal octane.yml
+Or run directly with the Go toolchain:
 
-Create `octane.yml` in the root of your project:
+```bash
+go run ./cmd/octane --help
+```
+
+## Configure
+
+The repository includes a working starter config at `octane.yml`:
 
 ```yaml
 storiesDir:  scenarios/v16
@@ -71,109 +59,111 @@ maxParallel: 1
 parameters:
   connectorId: "1"
   valid_idTag: "AABBCC"
+  connectionTimeOut: "30s"
   meterStart: "0"
+  meterStop: "1000"
 ```
 
-The `--csms-endpoint` flag (or the `OCTANE_CSMS_ENDPOINT` environment
-variable) tells OCTANE where your CSMS WebSocket endpoint is. It is
-not stored in `octane.yml` because it typically differs between environments.
+The CSMS endpoint is not stored in `octane.yml`. Pass it to `octane run` with
+`--csms-endpoint`.
 
-### Run one story
+Configuration precedence is:
+
+1. Built-in defaults.
+2. `octane.yml`.
+3. `OCTANE_*` environment variables.
+4. CLI flags.
+
+See [docs/configuration.md](./docs/configuration.md) for the field reference.
+
+## Run
+
+Run the checked-in OCPP 1.6 suite against a local CSMS:
 
 ```bash
-./octane run scenarios/v16/station_boot_accepted.story \
-    --csms-endpoint ws://localhost:9210
+./bin/octane run --csms-endpoint ws://localhost:9210
 ```
 
-### Run the full suite
+Run one story:
 
 ```bash
-./octane run --csms-endpoint ws://localhost:9210
+./bin/octane run scenarios/v16/station_boot_accepted.story \
+  --csms-endpoint ws://localhost:9210
 ```
 
-OCTANE discovers all `.story` files under `storiesDir`, resolves the
-dependency graph, and executes them in order.
+Override a story parameter at runtime:
 
-### GitHub Action
-
-```yaml
-# .github/workflows/conformance.yml
-name: OCPP Conformance
-on: [push, pull_request]
-
-jobs:
-  conformance:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: evcoreco/octane-action@v0
-        with:
-          csms-endpoint: ws://your-csms-host:9210
-          stories: scenarios/v16/
-          fail-on: any
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: conformance-reports
-          path: reports/
+```bash
+./bin/octane run scenarios/v16/transaction_pluginfirst_accepted.story \
+  --csms-endpoint ws://localhost:9210 \
+  --param valid_idTag=AABBCC \
+  --param connectorId=1
 ```
 
-See [`action/README.md`](./action/README.md) for the full input reference.
+Validate story syntax and structure without opening a CSMS connection:
 
----
-
-## OCPP 1.6 coverage
-
-The following message types have conformance stories. "Stories" is the count
-of `.story` files exercising that message type.
-
-| OCPP Message | Direction | Stories | Notes |
-|---|---|---|---|
-| BootNotification | CS → CSMS | 2 | Accepted; full boot sequence |
-| StatusNotification | CS → CSMS | 1 | Available state |
-| Heartbeat | CS → CSMS | 1 | Part of boot sequence |
-| Authorize | CS → CSMS | 1 | Plug-in-first flow |
-| StartTransaction | CS → CSMS | 2 | Plug-in-first; identification-first |
-| StopTransaction | CS → CSMS | 1 | Normal stop |
-| MeterValues | CS → CSMS | 1 | Periodic sampling |
-| RemoteStartTransaction | CSMS → CS | 1 | Accepted |
-| RemoteStopTransaction | CSMS → CS | 1 | Accepted |
-| Reset | CSMS → CS | 2 | Soft; Hard |
-| UnlockConnector | CSMS → CS | 2 | Accepted; Failed |
-| ChangeAvailability | CSMS → CS | 2 | Operative; Inoperative |
-| GetConfiguration | CSMS → CS | 1 | Key list returned |
-| ChangeConfiguration | CSMS → CS | 1 | Accepted |
-| ClearCache | CSMS → CS | 1 | Accepted |
-| ReserveNow | CSMS → CS | 1 | Faulted response |
-| CancelReservation | CSMS → CS | 1 | Accepted |
-
-**Not yet covered:** DiagnosticsStatusNotification, FirmwareStatusNotification,
-DataTransfer, TriggerMessage, SendLocalList, GetLocalListVersion. Keywords and
-stories for these message types have not been written yet.
-
----
-
-## Story format
-
-Stories are declarative text files in a Gherkin-flavored DSL. Here is
-`scenarios/v16/connector_reservation_faulted.story`:
-
+```bash
+./bin/octane validate stories scenarios/v16
 ```
-# Connector reservation faulted.
-#
-# Validates that a CSMS implementing OCPP-J 1.6 -6.40 ReserveNow
-# correctly handles the case where a charging station rejects a
-# reservation request by responding with status "Faulted". The CSMS
-# must accept the response without raising an OCPP-level error;
-# whether or not it surfaces the rejection to upstream operator
-# tooling is out of OCTANE's wire-only scope.
-#
-# This is a CSMS-initiated, single-station scenario. The dependency
-# chain ensures the connector under test is in the "Available" state
-# (per OCPP-J 1.6 -4.7) before the reservation request is sent;
-# without that prerequisite, the CSMS may legitimately respond
-# differently and the test would fail for the wrong reason.
 
+A completed run prints a summary like:
+
+```text
+passed=23 failed=0 skipped=0 cache-hits=0
+report-dir=reports/<run-id>
+```
+
+Reports are written below `reports/` unless `--report-dir` is changed or set to
+an empty value.
+
+## CLI Surface
+
+Global flags:
+
+| Flag | Purpose |
+|---|---|
+| `--config` | Path to `octane.yml`; defaults to `octane.yml`. |
+| `--cache-dir` | Override the content-addressed result cache directory. |
+| `--no-cache` | Bypass cached results and execute every selected story. |
+| `--verbose`, `-v` | Enable verbose output. |
+
+Main commands:
+
+| Command | Purpose |
+|---|---|
+| `octane run [story-paths...]` | Run `.story` files or directories against a CSMS. |
+| `octane validate stories [paths...]` | Parse and validate stories without executing them. |
+| `octane keywords list` | Print registered primitive and OCPP 1.6 keywords. |
+| `octane keywords resolve <step-text>` | Resolve a story step to a keyword pattern. |
+| `octane cache info` | Print the effective cache location. |
+| `octane cache prune --max-age 24h` | Remove old or expired cache entries. |
+| `octane cache clear` | Remove all cached result entries. |
+| `octane cache key <story-id>` | Print the placeholder cache key hash for a story ID. |
+| `octane completion <shell>` | Generate shell completions. |
+
+Useful `run` flags:
+
+| Flag | Purpose |
+|---|---|
+| `--csms-endpoint` | Base WebSocket URL of the CSMS under test. |
+| `--max-parallel` | Maximum concurrently executing stories. |
+| `--shard N/M` | Run one shard of the selected story set in CI. |
+| `--ocpp-version` | Restrict execution to a declared OCPP version, such as `1.6`. |
+| `--lock-timeout` | Maximum wait for a cache lock; default is `60s`. |
+| `--no-wait` | Fail immediately if a cache lock is busy. |
+| `--insecure-skip-verify` | Disable TLS certificate verification. |
+| `--param name=value` | Override a story parameter; may be repeated. |
+| `--report-dir` | Directory where per-run report subdirectories are written. |
+| `--no-trace-on-pass` | Omit wire traces from reports for passing stories. |
+
+Run `./bin/octane help <command>` for the authoritative command help.
+
+## Story Format
+
+Stories are Gherkin-flavored text files with metadata, setup, scenario steps,
+dependencies, and teardown. This is the shape used by the checked-in suite:
+
+```text
 Meta
     Name:        Connector reservation faulted
     Id:          connector_reservation_faulted
@@ -200,156 +190,90 @@ Teardown
     Disconnect station "CP01"
 ```
 
-The `Depends` block declares that `connector_status_available` must pass
-first (scoped per-station). The runner enforces this automatically via DAG
-resolution. Stories are version-controlled alongside the CSMS under test and
-trace to specific OCPP spec sections via `Spec-Ref`.
+The parser and validator live under `pkg/story`. Dependency ordering is handled
+by `pkg/runner`; dependency graph details are documented in
+[docs/concepts/dependency-graph.md](./docs/concepts/dependency-graph.md).
 
-See [`docs/configuration.md`](./docs/configuration.md) for the full story
-metadata reference.
+## OCPP 1.6 Coverage
 
----
+The checked-in `scenarios/v16` suite exercises these OCPP 1.6 flows:
 
-## CLI reference
-
-| Subcommand | Description |
+| Area | Stories |
 |---|---|
-| `octane run [stories...] --csms-endpoint <url>` | Run conformance stories against a CSMS |
-| `octane validate [stories...]` | Parse and validate story files without running them |
-| `octane keywords list` | List all registered keywords |
-| `octane keywords resolve <pattern>` | Resolve a keyword pattern against the registry |
-| `octane cache info` | Show cache statistics |
-| `octane cache prune` | Remove stale cache entries |
-| `octane cache clear` | Remove all cache entries |
-| `octane cache key` | Print the cache key for a story file |
-| `octane completion bash\|zsh\|fish\|powershell` | Generate shell completion script |
+| Connection and boot | `station_connection_established`, `station_boot_accepted`, `boot_sequence_accepted` |
+| Status and heartbeat | `connector_status_available`, `meter_values_periodic_accepted` |
+| Local transactions | `transaction_pluginfirst_accepted`, `transaction_identificationfirst_accepted`, `transaction_identificationfirst_connection_timeout_available`, `transaction_stop_accepted`, `transaction_evside_disconnect_true_true` |
+| Remote transactions | `transaction_remotestart_accepted`, `transaction_remotestop_accepted` |
+| Connector control | `connector_unlock_accepted`, `connector_unlock_failed`, `connector_availability_operative`, `connector_availability_inoperative` |
+| Station control | `station_reset_soft_accepted`, `station_reset_hard_accepted` |
+| Configuration and cache | `configuration_get_accepted`, `configuration_change_accepted`, `cache_clear_accepted` |
+| Reservations | `connector_reservation_faulted`, `connector_cancelreservation_accepted` |
 
-**Selected `octane run` flags:**
+Use `./bin/octane keywords list` to see the current registered keyword catalog.
 
-| Flag | Default | Description |
-|---|---|---|
-| `--csms-endpoint` | (required) | Base WebSocket URL of the CSMS under test |
-| `--max-parallel` | `1` | Maximum concurrently executing stories |
-| `--shard N/M` | (none) | Run the Nth of M shards (for CI fan-out) |
-| `--ocpp-version` | (all) | Restrict run to stories declaring this version |
-| `--fail-on` | `any` | Exit non-zero on `any` failure or only on `major` |
-| `--report-dir` | `reports/` | Directory for JSON and Robot XML reports |
-| `--no-trace-on-pass` | false | Omit wire trace from reports for passing stories |
-| `--insecure-skip-verify` | false | Disable TLS certificate verification (insecure) |
+## Repository Layout
 
-Full flag documentation: [`docs/cli-reference.md`](./docs/cli-reference.md).
+| Path | Purpose |
+|---|---|
+| `cmd/octane` | Cobra CLI, command wiring, config loading, exit behavior. |
+| `pkg/story` | `.story` lexer, parser, AST, diagnostics, and parser tests. |
+| `pkg/runner` | Story execution, dependency traversal, sharding, skip logic, cache integration. |
+| `pkg/keywords` | Primitive, lifecycle, OCPP 1.6, API, and registry packages. |
+| `pkg/transport` | WebSocket dialing and station connection management. |
+| `pkg/wire` | OCPP-J frame parsing, encoding, and coercion. |
+| `pkg/cache` | Content-addressed result cache and file locking. |
+| `pkg/report` | Report model plus JSON and Robot XML writers. |
+| `pkg/engine` | Deterministic clock and random primitives for repeatable runs. |
+| `scenarios/v16` | Checked-in OCPP 1.6 conformance stories. |
+| `docs` | Configuration, CLI, concepts, ADRs, manpage sources, and integration docs. |
+| `examples` | Consumer examples, including CI snippets and a primitive story. |
+| `action` | Docker-based GitHub Action wrapper metadata and entrypoint. |
+| `website` | Docusaurus documentation site. |
+| `test/integration` | Integration tests for runner, cache, reports, TLS, and keyword behavior. |
+| `test/reference` | Docker Compose reference target assets for CitrineOS-oriented testing. |
+| `packaging` | `nfpm` packaging configuration. |
+| `scripts` | Manpage, completion, and CI helper scripts. |
 
----
+## Development
 
-## How it works
-
-OCTANE opens a WebSocket connection to the CSMS endpoint, identifies itself
-as a charging station using the station ID embedded in each story, and drives
-the protocol exchange step by step. Each step in a story resolves to a
-*keyword* — a Go function in the keyword library that knows how to send a
-specific OCPP message, wait for a response, and assert the response fields.
-The keyword library has three layers: primitive (raw WebSocket send/receive),
-domain (OCPP 1.6 message types), and lifecycle (connect/disconnect/register).
-The runner resolves story dependencies into a DAG, executes stories in
-dependency order using a configurable worker pool, consults the content-
-addressed file cache to skip unchanged stories, and emits a JSON report plus
-a Robot XML report on completion.
-
----
-
-## Repository layout
-
-```
-.
-├── .claude/                     # Claude Code agents and slash commands
-├── .github/workflows/           # CI: ci.yml, reference.yml, release.yml, docs.yml
-├── ARCHITECTURE.md              # Full design narrative
-├── AGENTS.md                    # Cross-tool agent contract
-├── CLAUDE.md                    # Claude Code project memory
-├── CONTRIBUTING.md
-├── action/                      # GitHub Action (action.yml, Dockerfile, entrypoint.sh)
-├── cmd/
-│   └── octane/                  # CLI entry point and subcommands
-│       └── internal/config/     # Config struct, env-var layering, flag overrides
-├── docs/
-│   ├── adr/                     # Architecture Decision Records (0001–0020)
-│   ├── cli-reference.md
-│   ├── configuration.md
-│   ├── conformance-claim.md
-│   └── getting-started.md
-├── go.mod
-├── octane.yml                   # Project-level OCTANE config (storiesDir, ocppVersion)
-├── packaging/                   # nfpm.yaml for .deb/.rpm
-├── pkg/
-│   ├── cache/                   # Content-addressed file cache
-│   ├── engine/                  # Deterministic clock and rand
-│   ├── keywords/
-│   │   ├── api/                 # Keyword type definitions and interfaces
-│   │   ├── lifecycle/           # Connection lifecycle keywords
-│   │   ├── ocpp16/              # OCPP 1.6 domain keywords (30 keywords, 17 message types)
-│   │   ├── primitive/           # Raw send/receive transport keywords
-│   │   └── registry/            # Keyword registration and lookup
-│   ├── report/                  # Report types; JSON and Robot XML emitters
-│   ├── runner/                  # DAG resolver, worker pool, story executor
-│   ├── story/                   # .story DSL parser → AST
-│   ├── transport/               # WebSocket connection management
-│   └── wire/                    # OCPP-J framing (Call, CallResult, CallError)
-├── scenarios/
-│   └── v16/                     # 21 OCPP 1.6 conformance stories
-├── scripts/                     # gen-manpages.sh, gen-completions.sh
-├── specs/                       # Spec-Kit specs (001–007)
-├── test/                        # Integration and end-to-end tests
-├── website/                     # Docusaurus documentation site
-├── CHANGELOG.md
-└── LICENSE                      # Apache-2.0
-```
-
----
-
-## Contributing
-
-OCTANE uses spec-driven development. No code lands without a merged spec.
-The flow:
-
-1. `/specify <feature>` — draft `specs/NNN-feature/spec.md`
-2. `/plan` — fill `plan.md` with technical approach and any ADR drafts
-3. `/tasks` — decompose into atomic, agent-assignable tasks
-4. `/implement T-NNN-MM` — execute one task under the right subagent
-
-Slash commands are defined under `.claude/commands/`. The full agent
-contract is [`AGENTS.md`](./AGENTS.md). Read the constitution
-(`.specify/memory/constitution.md`) before opening a PR.
-
-### Local development
+Common local commands:
 
 ```bash
-# Format, lint, test, build
 make format
 make lint
 make test
 make build
-
-# Generate shell completions
-make completions
-
-# Run the docs site locally
-make docs-serve
 ```
 
----
+Additional procedures:
+
+```bash
+make test-reference   # run reference-tagged integration tests with Docker Compose
+make fuzz             # run fuzz targets for 30 seconds each
+make man              # regenerate man pages
+make completions      # regenerate shell completions
+make docs-html        # build the Docusaurus site
+make docs-serve       # serve docs on http://127.0.0.1:3000
+make package          # snapshot release artifacts through goreleaser
+make clean            # remove generated build artifacts
+```
+
+The CI workflows currently live in `.github/workflows/ci.yml`,
+`.github/workflows/docs.yml`, and `.github/workflows/release.yml`.
+
+## Exit Codes
+
+| Code | Meaning |
+|---|---|
+| `0` | Command succeeded; for `run`, all selected stories passed or were satisfied from cache. |
+| `1` | One or more stories failed. |
+| `64` | Configuration, flag, or story validation error. |
+| `74` | I/O error. |
+| `125` | Internal error. |
 
 ## License
 
-Apache-2.0. See [`LICENSE`](./LICENSE) and
-[ADR 0001](./docs/adr/0001-license.md) for the rationale.
+Apache-2.0. See [LICENSE](./LICENSE).
 
-## Acknowledgements
-
-- The **Open Charge Alliance** for publishing the OCPP specifications.
-- **CitrineOS** (LF Energy) for being a credible open-source CSMS
-  reference target.
-- **Robot Framework** for the structural metaphor that informs
-  OCTANE's keyword library design.
-
-OCTANE is not affiliated with or endorsed by the Open Charge Alliance,
-LF Energy, or CitrineOS.
+OCTANE is not affiliated with or endorsed by the Open Charge Alliance, LF
+Energy, or CitrineOS.
