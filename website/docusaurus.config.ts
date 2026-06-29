@@ -7,7 +7,7 @@ const config: Config = {
   favicon: 'img/favicon.svg',
 
   url: 'https://octane.dev',
-  baseUrl: '/',
+  baseUrl: '/octane/',
 
   organizationName: 'evcoreco',
   projectName: 'octane',

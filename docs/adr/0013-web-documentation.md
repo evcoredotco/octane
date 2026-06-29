@@ -121,7 +121,7 @@ plugin provides client-side search.
 
 ### Build dependencies
 
-- Node 20+ LTS for Docusaurus.
+- Node 26+ LTS for Docusaurus.
 - Confined to `website/`; the rest of the repo remains Go-only.
 - `package-lock.json` committed; CI runs `npm ci`, never `npm install`.
 
