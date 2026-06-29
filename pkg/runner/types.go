@@ -174,4 +174,9 @@ type Config struct {
 	// means no endpoint is configured; lifecycle keywords will return
 	// a descriptive error if they need it.
 	CSMSEndpoint string
+
+	// Parameters supplies runtime values for placeholders declared by
+	// story Meta Parameters. The runner substitutes these into step text
+	// before keyword resolution.
+	Parameters map[string]string
 }

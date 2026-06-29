@@ -811,6 +811,7 @@ func executeStory(
 		storyIdx,
 		state,
 		ocppVer,
+		cfg.Parameters,
 		&findings,
 	)
 
@@ -840,13 +841,30 @@ func executeAllSections(
 	storyIdx storyIndex,
 	state api.State,
 	ocppVer string,
+	parameters map[string]string,
 	findings *[]Finding,
 ) StoryResult {
 	// Run prerequisite stories' non-teardown steps inline so that dependent
 	// stories inherit runtime state (e.g., open WebSocket connections).
-	if prereqFailed := runPrereqSections(ctx, storyAST, storyIdx, state, ocppVer, findings); prereqFailed {
+	if prereqFailed := runPrereqSections(
+		ctx,
+		storyAST,
+		storyIdx,
+		state,
+		ocppVer,
+		parameters,
+		findings,
+	); prereqFailed {
 		// Teardown always runs.
-		_ = runSteps(ctx, storyAST.Teardown, state, ocppVer, findings)
+		_ = runSteps(
+			ctx,
+			storyAST.Teardown,
+			storyAST.Meta.Parameters,
+			parameters,
+			state,
+			ocppVer,
+			findings,
+		)
 
 		return StoryResult{
 			Order:       emptyLen,
@@ -866,18 +884,48 @@ func executeAllSections(
 
 	failed := false
 
-	failed = runSteps(ctx, storyAST.Background, state, ocppVer, findings) ||
+	failed = runSteps(
+		ctx,
+		storyAST.Background,
+		storyAST.Meta.Parameters,
+		parameters,
+		state,
+		ocppVer,
+		findings,
+	) ||
 		failed
-	failed = runSteps(ctx, storyAST.Setup, state, ocppVer, findings) || failed
+	failed = runSteps(
+		ctx,
+		storyAST.Setup,
+		storyAST.Meta.Parameters,
+		parameters,
+		state,
+		ocppVer,
+		findings,
+	) || failed
 
 	for _, scenario := range storyAST.Scenarios {
 		failed = runSteps(
-			ctx, scenario.Steps, state, ocppVer, findings,
+			ctx,
+			scenario.Steps,
+			storyAST.Meta.Parameters,
+			parameters,
+			state,
+			ocppVer,
+			findings,
 		) || failed
 	}
 
 	// Teardown always runs (best-effort).
-	_ = runSteps(ctx, storyAST.Teardown, state, ocppVer, findings)
+	_ = runSteps(
+		ctx,
+		storyAST.Teardown,
+		storyAST.Meta.Parameters,
+		parameters,
+		state,
+		ocppVer,
+		findings,
+	)
 
 	resultStatus := StatusPassed
 	if failed {
@@ -917,10 +965,19 @@ func runPrereqSections(
 	storyIdx storyIndex,
 	state api.State,
 	ocppVer string,
+	parameters map[string]string,
 	findings *[]Finding,
 ) bool {
 	for _, dep := range storyAST.Meta.Depends {
-		if failed := runPrereqSection(ctx, dep.ID, storyIdx, state, ocppVer, findings); failed {
+		if failed := runPrereqSection(
+			ctx,
+			dep.ID,
+			storyIdx,
+			state,
+			ocppVer,
+			parameters,
+			findings,
+		); failed {
 			return true
 		}
 	}
@@ -934,6 +991,7 @@ func runPrereqSection(
 	storyIdx storyIndex,
 	state api.State,
 	ocppVer string,
+	parameters map[string]string,
 	findings *[]Finding,
 ) bool {
 	prereqStory, ok := storyIdx[depID]
@@ -941,19 +999,43 @@ func runPrereqSection(
 		return false
 	}
 
-	if failed := runPrereqSections(ctx, prereqStory, storyIdx, state, ocppVer, findings); failed {
+	if failed := runPrereqSections(
+		ctx,
+		prereqStory,
+		storyIdx,
+		state,
+		ocppVer,
+		parameters,
+		findings,
+	); failed {
 		return true
 	}
 
-	if failed := runSteps(ctx, prereqStory.Background, state, ocppVer, findings); failed {
+	if failed := runSteps(
+		ctx,
+		prereqStory.Background,
+		prereqStory.Meta.Parameters,
+		parameters,
+		state,
+		ocppVer,
+		findings,
+	); failed {
 		return true
 	}
 
-	if failed := runSteps(ctx, prereqStory.Setup, state, ocppVer, findings); failed {
+	if failed := runSteps(
+		ctx,
+		prereqStory.Setup,
+		prereqStory.Meta.Parameters,
+		parameters,
+		state,
+		ocppVer,
+		findings,
+	); failed {
 		return true
 	}
 
-	return runPrereqScenarios(ctx, prereqStory, state, ocppVer, findings)
+	return runPrereqScenarios(ctx, prereqStory, state, ocppVer, parameters, findings)
 }
 
 func runPrereqScenarios(
@@ -961,10 +1043,19 @@ func runPrereqScenarios(
 	prereqStory *ast.Story,
 	state api.State,
 	ocppVer string,
+	parameters map[string]string,
 	findings *[]Finding,
 ) bool {
 	for _, scenario := range prereqStory.Scenarios {
-		if failed := runSteps(ctx, scenario.Steps, state, ocppVer, findings); failed {
+		if failed := runSteps(
+			ctx,
+			scenario.Steps,
+			prereqStory.Meta.Parameters,
+			parameters,
+			state,
+			ocppVer,
+			findings,
+		); failed {
 			return true
 		}
 	}
@@ -977,6 +1068,8 @@ func runPrereqScenarios(
 func runSteps(
 	ctx context.Context,
 	steps []ast.Step,
+	declaredParams []string,
+	parameters map[string]string,
 	state api.State,
 	ocppVer string,
 	findings *[]Finding,
@@ -984,7 +1077,15 @@ func runSteps(
 	failed := false
 
 	for _, step := range steps {
-		err := runStep(ctx, step, state, ocppVer, findings)
+		err := runStep(
+			ctx,
+			step,
+			declaredParams,
+			parameters,
+			state,
+			ocppVer,
+			findings,
+		)
 		if err != nil {
 			failed = true
 		}
@@ -997,16 +1098,27 @@ func runSteps(
 func runStep(
 	ctx context.Context,
 	step ast.Step,
+	declaredParams []string,
+	parameters map[string]string,
 	state api.State,
 	ocppVer string,
 	findings *[]Finding,
 ) error {
 	ver := parseOCPPVersion(ocppVer)
+	stepText, bindErr := bindStepParameters(step.Text, declaredParams, parameters)
+	if bindErr != nil {
+		*findings = append(*findings, Finding{
+			Message:  fmt.Sprintf("step %q: %v", step.Text, bindErr),
+			Severity: "error",
+		})
 
-	match, err := registry.Resolve(step.Text, ver)
+		return fmt.Errorf("runner: bind parameters: %w", bindErr)
+	}
+
+	match, err := registry.Resolve(stepText, ver)
 	if err != nil {
 		*findings = append(*findings, Finding{
-			Message:  fmt.Sprintf("step %q: %v", step.Text, err),
+			Message:  fmt.Sprintf("step %q: %v", stepText, err),
 			Severity: "error",
 		})
 
@@ -1016,7 +1128,7 @@ func runStep(
 	err = match.Keyword.Func(ctx, state, match.Args)
 	if err != nil {
 		*findings = append(*findings, Finding{
-			Message:  fmt.Sprintf("step %q: %v", step.Text, err),
+			Message:  fmt.Sprintf("step %q: %v", stepText, err),
 			Severity: "error",
 		})
 
@@ -1024,6 +1136,30 @@ func runStep(
 	}
 
 	return nil
+}
+
+func bindStepParameters(
+	stepText string,
+	declaredParams []string,
+	parameters map[string]string,
+) (string, error) {
+	bound := stepText
+
+	for _, name := range declaredParams {
+		placeholder := "{" + name + "}"
+		if !strings.Contains(bound, placeholder) {
+			continue
+		}
+
+		value, ok := parameters[name]
+		if !ok {
+			return emptyString, fmt.Errorf("missing story parameter %q", name)
+		}
+
+		bound = strings.ReplaceAll(bound, placeholder, value)
+	}
+
+	return bound, nil
 }
 
 // writeToCache serialises the StoryResult and writes it to the

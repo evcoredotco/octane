@@ -45,19 +45,26 @@ insecureSkipVerify: false
 
 # Exit threshold for the run command: "any" (default) or "major".
 failOn: any
+
+# Runtime values for placeholders declared in story Meta Parameters.
+parameters:
+  connectorId: "1"
+  valid_idTag: "AABBCC"
+  meterStart: "0"
 ```
 
 ### Field reference
 
-| Field | Type | Default | Environment override |
-|---|---|---|---|
-| `storiesDir` | string | `scenarios` | — |
-| `cacheDir` | string | `` (XDG default) | `OCTANE_CACHE_DIR` |
-| `maxParallel` | int | `1` | `OCTANE_MAX_PARALLEL` |
-| `ocppVersion` | string | `` | `OCTANE_OCPP_VERSION` |
-| `lockTimeout` | duration | `60s` | `OCTANE_LOCK_TIMEOUT` |
-| `insecureSkipVerify` | bool | `false` | `OCTANE_INSECURE_SKIP_VERIFY` |
-| `failOn` | string | `any` | `OCTANE_FAIL_ON` |
+| Field                | Type     | Default          | Environment override          |
+|----------------------|----------|------------------|-------------------------------|
+| `storiesDir`         | string   | `scenarios`      | —                             |
+| `cacheDir`           | string   | `` (XDG default) | `OCTANE_CACHE_DIR`            |
+| `maxParallel`        | int      | `1`              | `OCTANE_MAX_PARALLEL`         |
+| `ocppVersion`        | string   | ``               | `OCTANE_OCPP_VERSION`         |
+| `lockTimeout`        | duration | `60s`            | `OCTANE_LOCK_TIMEOUT`         |
+| `insecureSkipVerify` | bool     | `false`          | `OCTANE_INSECURE_SKIP_VERIFY` |
+| `failOn`             | string   | `any`            | `OCTANE_FAIL_ON`              |
+| `parameters`         | map      | `{}`             | `--param name=value`          |
 
 :::note The CSMS endpoint is not a config field
 There is no endpoint key in `octane.yml`. The endpoint typically differs
@@ -67,14 +74,14 @@ run time. See [connection profiles](../concepts/profiles.md).
 
 ## Environment variables
 
-| Variable | Type | Maps to | Description |
-|---|---|---|---|
-| `OCTANE_CACHE_DIR` | string | `cacheDir` / `--cache-dir` | Cache directory override. |
-| `OCTANE_MAX_PARALLEL` | int | `maxParallel` / `--max-parallel` | Max concurrent stories. |
-| `OCTANE_OCPP_VERSION` | string | `ocppVersion` / `--ocpp-version` | Restrict to this OCPP version. |
-| `OCTANE_LOCK_TIMEOUT` | duration | `lockTimeout` / `--lock-timeout` | Cache-lock acquisition timeout. |
-| `OCTANE_FAIL_ON` | string | `failOn` / `--fail-on` | Failure threshold (`any` or `major`). |
-| `OCTANE_INSECURE_SKIP_VERIFY` | bool | `insecureSkipVerify` / `--insecure-skip-verify` | Accepts `true` or `1`. |
+| Variable                      | Type     | Maps to                                         | Description                           |
+|-------------------------------|----------|-------------------------------------------------|---------------------------------------|
+| `OCTANE_CACHE_DIR`            | string   | `cacheDir` / `--cache-dir`                      | Cache directory override.             |
+| `OCTANE_MAX_PARALLEL`         | int      | `maxParallel` / `--max-parallel`                | Max concurrent stories.               |
+| `OCTANE_OCPP_VERSION`         | string   | `ocppVersion` / `--ocpp-version`                | Restrict to this OCPP version.        |
+| `OCTANE_LOCK_TIMEOUT`         | duration | `lockTimeout` / `--lock-timeout`                | Cache-lock acquisition timeout.       |
+| `OCTANE_FAIL_ON`              | string   | `failOn` / `--fail-on`                          | Failure threshold (`any` or `major`). |
+| `OCTANE_INSECURE_SKIP_VERIFY` | bool     | `insecureSkipVerify` / `--insecure-skip-verify` | Accepts `true` or `1`.                |
 
 Durations use Go's syntax: `60s`, `5m`, `1h30m`. If a numeric or duration
 variable is present but unparseable, OCTANE silently drops the invalid

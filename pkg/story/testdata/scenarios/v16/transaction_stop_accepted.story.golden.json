@@ -13,7 +13,7 @@
     "timeout": 60000000000,
     "parameters": [
       "connectorId",
-      "idTag",
+      "valid_idTag",
       "meterStart",
       "transactionId",
       "meterStop"
@@ -44,7 +44,7 @@
     },
     {
       "kind": 4,
-      "text": "the operator has provisioned id token \"{idTag}\" with status \"Accepted\"",
+      "text": "the operator has provisioned id token \"{valid_idTag}\" with status \"Accepted\"",
       "position": {
         "line": 29,
         "column": 5

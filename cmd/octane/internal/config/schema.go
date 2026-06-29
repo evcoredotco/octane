@@ -59,6 +59,11 @@ type Config struct {
 	// binary to exit with [exitcode.TestFailed] when at least one
 	// story has status=failed. "major" is reserved for future use.
 	FailOn string `yaml:"failOn"`
+
+	// Parameters supplies runtime values for placeholders declared by
+	// story Meta Parameters. Values are strings at the config boundary;
+	// keyword pattern matching performs the final type coercion.
+	Parameters map[string]string `yaml:"parameters"`
 }
 
 // Default returns the built-in baseline configuration. It is used
@@ -73,5 +78,6 @@ func Default() Config {
 		LockTimeout:        defaultLockTimeoutSeconds * time.Second,
 		InsecureSkipVerify: false,
 		FailOn:             "any",
+		Parameters:         map[string]string{},
 	}
 }

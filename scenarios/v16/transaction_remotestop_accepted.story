@@ -17,7 +17,7 @@ Meta
     Tags:        transaction, csms-initiated, wire-only
     Stations:    1
     Timeout:     60s
-    Parameters:  connectorId, idTag, meterStart, transactionId
+    Parameters:  connectorId, valid_idTag, meterStart, transactionId
     Depends:
       - id:    transaction_pluginfirst_accepted
         scope: per-station

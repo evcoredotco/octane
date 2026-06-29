@@ -40,6 +40,7 @@ are searched recursively. When no paths are given, OCTANE searches the
 | `--lock-timeout` | duration | `60s` | Maximum time to wait when acquiring a per-cache-key lock. |
 | `--no-wait` | bool | `false` | Fail immediately when a cache lock is busy instead of waiting. |
 | `--insecure-skip-verify` | bool | `false` | Disable TLS certificate verification. Emits a warning banner. Do not use in production. |
+| `--param` | stringArray | `` | Story parameter override in `name=value` form. May be repeated. |
 | `--fail-on` | string | `any` | Exit with code 1 when this threshold is reached. `any` (default) fails on the first failed story. `major` is reserved. |
 
 **Output**

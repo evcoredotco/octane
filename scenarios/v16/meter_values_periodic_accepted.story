@@ -18,14 +18,14 @@ Meta
     Tags:        metering, wire-only
     Stations:    1
     Timeout:     60s
-    Parameters:  connectorId, idTag, meterStart, meterValue
+    Parameters:  connectorId, valid_idTag, meterStart, meterValue
     Depends:
       - id:    transaction_pluginfirst_accepted
         scope: per-station
 
 Background
     Given the CSMS is reachable
-    And   the operator has provisioned id token "{idTag}" with status "Accepted"
+    And   the operator has provisioned id token "{valid_idTag}" with status "Accepted"
 
 Scenario: Station sends a periodic MeterValues message; CSMS acknowledges
     When  station "CP01" sends MeterValues for connector {connectorId}

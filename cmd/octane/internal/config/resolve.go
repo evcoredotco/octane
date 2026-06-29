@@ -31,6 +31,10 @@ type FlagOverrides struct {
 	// InsecureSkipVerify overrides [Config.InsecureSkipVerify] when
 	// non-nil.
 	InsecureSkipVerify *bool
+
+	// Parameters overlays [Config.Parameters] when non-empty. Individual
+	// keys override YAML/env-sourced parameter values.
+	Parameters map[string]string
 }
 
 // Resolve merges cfg with the explicit flag overrides in flags and
@@ -64,5 +68,26 @@ func Resolve(cfg Config, flags FlagOverrides) Config {
 		cfg.InsecureSkipVerify = *flags.InsecureSkipVerify
 	}
 
+	if len(flags.Parameters) > 0 {
+		cfg.Parameters = mergeParameters(cfg.Parameters, flags.Parameters)
+	}
+
 	return cfg
+}
+
+func mergeParameters(
+	base map[string]string,
+	overrides map[string]string,
+) map[string]string {
+	merged := make(map[string]string, len(base)+len(overrides))
+
+	for key, value := range base {
+		merged[key] = value
+	}
+
+	for key, value := range overrides {
+		merged[key] = value
+	}
+
+	return merged
 }

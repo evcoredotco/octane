@@ -41,6 +41,7 @@ type runFlagsT struct {
 	reportDir          string
 	noTraceOnPass      bool
 	csmsEndpoint       string
+	params             []string
 }
 
 const (
@@ -160,6 +161,13 @@ func registerRunExecutionFlags(cmd *cobra.Command, flags *runFlagsT) {
 		emptyFlagValue,
 		`base WebSocket URL of the CSMS under test (e.g. "ws://localhost:9210")`,
 	)
+
+	cmdFlags.StringArrayVar(
+		&flags.params,
+		"param",
+		nil,
+		`story parameter override in name=value form; may be repeated`,
+	)
 }
 
 // registerRunOutputFlags registers the output and reporting flags for
@@ -217,6 +225,7 @@ func runStories(
 		OCPPVersion:        cfg.OCPPVersion,
 		InsecureSkipVerify: cfg.InsecureSkipVerify,
 		CSMSEndpoint:       flags.csmsEndpoint,
+		Parameters:         cfg.Parameters,
 	}
 
 	result, runErr := runner.Run(context.Background(), runnerCfg)
@@ -368,7 +377,32 @@ func applyRunFlagOverrides(
 		overrides.CacheDir = &cacheDir
 	}
 
+	params, err := parseParameterOverrides(flags.params)
+	if err != nil {
+		dieErrf(exitcode.ConfigError, "octane: invalid --param value: %v\n", err)
+	}
+	overrides.Parameters = params
+
 	return config.Resolve(cfg, overrides)
+}
+
+func parseParameterOverrides(values []string) (map[string]string, error) {
+	if len(values) == zeroIntDefault {
+		return nil, nil
+	}
+
+	params := make(map[string]string, len(values))
+
+	for _, raw := range values {
+		name, value, ok := strings.Cut(raw, "=")
+		if !ok || name == emptyFlagValue {
+			return nil, fmt.Errorf("got %q, expected name=value", raw)
+		}
+
+		params[name] = value
+	}
+
+	return params, nil
 }
 
 // shardSpec holds the parsed shard index (zero-based) and total from

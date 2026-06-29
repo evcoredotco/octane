@@ -44,6 +44,7 @@ func TestResolve_FlagWinsOverEnv(t *testing.T) {
 		LockTimeout:        nil,
 		FailOn:             nil,
 		InsecureSkipVerify: nil,
+		Parameters:         nil,
 	}
 
 	resolved := config.Resolve(base, flags)
@@ -76,6 +77,7 @@ func TestResolve_EnvWinsOverYAML(t *testing.T) {
 		LockTimeout:        nil,
 		FailOn:             nil,
 		InsecureSkipVerify: nil,
+		Parameters:         nil,
 	}
 
 	resolved := config.Resolve(base, flags)
@@ -106,6 +108,7 @@ func TestResolve_YAMLWinsOverDefault(t *testing.T) {
 		LockTimeout:        nil,
 		FailOn:             nil,
 		InsecureSkipVerify: nil,
+		Parameters:         nil,
 	}
 
 	resolved := config.Resolve(base, flags)
@@ -133,6 +136,7 @@ func TestResolve_DefaultUsedWhenNoOverride(t *testing.T) {
 		LockTimeout:        nil,
 		FailOn:             nil,
 		InsecureSkipVerify: nil,
+		Parameters:         nil,
 	}
 
 	resolved := config.Resolve(base, flags)
@@ -177,6 +181,7 @@ func TestResolve_NilFlagLeavesFieldUnchanged(t *testing.T) {
 		LockTimeout:        nil,
 		FailOn:             nil,
 		InsecureSkipVerify: nil,
+		Parameters:         nil,
 	}
 
 	resolved := config.Resolve(base, flags)
@@ -187,5 +192,46 @@ func TestResolve_NilFlagLeavesFieldUnchanged(t *testing.T) {
 			preservedCacheDir,
 			resolved.CacheDir,
 		)
+	}
+}
+
+func TestResolve_ParameterOverridesMergeWithYAML(t *testing.T) {
+	t.Parallel()
+
+	base := config.Default()
+	base.Parameters = map[string]string{
+		"connectorId": "1",
+		"valid_idTag": "YAML",
+	}
+
+	flags := config.FlagOverrides{
+		CacheDir:           nil,
+		MaxParallel:        nil,
+		OCPPVersion:        nil,
+		LockTimeout:        nil,
+		FailOn:             nil,
+		InsecureSkipVerify: nil,
+		Parameters: map[string]string{
+			"valid_idTag": "CLI",
+			"meterStart":  "0",
+		},
+	}
+
+	resolved := config.Resolve(base, flags)
+
+	if resolved.Parameters["connectorId"] != "1" {
+		t.Errorf("connectorId: want %q, got %q", "1", resolved.Parameters["connectorId"])
+	}
+
+	if resolved.Parameters["valid_idTag"] != "CLI" {
+		t.Errorf(
+			"valid_idTag: want %q, got %q",
+			"CLI",
+			resolved.Parameters["valid_idTag"],
+		)
+	}
+
+	if resolved.Parameters["meterStart"] != "0" {
+		t.Errorf("meterStart: want %q, got %q", "0", resolved.Parameters["meterStart"])
 	}
 }

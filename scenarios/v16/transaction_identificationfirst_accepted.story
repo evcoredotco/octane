@@ -42,23 +42,23 @@ Meta
     Tags:        transaction, charging, wire-only
     Stations:    1
     Timeout:     60s
-    Parameters:  connectorId, idTag, meterStart
+    Parameters:  connectorId, valid_idTag, meterStart
     Depends:
       - id:    connector_status_available
         scope: per-station
 
 Background
     Given the CSMS is reachable
-    And   the operator has provisioned id token "{idTag}" with status "Accepted"
+    And   the operator has provisioned id token "{valid_idTag}" with status "Accepted"
 
 Scenario: Authorization precedes plug-in; transaction starts cleanly
-    When  station "CP01" sends Authorize with idTag "{idTag}"
+    When  station "CP01" sends Authorize with idTag "{valid_idTag}"
     Then  the CSMS responds to Authorize with idTagInfo.status "Accepted" within 30 seconds
 
     When  station "CP01" sends StatusNotification for connector {connectorId} with status "Preparing"
     Then  the CSMS acknowledges the status within 10 seconds
 
-    When  station "CP01" starts a transaction on connector {connectorId} with idTag "{idTag}" and meterStart {meterStart}
+    When  station "CP01" starts a transaction on connector {connectorId} with idTag "{valid_idTag}" and meterStart {meterStart}
     Then  the CSMS responds to StartTransaction with idTagInfo.status "Accepted" within 30 seconds
     And   the StartTransaction response assigns a positive transactionId
 
