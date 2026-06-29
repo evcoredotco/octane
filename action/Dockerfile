@@ -32,11 +32,11 @@ RUN apk add --no-cache git \
 # Alpine provides a minimal shell environment needed by entrypoint.sh.
 # SHA pinned for reproducible builds. Refresh with:
 #   docker pull alpine:3.21 && docker inspect alpine:3.21 --format '{{index .RepoDigests 0}}'
-FROM alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d
+FROM alpine:3.23
 
 RUN apk add --no-cache bash ca-certificates
 
-LABEL org.opencontainers.image.source="https://github.com/octane-project/octane"
+LABEL org.opencontainers.image.source="https://github.com/evcoredotco/octane"
 LABEL org.opencontainers.image.title="octane-action"
 LABEL org.opencontainers.image.description="OCPP Conformance Testing & Network Evaluation"
 LABEL org.opencontainers.image.licenses="Apache-2.0"
