@@ -3,7 +3,7 @@ package robotxml
 import (
 	"time"
 
-	"github.com/evcoreco/octane/pkg/report/model"
+	"github.com/evcoredotco/octane/pkg/report/model"
 )
 
 // robotTimeLayout is the Robot Framework datetime format.

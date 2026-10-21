@@ -82,7 +82,7 @@ contents:
 deb:
   compression: xz
   fields:
-    Bugs: https://github.com/evcoreco/octane/issues
+    Bugs: https://github.com/evcoredotco/octane/issues
 
 rpm:
   group: Development/Tools

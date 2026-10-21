@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/evcoreco/octane/pkg/keywords/api"
+	"github.com/evcoredotco/octane/pkg/keywords/api"
 )
 
 // errBootNotAccepted is returned by stationIsInRegisteredState when the

@@ -11,8 +11,8 @@ import (
 	"context"
 	"testing"
 
-	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
-	"github.com/evcoreco/octane/pkg/runner"
+	_ "github.com/evcoredotco/octane/pkg/keywords/primitive"
+	"github.com/evcoredotco/octane/pkg/runner"
 )
 
 // storyPerRunPrereq is a per-run-scoped prereq used by three stories.

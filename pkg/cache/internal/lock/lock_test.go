@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/evcoreco/octane/pkg/cache/internal/lock"
+	"github.com/evcoredotco/octane/pkg/cache/internal/lock"
 )
 
 // fmtHolderAcquire is the format string for holder Acquire failures.

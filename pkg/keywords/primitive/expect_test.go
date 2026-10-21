@@ -16,9 +16,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/evcoreco/octane/pkg/keywords/api"
-	"github.com/evcoreco/octane/pkg/keywords/api/mock"
-	"github.com/evcoreco/octane/pkg/keywords/primitive" // exposes TimeoutError
+	"github.com/evcoredotco/octane/pkg/keywords/api"
+	"github.com/evcoredotco/octane/pkg/keywords/api/mock"
+	"github.com/evcoredotco/octane/pkg/keywords/primitive" // exposes TimeoutError
 )
 
 // ── Named constants ──────────────────────────────────────────────────────────

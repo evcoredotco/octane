@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/evcoreco/octane/pkg/keywords/api"
-	"github.com/evcoreco/octane/pkg/wire"
+	"github.com/evcoredotco/octane/pkg/keywords/api"
+	"github.com/evcoredotco/octane/pkg/wire"
 )
 
 // sendCall constructs an OCPP-J CALL frame from the given unique ID,

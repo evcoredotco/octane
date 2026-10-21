@@ -9,8 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
-	"github.com/evcoreco/octane/pkg/cache"
+	"github.com/evcoredotco/octane/cmd/octane/internal/exitcode"
+	"github.com/evcoredotco/octane/pkg/cache"
 )
 
 // dirMode is the permission bits for directories created by cache commands.

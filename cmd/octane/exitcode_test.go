@@ -3,7 +3,7 @@ package main_test
 import (
 	"testing"
 
-	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
+	"github.com/evcoredotco/octane/cmd/octane/internal/exitcode"
 )
 
 const (

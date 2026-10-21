@@ -223,7 +223,7 @@ deviation surfaces as a finding — not as a different keyword.
 ```go
 import (
     "context"
-    "github.com/evcoreco/octane/pkg/keywords/api"
+    "github.com/evcoredotco/octane/pkg/keywords/api"
 )
 
 func myKeyword(ctx context.Context, state api.State, args api.Args) error {
@@ -275,8 +275,8 @@ package boot
 import (
     "context"
 
-    "github.com/evcoreco/octane/pkg/keywords/api"
-    "github.com/evcoreco/octane/pkg/keywords/registry"
+    "github.com/evcoredotco/octane/pkg/keywords/api"
+    "github.com/evcoredotco/octane/pkg/keywords/registry"
 )
 
 func init() {
@@ -348,8 +348,8 @@ import (
     "testing"
     "time"
 
-    "github.com/evcoreco/octane/pkg/keywords/api"
-    "github.com/evcoreco/octane/pkg/keywords/api/mock"
+    "github.com/evcoredotco/octane/pkg/keywords/api"
+    "github.com/evcoredotco/octane/pkg/keywords/api/mock"
 )
 
 func TestSendBootNotification_Accepted(t *testing.T) {

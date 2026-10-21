@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/evcoreco/octane/pkg/story/ast"
-	"github.com/evcoreco/octane/pkg/story/diag"
-	"github.com/evcoreco/octane/pkg/story/lex"
+	"github.com/evcoredotco/octane/pkg/story/ast"
+	"github.com/evcoredotco/octane/pkg/story/diag"
+	"github.com/evcoredotco/octane/pkg/story/lex"
 )
 
 // errUnknownScope is the sentinel error returned by parseScope when the

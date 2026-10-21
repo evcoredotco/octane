@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/evcoreco/octane/pkg/transport"
+	"github.com/evcoredotco/octane/pkg/transport"
 )
 
 // stationAdapter wraps a [transport.Station] so that it satisfies

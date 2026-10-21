@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/evcoreco/octane/pkg/story/ast"
-	"github.com/evcoreco/octane/pkg/story/lex"
+	"github.com/evcoredotco/octane/pkg/story/ast"
+	"github.com/evcoredotco/octane/pkg/story/lex"
 )
 
 // Sentinel errors for parser_steps parse failures.

@@ -10,9 +10,9 @@
 package story
 
 import (
-	"github.com/evcoreco/octane/pkg/story/ast"
-	"github.com/evcoreco/octane/pkg/story/diag"
-	"github.com/evcoreco/octane/pkg/story/lex"
+	"github.com/evcoredotco/octane/pkg/story/ast"
+	"github.com/evcoredotco/octane/pkg/story/diag"
+	"github.com/evcoredotco/octane/pkg/story/lex"
 )
 
 // noScenarios is the zero-length sentinel used to detect a missing Scenario

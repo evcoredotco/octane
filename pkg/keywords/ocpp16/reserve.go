@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/evcoreco/octane/pkg/keywords/api"
-	"github.com/evcoreco/octane/pkg/wire"
+	"github.com/evcoredotco/octane/pkg/keywords/api"
+	"github.com/evcoredotco/octane/pkg/wire"
 )
 
 // csmsEnqueuesReserveNow implements:

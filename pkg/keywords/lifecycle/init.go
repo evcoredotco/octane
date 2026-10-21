@@ -1,8 +1,8 @@
 package lifecycle
 
 import (
-	"github.com/evcoreco/octane/pkg/keywords/api"
-	"github.com/evcoreco/octane/pkg/keywords/registry"
+	"github.com/evcoredotco/octane/pkg/keywords/api"
+	"github.com/evcoredotco/octane/pkg/keywords/registry"
 )
 
 // Register adds every lifecycle keyword to the global registry.

@@ -13,7 +13,7 @@ DOCS_PORT     ?= 3000
 
 PKG    := ./...
 BIN    := ./bin/octane
-MODULE := github.com/evcoreco/octane
+MODULE := github.com/evcoredotco/octane
 
 .DEFAULT_GOAL := help
 

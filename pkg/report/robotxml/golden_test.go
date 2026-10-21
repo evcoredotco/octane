@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/evcoreco/octane/pkg/report"
-	"github.com/evcoreco/octane/pkg/report/robotxml"
-	"github.com/evcoreco/octane/pkg/runner"
+	"github.com/evcoredotco/octane/pkg/report"
+	"github.com/evcoredotco/octane/pkg/report/robotxml"
+	"github.com/evcoredotco/octane/pkg/runner"
 )
 
 const (

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/evcoreco/octane/pkg/engine/clock"
+	"github.com/evcoredotco/octane/pkg/engine/clock"
 )
 
 // chanBufOne is the buffer size for a single-result channel.

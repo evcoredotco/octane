@@ -24,8 +24,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/evcoreco/octane/pkg/keywords/api"
-	"github.com/evcoreco/octane/pkg/keywords/api/mock"
+	"github.com/evcoredotco/octane/pkg/keywords/api"
+	"github.com/evcoredotco/octane/pkg/keywords/api/mock"
 )
 
 // bootNotificationFrame is a minimal OCPP 1.6 BootNotification CALL frame

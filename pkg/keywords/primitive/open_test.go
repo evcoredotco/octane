@@ -17,9 +17,9 @@ import (
 
 	"github.com/coder/websocket"
 
-	"github.com/evcoreco/octane/pkg/keywords/api"
-	"github.com/evcoreco/octane/pkg/keywords/api/mock"
-	"github.com/evcoreco/octane/pkg/keywords/registry"
+	"github.com/evcoredotco/octane/pkg/keywords/api"
+	"github.com/evcoredotco/octane/pkg/keywords/api/mock"
+	"github.com/evcoredotco/octane/pkg/keywords/registry"
 )
 
 // ── Named constants ──────────────────────────────────────────────────────────

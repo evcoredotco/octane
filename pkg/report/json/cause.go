@@ -1,7 +1,7 @@
 package reportjson
 
 import (
-	"github.com/evcoreco/octane/pkg/report/model"
+	"github.com/evcoredotco/octane/pkg/report/model"
 )
 
 // emptyCauseChain is the minimum chain length that triggers defensive

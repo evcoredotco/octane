@@ -11,7 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/evcoreco/octane/pkg/story/ast"
+	"github.com/evcoredotco/octane/pkg/story/ast"
 )
 
 // Serialize returns a compact, byte-deterministic JSON encoding of story.

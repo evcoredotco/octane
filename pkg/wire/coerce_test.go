@@ -12,7 +12,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/evcoreco/octane/pkg/wire"
+	"github.com/evcoredotco/octane/pkg/wire"
 )
 
 const (

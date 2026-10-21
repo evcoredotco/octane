@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/evcoreco/octane/pkg/keywords/api"
-	"github.com/evcoreco/octane/pkg/transport"
+	"github.com/evcoredotco/octane/pkg/keywords/api"
+	"github.com/evcoredotco/octane/pkg/transport"
 )
 
 // errNoCSMSEndpoint is returned when state.CSMSBaseURL() is empty.

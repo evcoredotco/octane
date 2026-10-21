@@ -17,9 +17,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/evcoreco/octane/pkg/keywords/api"
-	"github.com/evcoreco/octane/pkg/keywords/primitive"
-	"github.com/evcoreco/octane/pkg/keywords/registry"
+	"github.com/evcoredotco/octane/pkg/keywords/api"
+	"github.com/evcoredotco/octane/pkg/keywords/primitive"
+	"github.com/evcoredotco/octane/pkg/keywords/registry"
 )
 
 // ── Named constants ──────────────────────────────────────────────────────────

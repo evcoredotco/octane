@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/evcoreco/octane/pkg/keywords/api"
+	"github.com/evcoredotco/octane/pkg/keywords/api"
 )
 
 // errFrameNotSlice is returned when the frame argument is not a JSON array.

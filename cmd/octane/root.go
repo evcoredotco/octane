@@ -6,10 +6,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
-	"github.com/evcoreco/octane/pkg/keywords/lifecycle"
-	"github.com/evcoreco/octane/pkg/keywords/ocpp16"
-	"github.com/evcoreco/octane/pkg/keywords/primitive"
+	"github.com/evcoredotco/octane/cmd/octane/internal/exitcode"
+	"github.com/evcoredotco/octane/pkg/keywords/lifecycle"
+	"github.com/evcoredotco/octane/pkg/keywords/ocpp16"
+	"github.com/evcoredotco/octane/pkg/keywords/primitive"
 )
 
 // version, commit, and date are injected at build time by goreleaser via

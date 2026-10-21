@@ -7,7 +7,7 @@ package story_test
 import (
 	"testing"
 
-	"github.com/evcoreco/octane/pkg/story"
+	"github.com/evcoredotco/octane/pkg/story"
 )
 
 // FuzzParse is a property-based fuzz test: any byte sequence fed to

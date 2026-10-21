@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/evcoreco/octane/pkg/report"
-	reportjson "github.com/evcoreco/octane/pkg/report/json"
-	"github.com/evcoreco/octane/pkg/runner"
+	"github.com/evcoredotco/octane/pkg/report"
+	reportjson "github.com/evcoredotco/octane/pkg/report/json"
+	"github.com/evcoredotco/octane/pkg/runner"
 )
 
 // schemaTestYear is the year used in buildMinimalResult time fixtures.

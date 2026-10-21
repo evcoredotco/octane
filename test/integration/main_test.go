@@ -3,8 +3,8 @@ package integration_test
 import (
 	"testing"
 
-	"github.com/evcoreco/octane/pkg/keywords/lifecycle"
-	"github.com/evcoreco/octane/pkg/keywords/primitive"
+	"github.com/evcoredotco/octane/pkg/keywords/lifecycle"
+	"github.com/evcoredotco/octane/pkg/keywords/primitive"
 )
 
 // TestMain registers all keyword packages before running any tests.

@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/evcoreco/octane/pkg/report/internal/redact"
+	"github.com/evcoredotco/octane/pkg/report/internal/redact"
 )
 
 const (
