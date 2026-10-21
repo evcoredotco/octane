@@ -1,93 +1,29 @@
 # CLAUDE.md — OCTANE
 
-> **What this file is:** Claude Code-specific dispatch rules, tool
-> shortcuts, file-scope reminders, and domain refusals that extend the
-> cross-tool agent contract in `AGENTS.md`.
+> **What this file is:** Claude Code-specific rules and domain refusals
+> that extend the cross-tool agent contract in `AGENTS.md`.
 >
 > **What this file is not:** a substitute for `AGENTS.md`. Every rule in
 > `AGENTS.md` is binding here. Where this file and `AGENTS.md`
 > contradict, `AGENTS.md` wins. When in doubt about agent scope,
 > responsibility, or workflow, read `AGENTS.md` first.
->
-> **When NOT to use this file:** if you need the binding agent contract,
-> lane definitions, or spec-driven workflow — use `AGENTS.md`. This file
-> adds Claude-specific shortcuts on top, it does not replace anything.
 
 ## Loading order
 
-1. `.specify/memory/constitution.md` — binding principles
-2. `AGENTS.md` — agent contract (read first, always authoritative)
-3. This file — Claude Code-specific overrides and shortcuts
-4. Active spec under `specs/<current-branch>/`
-
-## Default agent dispatch
-
-When the user gives a high-level instruction without specifying an agent,
-route as follows:
-
-| Phrase pattern | Default agent |
-|----------------|---------------|
-| "draft a spec", "let's design", "what should we build" | architect |
-| "implement", "code this up", "write the function" | backend |
-| "add a keyword", "story DSL", "parser", "scenario file", ".story" | keyword-author |
-| "add a test", "write coverage", "fuzz this" | qa |
-| "wire CI", "publish the action", "container", "release" | devops |
-| "review this", "look at the diff" | reviewer |
-| "is this safe", "credentials", "TLS", "secrets" | security |
-| "write docs", "update README", "changelog" | docs |
-
-If the request straddles two roles, the architect mediates.
-
-## Slash commands
-
-| Command | What it does |
-|---------|--------------|
-| `/specify <text>` | Run `.specify/scripts/bash/new-spec.sh`, then draft `spec.md` from the user's description |
-| `/plan` | Read the active `spec.md` and fill `plan.md` |
-| `/tasks` | Read `spec.md` + `plan.md` and generate `tasks.md` rows |
-| `/implement <task-id>` | Execute one task end-to-end under the assigned agent |
-| `/adr <title>` | Run `.specify/scripts/bash/new-adr.sh` and draft the ADR |
-| `/check` | Run `.specify/scripts/bash/check-spec.sh` against the active spec |
-
-Definitions live under `.claude/commands/`.
-
-## Subagent invocation hints
-
-Claude Code spawns subagents from `.claude/agents/`. To delegate explicitly:
-
-```
-> Use the backend subagent to implement T-001-04.
-> Use the security subagent to review the WebSocket TLS settings in pkg/transport.
-```
-
-When a subagent finishes, return control to the main thread with a one-line
-summary; do not chain into another subagent without surfacing the
-intermediate result.
-
-## File scope reminders for the main thread
-
-The main Claude session (no subagent) may **read** anything.
-
-**Write targets** (main thread only — no subagent needed):
-
-| Condition | Write target |
-|-----------|-------------|
-| User is in spec/plan/tasks mode | `specs/<active>/` |
-| User asks to draft an ADR | `docs/adr/` |
-| User explicitly requests | `CLAUDE.md`, `AGENTS.md` |
-
-**Everything else is delegated.** If a task touches `cmd/`, `internal/`,
-`pkg/`, `.github/`, `action/`, `*_test.go`, or `docs/` prose, delegate
-to the appropriate subagent per the roster in `AGENTS.md -5`. Do not
-write to those paths directly from the main thread.
+1. `ARCHITECTURE.md` section 2 — the project principles, cited elsewhere
+   as "constitution principle N"
+2. `AGENTS.md` — agent contract (always authoritative)
+3. This file — Claude Code-specific rules
+4. The ADRs in `docs/adr/` that cover the area you are changing
 
 ## Things Claude should refuse to do
 
-- Edit `.specify/memory/constitution.md` without an ADR amendment in flight.
+- Change the principles in `ARCHITECTURE.md` section 2 without an ADR
+  that records the change.
 - Disable TLS verification anywhere in `pkg/transport/`.
 - Add new third-party Go dependencies without a draft ADR.
 - Mark a test case stable before it has passed against the pinned CitrineOS.
-- Push directly to `main`. Always work on a `spec/...` or `feat/...` branch.
+- Push directly to `master`. Work on a branch and open a pull request.
 - Declare any OCPP 1.6 data type (struct, enum, sub-object) locally in OCTANE.
   All OCPP 1.6 types **must** come from `github.com/evcoreco/ocpp16types`
   (ADR 0020). If the required type is missing from that module, stop and
@@ -132,4 +68,4 @@ All three are first-party EVCore infrastructure and must be pinned as direct
 ## Quick references
 
 - OCPP 1.6J spec: https://www.openchargealliance.org/protocols/ocpp-16/
-- - - CitrineOS: https://citrineos.github.io/
+- CitrineOS: https://citrineos.github.io/

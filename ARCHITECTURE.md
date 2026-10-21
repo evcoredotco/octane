@@ -1,19 +1,19 @@
 # OCTANE — Architecture
 
 > **What this document is:** a design narrative that consolidates the
-> ratified ADRs and constitution into a single readable reference. It is
-> a *summary*, not a specification — where this document and an ADR
-> disagree, the ADR wins.
+> ratified ADRs and the project principles into a single readable
+> reference. It is a *summary*, not a specification — where this
+> document and an ADR disagree, the ADR wins.
 >
 > **What this document is not:** a specification, a test plan, or an
-> implementation guide. For binding rules read the constitution
-> (`.specify/memory/constitution.md`) and the individual ADRs in
-> `docs/adr/`. For agent operating rules read `AGENTS.md`.
+> implementation guide. For binding rules read the principles in
+> section 2 and the individual ADRs in `docs/adr/`. For agent operating
+> rules read `AGENTS.md`.
 >
 > **Audience:** engineers, certification reviewers, and contributors.
 >
 > **Scope:** OCTANE v0 (pre-alpha). Decisions tracked through ADR 0020.
-> **Last reviewed:** 2026-04-29
+> **Last reviewed:** 2026-10-21
 
 ---
 
@@ -43,9 +43,11 @@ The published artefact set is small and stable:
 
 ## 2. Foundational principles
 
-OCTANE's constitution (`.specify/memory/constitution.md`, currently at
-v1.2.0) is the only document that overrides the rest. Every spec, ADR,
-and design decision must comply with it. The principles, in summary:
+OCTANE's constitution is the only set of rules that overrides the rest.
+Every ADR and design decision must comply with it. The full constitution
+text is not kept in this repository; the table below is the reference
+for the principles that ADRs, code comments, and other documents cite as
+"constitution principle N".
 
 | #    | Principle                                               | Operational meaning                                                                                 |
 |------|---------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
@@ -56,7 +58,7 @@ and design decision must comply with it. The principles, in summary:
 | V    | Go-First, Stdlib-Heavy                                  | Go 1.26. Third-party deps require an ADR. WebSocket is the single allowed exception.                |
 | VI   | Test Cases Are Code, Not Configuration                  | Stories are a declarative *surface*; the keyword library that executes them is typed Go.            |
 | VII  | Public API Stability                                    | `pkg/` follows semver. `internal/` does not.                                                        |
-| VIII | Spec-Driven Development                                 | Code does not land before its spec merges.                                                          |
+| VIII | Spec-Driven Development                                 | Architectural decisions are recorded as ADRs before the code lands.                                 |
 | IX   | AI Agents Are Bounded Contributors                      | Agents have declared scopes; agent commits get human sign-off.                                      |
 | X    | Security and Compliance Are Continuous                  | TLS on by default, secrets never in artefacts, dependencies scanned on every PR.                    |
 | XI   | Conformance Is Verified On the Wire                     | OCTANE never demands changes to the CSMS, never uses admin APIs, never depends on a vendor adapter. |
@@ -64,14 +66,15 @@ and design decision must comply with it. The principles, in summary:
 
 Principles XI and XII are the two pivots that distinguish the current
 design from earlier drafts. They emerged from a deliberate rejection
-of an adapter-based model (see -12) and align OCTANE with a
+of an adapter-based model (see section 13) and align OCTANE with a
 **zero-cooperation-cost** adoption philosophy: any CSMS team can
 run OCTANE against an unmodified deployment with one CLI command.
 
 ## 2.1 What OCTANE does NOT do
 
 These non-responsibilities are architectural constants, not temporary
-limitations. They will not change without a constitution amendment.
+limitations. They will not change without an ADR that amends the
+principles in section 2.
 
 | OCTANE does NOT… | Responsibility delegated to |
 |------------------|-----------------------------|
@@ -92,7 +95,7 @@ limitations. They will not change without a constitution amendment.
 │  ──────────────────────────────────────────────────────────────  │
 │  Declarative Gherkin-flavored scenarios. One per OCPP section/   │
 │  protocol behavior under test.                                   │
-│  Live in scenarios/v16/, scenarios/, scenarios/v21/.             │
+│  Live in scenarios/v16/.                                         │
 │  Read by certification reviewers. Version-controlled. ADR 0006.  │
 └──────────────────────────────────────────────────────────────────┘
                               ▼  resolves keywords against
@@ -117,7 +120,7 @@ limitations. They will not change without a constitution amendment.
 ┌──────────────────────────────────────────────────────────────────┐
 │  Reports                                                         │
 │  ──────────────────────────────────────────────────────────────  │
-│  • report.json     — OCTANE-native, byte-deterministic           │
+│  • octane.json     — OCTANE-native, byte-deterministic           │
 │  • output.xml      — Robot Framework 7.x format (ADR 0009)       │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -134,23 +137,28 @@ A `.story` file declares one OCPP scenario in three required sections
 Indentation is whitespace-significant; tabs are forbidden; the parser
 is recursive-descent with no third-party dependency.
 
-```yml
+```text
 Meta
-    Spec-Ref:    OCPP-1.6 / TC_048_1_CSMS
-    Title:       Reservation of a Connector — Faulted
+    Name:        Connector reservation faulted
+    Id:          connector_reservation_faulted
+    Spec-Ref:    OCPP-J 1.6 -6.40 ReserveNow
     Tags:        reservation, csms-initiated, wire-only
     Stations:    1
     Timeout:     30s
     Parameters:  connectorId, idTag
+    Depends:
+      - id:    connector_status_available
+        scope: per-station
 
 Background
     Given the CSMS is reachable
-    And   the profile defines station "CP01"
+    And   station "CP01" is registered to the CSMS
 
 Scenario: CSMS handles a Faulted reservation response
     When  the CSMS sends ReserveNow with connectorId {connectorId}
-          and idTag "{idTag}" to station "CP01"
+          and idTag "{idTag}" to station "CP01" within 30 seconds
     Then  station "CP01" responds with ReserveNow.conf status "Faulted"
+    And   the CSMS accepts the response without error within 10 seconds
 
 Teardown
     Disconnect station "CP01"
@@ -163,9 +171,10 @@ resource allocation (`Stations`), and classify the scenario through
 `helper`; optionally `pure-protocol` to declare independence from
 any fixture).
 
-The `Parameters` key declares story inputs that resolve from
-`octane.yml`. Without it, stories cannot vary by deployment. The exact
-schema is sketched but not yet ratified into an ADR.
+The `Parameters` key declares story inputs. They resolve from the
+`parameters` map in `octane.yml` and can be overridden per run with
+`octane run --param name=value`. Without them, stories cannot vary by
+deployment. The schema is implemented but not yet ratified into an ADR.
 
 The grammar is small enough to fit a recursive-descent parser in
 ~600–800 lines of Go (target). Diagnostic quality (line + column
@@ -237,7 +246,7 @@ Framework Python library:
 | Per-test scope                         | `api.State` per-scenario by construction                         |
 
 OCTANE does not use Robot Framework at runtime, but borrows its
-mental model and emits its `output.xml` format (see -8).
+mental model and emits its `output.xml` format (see section 11).
 
 Defined in **ADR 0007**.
 
@@ -321,8 +330,10 @@ files that only need enumerations or field types.
 
 When either module does not yet expose a needed type or message, the correct
 action is to contribute it upstream first, then unblock the OCTANE task once
-the release is tagged. The `reviewer` agent rejects any PR that violates
-either rule.
+the release is tagged. Reviewers reject any PR that violates either rule.
+
+**Status:** not yet adopted. None of these modules is in `go.mod` yet, and
+no OCTANE package imports them.
 
 Defined in **ADR 0020**.
 
@@ -434,7 +445,7 @@ handle. So a story declaring `Stations: 2` causes
 `station_boot_accepted` to run twice, once for `CP01` and once for
 `CP02`. A `per-run` prerequisite runs once regardless of station
 count. A `global` prerequisite runs once across the validity window
-defined by the cache (see -8).
+defined by the cache (see section 9).
 
 Defined in **ADR 0015**.
 
@@ -574,7 +585,7 @@ two or more simulated stations. A story declares the count in `Meta`:
 
 ```yml
 Meta
-    Spec-Ref:    OCPP-1.6 / TC_E_07_CS
+    Spec-Ref:    OCPP-J 1.6 -6.2 Authorize
     Stations:    2
 ```
 
@@ -603,7 +614,7 @@ Every run produces two artefacts:
 
 | File          | Format                                 | Purpose                                                                     |
 |---------------|----------------------------------------|-----------------------------------------------------------------------------|
-| `report.json` | OCTANE-native JSON, byte-deterministic | Source of truth for certification                                           |
+| `octane.json` | OCTANE-native JSON, byte-deterministic | Source of truth for certification                                           |
 | `output.xml`  | Robot Framework 7.x output schema      | Ecosystem reporting (Allure, ReportPortal, Jenkins, GitLab, GitHub Actions) |
 
 Both files are produced from the same in-memory report tree. They
@@ -628,54 +639,52 @@ Defined in **ADR 0009**.
 The canonical invocation is:
 
 ```shell
-octane run scenarios/v16/TC_048_1_CSMS.story
-octane run scenarios/                     # whole directory
-octane run scenarios/                           # everything
+octane run --csms-endpoint ws://localhost:9210                        # stories in storiesDir
+octane run scenarios/v16/station_boot_accepted.story --csms-endpoint ws://localhost:9210
+octane validate stories scenarios/v16                                 # no CSMS connection
 ```
 
-Configuration resolves through a hierarchy (ADR 0019, in scope but
-not yet ADR'd in this revision):
+Configuration resolves in this order, each level overriding the
+previous one:
 
-1. `--config` flag
-2. `OCTANE_CONFIG` environment variable
-3. `./octane.yml` or `./.octane/config.yml`
-4. `$XDG_CONFIG_HOME/octane/config.yml`
-5. `/etc/octane/config.yml`
+1. Built-in defaults
+2. `octane.yml` (path set with `--config`; default `./octane.yml`)
+3. `OCTANE_*` environment variables
+4. Command-line flags
 
-A sample `octane.yml`:
+The CSMS endpoint is not stored in `octane.yml`; pass it with
+`--csms-endpoint`. The checked-in `octane.yml`:
 
 ```yaml
-schema_version: "1"
-csms:
-  url: ws://localhost:8081/ocpp/CP01
-  ocpp_version: "1.6"
-connection: citrineos                  # resolves a connection profile per ADR 0010
-auth:
-  mode: none
-defaults:
-  timeout: 30s
-  seed: 42
-report:
-  output_dir: ./reports
-  formats: [json, robot-xml]
+storiesDir:  scenarios/v16
+ocppVersion: "1.6"
+maxParallel: 1
+parameters:
+  connectorId: "1"
+  valid_idTag: "AABBCC"
+  connectionTimeOut: "30s"
+  meterStart: "0"
+  meterStop: "1000"
 ```
+
+The full field reference is in `docs/configuration.md`.
 
 ### Distribution channels
 
-OCTANE distributes through standard Linux/macOS/Windows channels:
+`.goreleaser.yaml` and `packaging/nfpm.yaml` configure these release
+artefacts:
 
-| Channel       | Path                                              |
-|---------------|---------------------------------------------------|
-| Debian/Ubuntu | `apt install octane` (via APT repo)               |
-| Fedora/RHEL   | `dnf install octane` (via RPM repo)               |
-| macOS         | `brew install evcoreco/octane/octane`             |
-| Windows       | `scoop install octane`                            |
-| Docker        | `docker pull ghcr.io/evcoreco/octane`             |
-| Direct        | static binaries, signed via cosign, SBOM-attested |
+| Channel          | Artefact                                                  |
+|------------------|-----------------------------------------------------------|
+| Debian/Ubuntu    | `.deb` package (nfpm)                                     |
+| Fedora/RHEL      | `.rpm` package (nfpm)                                     |
+| macOS / Linux    | Homebrew formula in `evcoreco/homebrew-octane`            |
+| Docker           | `ghcr.io/evcoreco/octane` images for amd64 and arm64      |
+| Direct           | archives with SBOMs and cosign signatures                 |
 
-Packaging is orchestrated by `goreleaser` reading `.goreleaser.yaml`
-and `packaging/nfpm.yaml`. Release artefacts include man pages, shell
-completions, and the LICENSE.
+No release has been published yet. Build from source until one is.
+Release artefacts include man pages, shell completions, and the
+LICENSE.
 
 ### Documentation
 
@@ -691,11 +700,12 @@ OCTANE ships professional Unix-style documentation (ADR 0011):
 Shell completion (ADR 0012) ships for bash and zsh, with both static
 (subcommands, flags) and dynamic completion (story file paths,
 profile names, registered keywords). Dynamic completion functions
-are bound by a hard rule: read-only and side-effect-free, enforced
-by a build-time vettool.
+are bound by a hard rule: read-only and side-effect-free. No tool
+enforces the rule yet; reviewers check it.
 
-A separate Docusaurus website at `https://octane.dev/` (ADR 0013)
-covers tutorials, conceptual narrative, and the keyword catalog.
+A separate Docusaurus website in `website/` (ADR 0013), deployed to
+GitHub Pages by `.github/workflows/docs.yml`, covers tutorials,
+conceptual narrative, and the keyword catalog.
 It is **not** an HTML render of the man pages — different reading
 modes deserve different content shapes. Three of its reference pages
 are mechanically generated (CLI, config schema, keyword catalog); the
@@ -751,62 +761,57 @@ ecosystem compatibility while keeping the core in Go.
 
 ```text
 octane/
-├── .specify/
-│   ├── memory/
-│   │   └── constitution.md          # binding principles, v1.4.0
-│   ├── scripts/bash/                # spec-kit helper scripts
-│   └── templates/                   # spec / plan / tasks templates
-├── .claude/
-│   ├── agents/                      # subagent role definitions
-│   └── commands/                    # /specify /plan /tasks /implement /adr /check
-├── .github/workflows/               # ci.yml, reference.yml, release.yml, docs.yml
+├── .github/workflows/               # ci.yml, docs.yml, release.yml
+├── action/                          # GitHub Action wrapper (Docker-based)
+├── cmd/octane/                      # Cobra CLI, configuration, exit codes
+├── connections/                     # sample connection profile (citrineos.yaml)
 ├── docs/
-│   ├── adr/                         # 17 ADRs, all active, sequentially numbered
-│   ├── conformance-claim.md         # public conformance scope statement
-│   └── man/                         # scdoc sources for -5 and -7
-├── specs/
-│   ├── 001-story-parser/            # .story → AST (no I/O)
-│   ├── 002-wire-engine/              # transport + wire framing + clock/rand
-│   ├── 003-keyword-api/              # api package + registry + resolver
-│   ├── 004-primitive-keywords/       # transport-level primitive keywords
-│   ├── 005-dependency-cache/         # runner (DAG) + content-addressed cache
-│   ├── 006-cli-action/               # CLI + GitHub Action + GitLab integration
-│   └── 007-reports/                  # JSON + Robot XML emitters
-├── scenarios/
-│   ├── v16/                         # OCPP 1.6 stories: helpers + connector_reservation_faulted
-│   └──                         # OCPP 1.6 stories: boot_notification_*, authorize_concurrent_rejected
-├── action/                          # GitHub Action wrapper (manifest only; binary lands later)
-├── examples/                        # Consumer copy-paste artifacts (CI workflows for GH/GL)
+│   ├── adr/                         # architecture decision records
+│   ├── concepts/                    # concept documentation
+│   ├── integrations/                # CI and Robot Framework integration guides
+│   ├── keywords/                    # keyword reference
+│   ├── man/                         # scdoc sources for man sections 5 and 7
+│   └── conformance-claim.md         # public conformance scope statement
+├── examples/                        # consumer CI snippets and example stories
 ├── packaging/                       # nfpm.yaml for .deb/.rpm
-├── scripts/                         # gen-manpages.sh, gen-completions.sh
+├── pkg/
+│   ├── cache/                       # content-addressed result cache and locks
+│   ├── engine/                      # deterministic clock and rand
+│   ├── keywords/                    # api, registry, primitive, lifecycle, ocpp16
+│   ├── report/                      # report model, JSON and Robot XML writers
+│   ├── runner/                      # dependency graph, sharding, execution
+│   ├── story/                       # .story lexer, parser, AST, diagnostics
+│   ├── transport/                   # WebSocket dialing and station connections
+│   └── wire/                        # OCPP-J frame parsing and encoding
+├── scenarios/v16/                   # OCPP 1.6 conformance and helper stories
+├── scripts/                         # man page, completion and CI helper scripts
+├── test/
+│   ├── integration/                 # integration tests
+│   └── reference/                   # Docker Compose CitrineOS reference target
 ├── website/                         # Docusaurus site
 ├── AGENTS.md                        # cross-tool agent contract
-├── CLAUDE.md                        # Claude Code project memory
 ├── ARCHITECTURE.md                  # this document
-├── CONTRIBUTING.md                  # author / contributor guide
 ├── CHANGELOG.md
+├── CLAUDE.md                        # Claude Code project rules
+├── CONTRIBUTING.md                  # author / contributor guide
+├── Dockerfile                       # release image (binary supplied by goreleaser)
 ├── LICENSE                          # Apache-2.0
-├── Makefile                         # targets reserved; activate when code lands
-├── .goreleaser.yaml                 # release orchestration (activates with binary)
-└── .golangci.yaml                   # lint config (activates with code)
+├── Makefile                         # format, lint, test, build, docs, packaging
+├── golangci.yml                     # lint and formatter configuration
+├── octane.yml                       # starter configuration
+└── .goreleaser.yaml                 # release orchestration
 ```
 
-The `pkg/` directory tree and `go.mod` are intentionally absent.
-All Go code is specced (ADRs 0007, 0015, 0016, 0017; specs 001
-> and 002) but not yet written. Implementation follows the
-> Spec-Kit workflow.
-> 
-> ## 15. ADR index
+## 15. ADR index
 
-All ADRs are active and accepted. The numbering is sequential without
-gaps; superseded design history was removed during a 2026-04-26
-cleanup so that new contributors see only the current design.
+The ADRs are numbered 0001–0020. Number 0017 is not used. ADRs
+0001–0004 have status Proposed; the others are Accepted.
 
 | #    | Title                                                                          |
 |------|--------------------------------------------------------------------------------|
 | 0001 | Adopt Apache-2.0 License                                                       |
 | 0002 | Go as the Engine Language                                                      |
-| 0003 | WebSocket Library (`nhooyr.io/websocket`)                                      |
+| 0003 | WebSocket Library (`nhooyr.io/websocket`, now `github.com/coder/websocket`)     |
 | 0004 | CitrineOS as the Reference CSMS                                                |
 | 0005 | Story-Driven Conformance Framework                                             |
 | 0006 | `.story` Gherkin-Flavored DSL                                                  |
@@ -824,68 +829,50 @@ cleanup so that new contributors see only the current design.
 | 0019 | Runner Concurrency Model                                                       |
 | 0020 | Shared OCPP 1.6 Data Types and Messages via `ocpp16types` and `ocpp16messages` |
 
-Forthcoming (sketched in conversation, not yet written):
+Decisions that are implemented but not yet recorded as ADRs:
 
-| Title                                | Notes                                        |
-|--------------------------------------|----------------------------------------------|
-| CLI Surface and Subcommand Structure | Locks `octane run`, exit codes, global flags |
-| Configuration Resolution and Schema  | XDG chain, YAML schema, validation           |
-| Distribution Channels                | `.deb`, `.rpm`, Homebrew, Scoop, signing     |
-| Story Parameters                     | Project-supplied inputs in story Meta        |
+| Title                                | Notes                                                    |
+|--------------------------------------|----------------------------------------------------------|
+| CLI Surface and Subcommand Structure | `octane run`, exit codes, global flags                   |
+| Configuration Resolution and Schema  | defaults, `octane.yml`, `OCTANE_*`, flags                |
+| Distribution Channels                | `.deb`, `.rpm`, Homebrew, Docker, signing                |
+| Story Parameters                     | `Parameters` Meta key, `parameters` map, `--param` flag  |
 
 ## 16. What is implemented today
 
-This is honest scaffolding inventory, not aspirational marketing.
-
-| Component                                                                                                                                                                                                                                                                                             | Status                                     |
-|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------|
-| Constitution v1.4.0                                                                                                                                                                                                                                                                                   | Done                                       |
-| ADRs 0001–0016                                                                                                                                                                                                                                                                                        | Done                                       |
-| Spec 001 (bootstrap engine), Spec 002 (story framework)                                                                                                                                                                                                                                               | Specs merged, implementation pending       |
-| `.specify/` Spec-Kit scaffolding                                                                                                                                                                                                                                                                      | Done                                       |
-| `.claude/agents/` (8 subagents) and `/slash` commands                                                                                                                                                                                                                                                 | Done                                       |
-| Example `.story` files: 7 conformance stories (`boot_notification_accepted`, `boot_notification_malformed`, `authorize_concurrent_rejected`, `boot_sequence_accepted`, `connector_reservation_faulted`, `transaction_pluginfirst_accepted`, `transaction_identificationfirst_accepted`) and 3 helpers | Done                                       |
-| All Go code (`pkg/keywords`, `pkg/wire`, `pkg/cache`, `pkg/engine`, `pkg/transport`, `pkg/story` parser, `cmd/octane`)                                                                                                                                                                                | Specced, not implemented                   |
-| Sample connection profile YAML files (`connections/citrineos.yaml`, etc.)                                                                                                                                                                                                                             | Specced, not bootstrapped                  |
-| `CONTRIBUTING.md` and `docs/conformance-claim.md`                                                                                                                                                                                                                                                     | Done                                       |
-| Man-page sources (-5, -7)                                                                                                                                                                                                                                                                             | Done                                       |
-| Man-page generation script + scdoc + cobra hooks                                                                                                                                                                                                                                                      | Done (cobra hooks fire when binary exists) |
-| Shell completion script                                                                                                                                                                                                                                                                               | Done (depends on binary)                   |
-| Packaging (`.goreleaser.yaml`, `packaging/nfpm.yaml`)                                                                                                                                                                                                                                                 | Done (depends on binary)                   |
-| Docusaurus website skeleton                                                                                                                                                                                                                                                                           | Done                                       |
-| CI workflows (ci, reference, release, docs)                                                                                                                                                                                                                                                           | Done (Go jobs activate when code lands)    |
-
-The project is in a deliberate **design-complete, code-empty** state.
-All architectural decisions are committed in ADRs and specs; no Go
-code has been written yet. Implementation will follow the GitHub
-Spec-Kit workflow defined in `.specify/`, with each piece of the
-design landing as code only after its spec has been refined to
-implementation-ready detail.
+| Component                                                              | Status                                         |
+|------------------------------------------------------------------------|------------------------------------------------|
+| Story lexer, parser and validator (`pkg/story`)                        | Done                                           |
+| Keyword API, registry, primitive, lifecycle and OCPP 1.6 keywords      | Done                                           |
+| Runner: dependency graph, sharding, parallelism, skip logic            | Done                                           |
+| Content-addressed cache and file locks                                 | Done                                           |
+| Reports: `octane.json` and Robot Framework `output.xml`                | Done                                           |
+| CLI: `run`, `validate`, `keywords`, `cache`, `completion`              | Done                                           |
+| Man pages and bash/zsh completion                                      | Done                                           |
+| OCPP 1.6 stories in `scenarios/v16/`                                   | 23 stories                                     |
+| CI: lint, tests, CodeQL, website deployment                            | Done                                           |
+| Packaging (`.goreleaser.yaml`, `packaging/nfpm.yaml`)                  | Configured; no release published               |
+| GitHub Action (`action/`)                                              | Wrapper metadata and entrypoint                |
+| Docusaurus website                                                     | Deployed to GitHub Pages                       |
+| Connection profiles (ADR 0010)                                         | Sample profile only; the CLI does not load it |
+| Shared OCPP 1.6 modules (ADR 0020)                                     | Not adopted                                    |
+| OCPP 2.0.1 and 2.1                                                     | Out of scope                                   |
 
 ## 17. Reading order for new contributors
 
-1. This document (`ARCHITECTURE.md`)
-2. `.specify/memory/constitution.md`
-3. `AGENTS.md`
-4. The current spec under `specs/<NNN>-<slug>/`
-5. The matching ADRs from `docs/adr/`
-6. The example stories under `scenarios/v16/` and `scenarios/`
-   to see how the design plays out in practice. The starter keyword
-   catalog in spec 002 -10 lists every pattern the example stories
-   reference.
-7. The example stories under `scenarios/`
+1. This document (`ARCHITECTURE.md`), especially the principles in
+   section 2
+2. `AGENTS.md`
+3. `CONTRIBUTING.md`
+4. The ADRs in `docs/adr/` for the area you are changing
+5. The stories in `scenarios/v16/`, to see how the design plays out in
+   practice. Run `octane keywords list` for the full keyword catalog.
 
-For Claude Code users specifically, also read `CLAUDE.md` to
-understand the dispatch table and slash-command surface.
+For Claude Code users specifically, also read `CLAUDE.md`.
 
 ## 18. References
 
-- **Constitution:** `.specify/memory/constitution.md`
-- **OCPP specifications:**
-  - OCPP 1.6: <https://www.openchargealliance.org/protocols/ocpp-16/>
-  - OCPP 1.6: <https://www.openchargealliance.org/protocols/ocpp-201/>
-  - OCPP 1.6: <https://www.openchargealliance.org/protocols/ocpp-21/>
+- **OCPP 1.6:** <https://www.openchargealliance.org/protocols/ocpp-16/>
 - **CitrineOS:** <https://citrineos.github.io/>
 - **Robot Framework user guide (mental-model precedent):**
   <https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html>
-- **Spec-Kit pattern:** `.specify/templates/`

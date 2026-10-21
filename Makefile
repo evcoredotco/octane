@@ -1,28 +1,10 @@
 # OCTANE — Makefile
 #
-# All agents reference these targets by name. Keep the surface stable;
-# any change requires updating .claude/agents/*.md and AGENTS.md.
-#
-# STATUS: This Makefile's Go-related targets (format, lint, test,
-# build, package) are intentionally preserved as the contract for
-# when implementation begins. They will fail cleanly today because
-# pkg/ is empty and go.mod does not exist; this is expected. The
-# specs (specs/001-bootstrap-engine, specs/002-story-framework) and
-# ADRs (notably 0007, 0015, 0016, 0017) are the design source of
-# truth for the implementation that will populate the surface.
-#
-# Until Go code lands:
-#   make spec-check    works (validates the specs)
-#   make man           works (generates man pages from scdoc)
-#   make completions   works (generates shell completions; depends on the binary)
-#   make docs-html     works (Docusaurus build)
-#   make format/lint/test/build  fail cleanly until pkg/ exists
+# Contributors and CI use these targets by name. Keep the surface stable;
+# any change requires updating AGENTS.md and CONTRIBUTING.md.
 
 GO            ?= go
 GOLANGCI_LINT ?= golangci-lint
-GOFUMPT       ?= gofumpt
-GOLINES       ?= golines
-GCI           ?= gci
 # Keep in step with the versions pinned in .github/workflows/ci.yml.
 GOLANGCI_LINT_VERSION ?= v2.15.0
 STATICCHECK_VERSION   ?= 2026.2.2
@@ -45,16 +27,8 @@ help: ## Display this help message, listing all available targets and their desc
 
 ##@ Format / lint / test
 .PHONY: format
-format: ## Run gofmt, gofumpt, golines, gci.
-	$(GO) fmt $(PKG)
-	$(GOFUMPT) -l -w .
-	$(GOLINES) -w -m 80 .
-	$(GCI) write \
-		--skip-generated \
-		--section standard \
-		--section "prefix($(MODULE))" \
-		--section default \
-		.
+format: ## Format code with the formatters configured in golangci.yml (gci, gofumpt, golines).
+	$(GOLANGCI_LINT) fmt --config golangci.yml
 
 .PHONY: lint
 lint: ## Run golangci-lint, go vet, staticcheck.
@@ -106,17 +80,8 @@ action-image: ## Build the published octane-action Docker image locally.
 # ----------------------------------------------------------------------
 
 ##@ Spec helpers
-.PHONY: spec-check
-spec-check: ## Validate every spec under specs/.
-	@for d in specs/*/; do \
-		.specify/scripts/bash/check-spec.sh "$$d" || exit 1; \
-	done
-
 .PHONY: install-tools
 install-tools: ## Install development tooling.
-	$(GO) install mvdan.cc/gofumpt@latest
-	$(GO) install github.com/segmentio/golines@latest
-	$(GO) install github.com/daixiang0/gci@latest
 	$(GO) install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 	$(GO) install honnef.co/go/tools/cmd/staticcheck@$(STATICCHECK_VERSION)
 	$(GO) install github.com/goreleaser/goreleaser/v2@latest

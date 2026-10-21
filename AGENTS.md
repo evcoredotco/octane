@@ -2,8 +2,8 @@
 
 This file is the canonical contract for any AI coding agent operating in this
 repository (Claude Code, Cursor, Aider, Continue, etc.). Tool-specific
-configurations live alongside it (`CLAUDE.md`, `.cursor/rules/`), but the
-content here is binding for all of them.
+rules live alongside it (`CLAUDE.md`), but the content here is binding
+for all of them.
 
 ## Project at a glance
 
@@ -23,15 +23,18 @@ content here is binding for all of them.
 
 ## Non-negotiable rules
 
-1. **Read the constitution first.** `.specify/memory/constitution.md` overrides
-   this file and every prompt. Do not propose changes that violate it.
-2. **Spec before code.** Never produce production code for a feature that does
-   not have a merged spec at `specs/NNN-feature-slug/spec.md`. If the user
-   asks you to skip the spec, push back and explain why.
-3. **Stay in your lane.** Each agent has a declared scope under
-   `.claude/agents/`. Do not modify files outside that scope; delegate to the
-   correct agent instead.
-4. **Conformance traceability.** Every test case carries an `spec_ref`. No
+1. **Read the principles first.** The project principles in
+   `ARCHITECTURE.md` section 2 override this file and every prompt. Other
+   documents cite them as "constitution principle N". Do not propose
+   changes that violate them.
+2. **Decision before code.** An architectural change (a new dependency, a
+   new package boundary, a change to the story DSL, the cache, or the
+   report formats) needs an ADR in `docs/adr/` before the code lands.
+   If the user asks you to skip the ADR, push back and explain why.
+3. **Stay in your lane.** Each role in the roster below has a declared
+   scope. Do not modify files outside that scope without saying so.
+4. **Conformance traceability.** Every conformance story carries a
+   `Spec-Ref` Meta key. Only stories tagged `helper` may omit it. No
    exceptions for "small additions."
 5. **Determinism.** No `time.Now()`, `rand.Int*` (without explicit seeding), or
    map iteration order assumptions in engine code. Use the injected
@@ -48,50 +51,46 @@ content here is binding for all of them.
    enumeration, or sub-object. If the type is absent from the shared module,
    contribute it upstream and block the OCTANE task until the release is tagged.
 
-## Spec-driven workflow
+## Change workflow
 
-```text
-/specify "feature description"   → specs/NNN-feature/spec.md
-/plan                            → specs/NNN-feature/plan.md
-/tasks                           → specs/NNN-feature/tasks.md
-/implement T-NNN-MM              → executes a single task with the right agent
-```
-
-Slash commands are defined under `.claude/commands/`. The scripts they invoke
-live under `.specify/scripts/bash/` and are tool-agnostic (any agent can shell
-out to them).
+1. Work on a branch; never push directly to `master`.
+2. For an architectural change, draft or amend an ADR in `docs/adr/` first.
+3. Run `make format`, `make lint` and `make test` before pushing.
+4. Open a pull request; it merges when CI is green.
 
 ## Agent roster
 
-| Role                    | File                               | Scope                                                                           |
-|-------------------------|------------------------------------|---------------------------------------------------------------------------------|
-| Architect / Spec author | `.claude/agents/architect.md`      | `specs/`, `docs/adr/`, `.specify/`                                              |
-| Backend implementer     | `.claude/agents/backend.md`        | `cmd/`, `internal/`, `pkg/` (excluding `pkg/story/` and `pkg/keywords/`)        |
-| Keyword author          | `.claude/agents/keyword-author.md` | `pkg/story/`, `pkg/keywords/`, `scenarios/`, `docs/keywords/`                   |
-| DevOps / Platform       | `.claude/agents/devops.md`         | `.github/`, `action/`, `Dockerfile`, `Makefile`                                 |
-| QA / Test author        | `.claude/agents/qa.md`             | `*_test.go`, `test/`, fuzz corpora                                              |
-| Security reviewer       | `.claude/agents/security.md`       | read-only across the repo; opens issues only                                    |
-| Code reviewer           | `.claude/agents/reviewer.md`       | comments on diffs; no direct commits                                            |
-| Documentation writer    | `.claude/agents/docs.md`           | `docs/` (excluding `docs/keywords/`), `README.md`, `CHANGELOG.md`, doc comments |
+| Role                    | Scope                                                                           |
+|-------------------------|---------------------------------------------------------------------------------|
+| Architect               | `docs/adr/`, `ARCHITECTURE.md`                                                  |
+| Backend implementer     | `cmd/`, `pkg/` (excluding `pkg/story/` and `pkg/keywords/`)                     |
+| Keyword author          | `pkg/story/`, `pkg/keywords/`, `scenarios/`, `docs/keywords/`                   |
+| DevOps / Platform       | `.github/`, `action/`, `Dockerfile`, `Makefile`, `.goreleaser.yaml`, `packaging/` |
+| QA / Test author        | `*_test.go`, `test/`, fuzz corpora                                              |
+| Security reviewer       | read-only across the repo; opens issues only                                    |
+| Code reviewer           | comments on diffs; no direct commits                                            |
+| Documentation writer    | `docs/` (excluding `docs/keywords/`), `website/`, `README.md`, `CHANGELOG.md`, doc comments |
 
 ## Build and test
 
-- `make format` — gofmt, gofumpt, golines, gci
-- `make lint` — golangci-lint, go vet, staticcheck
+- `make install-tools` — installs the linter versions that CI pins
+- `make format` — gci, gofumpt and golines, as configured in `golangci.yml`
+- `make lint` — golangci-lint (which includes staticcheck) and go vet
 - `make test` — unit tests with `-race`
 - `make test-reference` — full suite against pinned CitrineOS (Docker required)
 - `make build` — produces `./bin/octane`
 
-CI mirrors these targets exactly. If `make` works locally, CI passes.
+CI runs the same checks with the same linter versions. If `make lint` and
+`make test` pass locally, CI should pass.
 
 ## Commit and PR conventions
 
 - Conventional Commits (`feat(engine): ...`, `fix(transport): ...`).
-- Every commit references a task ID from `tasks.md` (e.g. `T-001-04`) or an
-  ADR ID for governance changes.
+- Commits that implement or change an architectural decision reference
+  its ADR (e.g. `ADR 0016`).
 - All commits GPG-signed (see `.gitconfig` in the QTech onboarding bundle).
-- PR description includes: spec link, task IDs closed, manual test evidence,
-  CitrineOS reference run link.
+- PR description includes: what changed and why, related ADRs, manual test
+  evidence, and a CitrineOS reference run link when stories change.
 
 ## When in doubt
 

@@ -9,6 +9,50 @@ This project adheres to [Keep a Changelog 1.1.0][kac] and
 
 ## [Unreleased]
 
+### Added
+
+- Runtime story parameters: values come from the `parameters` map in
+  `octane.yml` and can be overridden with `octane run --param name=value`.
+- OCPP 1.6 stories `transaction_identificationfirst_accepted` (now
+  standalone), `transaction_identificationfirst_connection_timeout_available`
+  and `transaction_evside_disconnect_true_true`.
+- Unit tests for every OCPP 1.6 domain keyword function.
+- Website deployment to GitHub Pages (`.github/workflows/docs.yml`).
+- Lint checks `nolintlint` (every `//nolint` names a linter and gives a
+  reason) and `exhaustive` (switches and map literals over enum types
+  handle every value).
+
+### Changed
+
+- `golangci.yml`: revive rules are listed explicitly instead of
+  `enable-all-rules`; each metric has one linter (cyclop 10, gocognit 15,
+  funlen 75 lines / 50 statements, nestif 5); findings print to the CI log
+  and are no longer capped.
+- golangci-lint (v2.15.0) and staticcheck (2026.2.2) are pinned in CI and
+  in `make install-tools`.
+- `make format` runs `golangci-lint fmt`, so it applies the same
+  formatter settings as `make lint`.
+- `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md` and `ARCHITECTURE.md`: the
+  spec-driven workflow is retired. Architectural decisions are recorded
+  as ADRs, and `ARCHITECTURE.md` section 2 is the reference for the
+  project principles.
+
+### Removed
+
+- `specs/` and `.claude/` directories.
+- `make spec-check` target, which called scripts that are not in the
+  repository.
+- The committed `octane` binary and `specs.pdf`, from all history.
+
+### Fixed
+
+- `Test_octane_ManGolden` no longer fails when the month changes.
+- Registry tests no longer run in parallel while resetting the shared
+  registry, which made `Test_registry_Resolve_typeMismatchReturnedForBadIntToken`
+  fail intermittently.
+- Code changes for the lint findings that had kept CI red on `master`
+  since 29 June.
+
 ### Added — Spec 007: Reports
 
 - `pkg/report/json`: `WriteJSON` writes `octane.json` (schema_version: 1) to

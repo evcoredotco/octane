@@ -5,15 +5,18 @@ covers what you need to know to author conformance scenarios,
 keyword library entries, and supporting code in line with the
 project's conventions.
 
-> **Read first:** [`.specify/memory/constitution.md`](./.specify/memory/constitution.md).
-> Every contribution must comply with the constitution; the
-> conventions in this file operationalize it. If anything in this
-> file conflicts with the constitution, the constitution wins.
+> **Read first:** the project principles in
+> [`ARCHITECTURE.md` section 2](./ARCHITECTURE.md#2-foundational-principles),
+> which other documents cite as "principle N", and the
+> ADRs in [`docs/adr/`](./docs/adr/). Every contribution must comply
+> with them; the conventions in this file operationalize them. If
+> anything in this file conflicts with a principle or an ADR, the
+> principle or ADR wins.
 
 ## Table of contents
 
 - [Developer setup](#developer-setup)
-- [Spec-driven development](#spec-driven-development)
+- [Design decisions](#design-decisions)
 - [Authoring conformance stories](#authoring-conformance-stories)
 - [Authoring helper stories](#authoring-helper-stories)
 - [Adding keywords](#adding-keywords)
@@ -30,33 +33,30 @@ Run this once after cloning:
 make dev-setup
 ```
 
-This installs the Go toolchain helpers (`gofumpt`, `golines`, `gci`,
-`golangci-lint`, `goreleaser`) and configures `GOPRIVATE` to include
+This installs the tools at the versions CI pins (`golangci-lint`,
+`staticcheck`) plus `goreleaser`, and configures `GOPRIVATE` to include
 `github.com/evcoreco/*`.
 
-The `GOPRIVATE` setting is required because OCTANE depends on
-`github.com/evcoreco/ocpp16types`, the EVCore shared OCPP 1.6 type
-module (ADR 0020). Without it, `go mod tidy` and `go get` cannot
-resolve the module. Run `go env GOPRIVATE` to confirm the setting
-persisted.
+The `GOPRIVATE` setting is needed for `github.com/evcoreco/ocpp16types`,
+the EVCore shared OCPP 1.6 type module (ADR 0020). Without it,
+`go mod tidy` and `go get` cannot resolve the module. Run
+`go env GOPRIVATE` to confirm the setting persisted.
 
-Once `github.com/evcoreco/ocpp16types` publishes its first tagged
-release, run `make pin-ocpp16types` to add the pinned entry to
-`go.mod` and commit the result.
+`go.mod` does not depend on `ocpp16types` yet. Once the module publishes
+a tagged release, add it with
+`go get github.com/evcoreco/ocpp16types@<tag>` and commit the result.
 
-## Spec-driven development
+## Design decisions
 
-OCTANE follows a strict spec-driven workflow (constitution principle
-VIII). Code does not land before its spec merges:
+Architectural decisions are recorded as ADRs in `docs/adr/` before the
+code that implements them lands (principle VIII). An architectural
+change is a new dependency, a new package boundary, or a change to the
+story DSL, the cache, or the report formats. Draft or amend the ADR in
+the same pull request as the code, or in an earlier one.
 
-1. `/specify <feature>` — draft `specs/NNN-feature/spec.md`
-2. `/plan` — fill `plan.md` with technical approach + ADR drafts
-3. `/tasks` — decompose into atomic, agent-assignable tasks
-4. `/implement T-NNN-MM` — execute one task
-
-For trivial fixes (typos, comment improvements, single-line bug
-fixes), open a PR directly without a spec. The reviewer will tell
-you if a spec is needed.
+For everything else (bug fixes, new stories, new keywords that follow
+the existing patterns, documentation), open a pull request directly.
+The reviewer will tell you if an ADR is needed.
 
 ## Authoring conformance stories
 
@@ -172,11 +172,13 @@ They live under `pkg/keywords/`:
 - `pkg/keywords/api/`         — public surface (do not modify lightly)
 - `pkg/keywords/registry/`    — self-registration mechanism
 - `pkg/keywords/primitive/`   — transport-level escape hatches
-- `pkg/keywords/domain/v16/`  — OCPP 1.6 domain keywords
+- `pkg/keywords/lifecycle/`   — OCPP 1.6 connection lifecycle keywords
+  (connect, handshake, connected state)
+- `pkg/keywords/ocpp16/`      — OCPP 1.6 domain keywords
 
 Each keyword registers exactly one pattern. Domain keywords are
 identical for every CSMS implementing the OCPP version they target;
-there is no per-CSMS override layer (constitution principle XII).
+there is no per-CSMS override layer (principle XII).
 
 When adding a domain keyword, include:
 
@@ -210,10 +212,10 @@ WebSocket or sending a raw frame). Write a **domain** keyword when the
 operation encodes OCPP semantics for a specific version (for example,
 sending a BootNotification CALL and validating the CALLRESULT).
 
-Domain keywords live under `pkg/keywords/domain/v16/`. Primitive
+Domain keywords live under `pkg/keywords/ocpp16/`. Primitive
 keywords live under `pkg/keywords/primitive/`. Do not write domain
 keywords that vary by CSMS: OCTANE has no per-CSMS override layer
-(constitution principle XII). If a CSMS deviates from the spec, that
+(principle XII). If a CSMS deviates from the spec, that
 deviation surfaces as a finding — not as a different keyword.
 
 ### The `api.Func` signature
@@ -234,8 +236,9 @@ func myKeyword(ctx context.Context, state api.State, args api.Args) error {
   every blocking call (`station.Send`, `station.Expect`).
 - `state` provides station lookup, a deterministic clock, and
   structured logging. Use `state.Now()` — never `time.Now()` — so
-  that reports are byte-identical across runs (constitution
-  principle IV). The linter rejects `time.Now()` in `pkg/keywords/`.
+  that reports are byte-identical across runs (principle IV).
+  Reviewers reject `time.Now()` in `pkg/keywords/`; no linter checks
+  it yet.
 - `args` holds the named parameter values extracted from the step
   text. Use typed accessors to retrieve them.
 
@@ -454,28 +457,34 @@ If the type you need is absent from `ocpp16types`:
 1. Open a PR against `github.com/evcoreco/ocpp16types` with the type.
 2. Reference that upstream PR in your OCTANE task.
 3. Do **not** merge the OCTANE task until the upstream release is tagged.
-4. Run `make pin-ocpp16types` once the release lands to update the pin.
+4. Run `go get github.com/evcoreco/ocpp16types@<tag>` once the release
+   lands to update the pin.
 
-The `reviewer` agent flags any locally-declared OCPP type as an
-automatic `REQUEST CHANGES`.
+Reviewers request changes on any locally declared OCPP type.
 
 ---
 
 ## Code style
 
-Go code follows the conventions in
-[`mnt/skills/user/golang-master/SKILL.md`](https://example.invalid/golang-master)
-where applicable: gofmt, line length 80, function complexity ≤ 7,
-no `time.Now()` (use the injected clock), no global state outside
-the registry.
+Formatting and linting are defined in `golangci.yml`:
+
+- Formatters: gci (imports: standard, third-party, then this module),
+  gofumpt, and golines with a 120-character line limit.
+- Complexity limits: cyclomatic complexity 10 (`cyclop`), cognitive
+  complexity 15 (`gocognit`), 75 lines or 50 statements per function
+  (`funlen`), and nesting complexity 5 (`nestif`). Test files are exempt
+  from the complexity and length limits.
+- Every `//nolint` directive names the linter and gives a reason, and an
+  unused directive is an error (`nolintlint`).
+- No `time.Now()` in engine code; use the injected clock (principle IV).
+- No global state outside the keyword registry.
 
 Run before pushing:
 
 ```bash
-make format     # gofumpt + goimports
-make lint       # golangci-lint
+make format     # gci, gofumpt, golines
+make lint       # golangci-lint and go vet
 make test       # go test -race ./...
-make spec-check # validates spec structure
 ```
 
 ## Commits and PRs
@@ -484,12 +493,12 @@ Commits follow the Conventional Commits specification with a JIRA
 prefix when applicable, GPG-signed. Use the `qtech-commit` skill
 if you have it.
 
-PRs are scoped: one feature, one spec, one ADR, or one fix. PRs
-larger than ~600 lines are split.
+PRs are scoped: one feature, one ADR, or one fix. PRs larger than
+~600 lines are split.
 
 The reviewer is responsible for verifying:
 
-- Constitution compliance.
+- Compliance with the principles in `ARCHITECTURE.md` section 2.
 - ADR coverage for any new architectural decision.
 - IP cleanliness per ADR 0014 (no third-party catalog references).
 - Test coverage at appropriate granularity.
