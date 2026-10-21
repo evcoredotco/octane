@@ -295,8 +295,9 @@ jobs:
             octane-${{ runner.os }}-
 
       - name: Run OCTANE
-        uses: evcoreco/octane-action@v0
+        uses: evcoredotco/octane/action@v0
         with:
+          csms-endpoint: ws://172.17.0.1:9210
           stories: scenarios/v16/
           fail-on: major
 
@@ -332,7 +333,7 @@ variables:
 
 conformance:
   stage: conformance
-  image: ghcr.io/evcoreco/octane:latest
+  image: ghcr.io/evcoredotco/octane:latest
   cache:
     key:
       files:

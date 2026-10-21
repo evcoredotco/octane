@@ -44,7 +44,7 @@ LABEL org.opencontainers.image.licenses="Apache-2.0"
 COPY --from=builder /src/bin/octane /usr/local/bin/octane
 
 # Entrypoint script translates INPUT_* env vars to CLI flags.
-COPY action/entrypoint.sh /entrypoint.sh
+COPY --chmod=0755 action/entrypoint.sh /entrypoint.sh
 
 # Action workspace will be mounted at /github/workspace by the runner.
 WORKDIR /github/workspace

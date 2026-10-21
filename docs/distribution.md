@@ -6,13 +6,16 @@ Container Registry (GHCR).
 ## Image coordinates
 
 ```
-ghcr.io/evcoreco/octane:<version>
-ghcr.io/evcoreco/octane:latest
+ghcr.io/evcoredotco/octane:<version>    # exact release, e.g. v0.1.0
+ghcr.io/evcoredotco/octane:v<major>     # latest stable release in a major series, e.g. v0
+ghcr.io/evcoredotco/octane:v<major>.<minor>
+ghcr.io/evcoredotco/octane:latest
 ```
 
-Use a versioned tag (e.g. `v0.1.0`) in any automated pipeline. The `latest`
-tag tracks the most recent stable release and is suitable only for ad-hoc
-exploration on a developer workstation.
+Use an exact version (e.g. `v0.1.0`) in any automated pipeline. The `v0`
+tag is what the GitHub Action runs. The `latest` tag tracks the most recent
+stable release and is suitable only for ad-hoc exploration on a developer
+workstation.
 
 ## Supported platforms
 
@@ -29,15 +32,16 @@ the manifest list.
 The runtime layer is Alpine-based and contains only what OCTANE needs at
 execution time:
 
-- the `octane` binary compiled for the target platform
-- `bash` (required by the entrypoint)
+- the `octane` binary at `/usr/local/bin/octane`, compiled for the target
+  platform
+- `bash` and `/entrypoint.sh`, which the GitHub Action uses to map its
+  inputs to CLI flags
 - CA certificates (`ca-certificates` package) so TLS connections to a CSMS
   succeed out of the box
 
-The image entrypoint is `entrypoint.sh`, which maps well-known environment
-variables (e.g. `OCTANE_CACHE_DIR`, `OCTANE_TARGET`) to their corresponding
-CLI flags before invoking the `octane` binary. Consumers may also override
-the entrypoint and invoke the binary directly.
+The image sets no entrypoint, so CI runners can call `octane` from a shell
+and `docker run <image> octane ...` works directly. The binary reads
+`OCTANE_*` environment variables such as `OCTANE_CACHE_DIR` itself.
 
 ## Using the image in GitLab CI
 
@@ -46,7 +50,7 @@ silently change the binary your pipeline runs:
 
 ```yaml
 variables:
-  OCTANE_IMAGE: "ghcr.io/evcoreco/octane:v0.1.0"
+  OCTANE_IMAGE: "ghcr.io/evcoredotco/octane:v0.1.0"
   OCTANE_CACHE_DIR: "${CI_PROJECT_DIR}/.octane-cache"
 
 conformance:
@@ -60,37 +64,34 @@ conformance:
     - octane run scenarios/ --fail-on major
 ```
 
-`OCTANE_CACHE_DIR` is read by the entrypoint to set the cache root; the
-GitLab cache block then persists that directory between pipeline runs.
+`OCTANE_CACHE_DIR` sets the cache root; the GitLab cache block then persists
+that directory between pipeline runs.
 
 ## Using the image directly from the CLI
 
-To bypass the entrypoint and invoke the binary directly:
+Mount the directory that holds your stories and `octane.yml`, then run
+`octane` in it:
 
 ```
-docker run --rm \
-  --entrypoint /usr/local/bin/octane \
-  ghcr.io/evcoreco/octane:v0.1.0 \
-  run scenarios/
+docker run --rm -v "$(pwd)":/work -w /work \
+  --add-host=host.docker.internal:host-gateway \
+  ghcr.io/evcoredotco/octane:v0.1.0 \
+  octane run scenarios/ --csms-endpoint ws://host.docker.internal:9210
 ```
-
-Mount a local directory with `-v $(pwd)/scenarios:/scenarios` to pass
-scenario files into the container.
 
 ## Release cadence
 
 Every push of a `vMAJOR.MINOR.PATCH` tag triggers the `release.yml`
 workflow, which:
 
-1. runs `goreleaser` to produce platform-specific binaries and a GitHub
-   Release;
-2. calls `docker/build-push-action` in multi-arch mode to build and push the
-   image manifest for both `linux/amd64` and `linux/arm64`;
-3. tags the image with the full semver (`vX.Y.Z`), the minor series
-   (`vX.Y`), and updates `latest`.
+1. runs `goreleaser` to produce platform-specific binaries, `.deb` and
+   `.rpm` packages, SBOMs, signed checksums, and a GitHub Release;
+2. builds and pushes the image for both `linux/amd64` and `linux/arm64`;
+3. tags the image with the full version (`vX.Y.Z`), the major series
+   (`vX`), the minor series (`vX.Y`), and updates `latest`.
 
 Pre-release tags (`v0.1.0-rc.1`) publish a versioned image but do not move
-the `latest` tag.
+the `vX`, `vX.Y`, or `latest` tags.
 
 ## Pulling a pinned digest
 
@@ -98,7 +99,7 @@ For fully reproducible CI where even a tag re-push must not change the image,
 pull by digest:
 
 ```
-docker pull ghcr.io/evcoreco/octane@sha256:<digest>
+docker pull ghcr.io/evcoredotco/octane@sha256:<digest>
 ```
 
 Digests are stable across architectures for a given manifest list. Record the

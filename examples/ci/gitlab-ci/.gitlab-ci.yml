@@ -18,7 +18,7 @@ variables:
   # Pin the OCTANE image tag explicitly; "latest" defeats cache
   # invalidation by version because the binary identity changes
   # silently.
-  OCTANE_IMAGE: "ghcr.io/evcoreco/octane:0.1.0"
+  OCTANE_IMAGE: "ghcr.io/evcoredotco/octane:v0.1.0"
 
 # Reusable cache fragment. The key includes:
 #   - the GitLab runner tags (so caches don't collide across
@@ -40,13 +40,15 @@ variables:
 
 # Reusable script for the conformance run.
 .octane-run: &octane-run
-  - octane run "scenarios/v${OCPP_VERSION}/" --fail-on major
+  - octane run "scenarios/v${OCPP_VERSION}/" --csms-endpoint "${CSMS_ENDPOINT}" --fail-on major
 
 conformance:1.6:
   stage: conformance
   image: ${OCTANE_IMAGE}
   variables:
     OCPP_VERSION: "1.6"
+    # The service alias below, on the port the CSMS listens on.
+    CSMS_ENDPOINT: "ws://csms:8081"
   services:
     # Adjust to your CSMS deployment. This example assumes a
     # docker image with the CSMS exposing port 8081.

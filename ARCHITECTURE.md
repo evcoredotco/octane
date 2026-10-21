@@ -678,11 +678,12 @@ artefacts:
 |------------------|-----------------------------------------------------------|
 | Debian/Ubuntu    | `.deb` package (nfpm)                                     |
 | Fedora/RHEL      | `.rpm` package (nfpm)                                     |
-| macOS / Linux    | Homebrew formula in `evcoreco/homebrew-octane`            |
-| Docker           | `ghcr.io/evcoreco/octane` images for amd64 and arm64      |
-| Direct           | archives with SBOMs and cosign signatures                 |
+| macOS / Linux    | Homebrew formula in `evcoredotco/homebrew-octane` (tap not created yet) |
+| Docker           | `ghcr.io/evcoredotco/octane` images for amd64 and arm64   |
+| Direct           | archives with SBOMs and cosign-signed checksums           |
+| Go               | `go install github.com/evcoredotco/octane/cmd/octane@latest` |
 
-No release has been published yet. Build from source until one is.
+Releases are published from `vX.Y.Z` tags, starting with `v0.1.0`.
 Release artefacts include man pages, shell completions, and the
 LICENSE.
 
@@ -851,8 +852,8 @@ Decisions that are implemented but not yet recorded as ADRs:
 | Man pages and bash/zsh completion                                      | Done                                           |
 | OCPP 1.6 stories in `scenarios/v16/`                                   | 23 stories                                     |
 | CI: lint, tests, CodeQL, website deployment                            | Done                                           |
-| Packaging (`.goreleaser.yaml`, `packaging/nfpm.yaml`)                  | Configured; no release published               |
-| GitHub Action (`action/`)                                              | Wrapper metadata and entrypoint                |
+| Releases (`.goreleaser.yaml`, `packaging/nfpm.yaml`)                   | Published from `v0.1.0`; no Homebrew tap yet   |
+| GitHub Action (`action/`)                                              | `evcoredotco/octane/action@v0`                 |
 | Docusaurus website                                                     | Deployed to GitHub Pages                       |
 | Connection profiles (ADR 0010)                                         | Sample profile only; the CLI does not load it |
 | Shared OCPP 1.6 modules (ADR 0020)                                     | Not adopted                                    |

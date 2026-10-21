@@ -10,8 +10,6 @@
 # Outputs written to $GITHUB_OUTPUT:
 #   exit-code   — numeric exit code from octane run
 #   report-path — the report directory (INPUT_REPORT_DIR or "reports/")
-#
-# Task: T-006-31
 
 set -euo pipefail
 
@@ -38,6 +36,14 @@ fi
 # ---------------------------------------------------------------------------
 
 RUN_ARGS=()
+
+if [[ -z "${INPUT_CSMS_ENDPOINT:-}" ]]; then
+    echo "octane-action: the csms-endpoint input is required" >&2
+    exit 64
+fi
+
+RUN_ARGS+=(--csms-endpoint "${INPUT_CSMS_ENDPOINT}")
+RUN_ARGS+=(--report-dir "${INPUT_REPORT_DIR:-reports/}")
 
 if [[ -n "${INPUT_FAIL_ON:-}" ]]; then
     RUN_ARGS+=(--fail-on "${INPUT_FAIL_ON}")

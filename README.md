@@ -17,7 +17,10 @@ Current implementation status:
 - Stories are parsed into an AST, resolved through dependency ordering, run with
   optional parallelism, and cached by content-addressed keys.
 - Reports are written as JSON and Robot Framework-compatible XML.
-- The reliable installation path today is building from source in this repo.
+- Releases are published on GitHub Releases from `v0.1.0`: binaries, `.deb`
+  and `.rpm` packages, and the `ghcr.io/evcoredotco/octane` image. You can
+  also run `go install github.com/evcoredotco/octane/cmd/octane@latest` or
+  build from source.
 
 Last reviewed: 2026-06-29.
 

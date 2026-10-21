@@ -9,6 +9,10 @@ This project adheres to [Keep a Changelog 1.1.0][kac] and
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-21
+
+First release.
+
 ### Added
 
 - Runtime story parameters: values come from the `parameters` map in
@@ -24,6 +28,17 @@ This project adheres to [Keep a Changelog 1.1.0][kac] and
 
 ### Changed
 
+- The Go module path, container image, Homebrew tap, and GitHub release use
+  the `evcoredotco` organization (module `github.com/evcoredotco/octane`).
+  The GitHub Action is `evcoredotco/octane/action@v0`.
+- The release image is Alpine-based with `bash`, CA certificates, the
+  `octane` binary on `PATH`, and the Action entrypoint, and sets no
+  entrypoint of its own. It is tagged `vX.Y.Z`, `vX`, `vX.Y` and `latest`.
+- Release signing uses cosign v3 Sigstore bundles
+  (`checksums.txt.sigstore.json`).
+- The release workflow runs only for full version tags and pins goreleaser
+  v2.18.3. The Homebrew tap update is skipped when
+  `HOMEBREW_TAP_GITHUB_TOKEN` is not set.
 - `golangci.yml`: revive rules are listed explicitly instead of
   `enable-all-rules`; each metric has one linter (cyclop 10, gocognit 15,
   funlen 75 lines / 50 statements, nestif 5); findings print to the CI log
@@ -46,6 +61,11 @@ This project adheres to [Keep a Changelog 1.1.0][kac] and
 
 ### Fixed
 
+- GitHub Action: it ran an image without its entrypoint script, could not
+  take a CSMS endpoint, and did not pass `report-dir`. It now has a required
+  `csms-endpoint` input, and `entrypoint.sh` is executable.
+- `octane.yml.5` man page source failed to build with scdoc, which would have
+  failed the release.
 - `Test_octane_ManGolden` no longer fails when the month changes.
 - Registry tests no longer run in parallel while resetting the shared
   registry, which made `Test_registry_Resolve_typeMismatchReturnedForBadIntToken`
