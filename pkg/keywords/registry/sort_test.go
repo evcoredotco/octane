@@ -1,8 +1,8 @@
 // Package registry — white-box test for sort determinism (T-003-22, AC1).
 //
-// This file uses package registry (not registry_test) so that reset() is
-// accessible to isolate this test from the global registry state populated
-// by other _test.go files or init() registrations.
+// This file uses package registry (not registry_test) so that
+// resetGlobalRegistry is accessible to isolate this test from the global
+// registry state populated by other _test.go files or init() registrations.
 
 package registry
 
@@ -167,7 +167,7 @@ func assertSortOrder(t *testing.T, keywords []api.Keyword) {
 // be identical and correctly sorted (AC1).
 func Test_registry_All_stableSortAfterRandomRegistrations(t *testing.T) {
 	// Isolate this test from any keywords registered by other files.
-	reset()
+	resetGlobalRegistry(t)
 
 	rng := rand.Deterministic(sortTestSeed)
 	shuffled := buildShuffledKeywords(rng)
