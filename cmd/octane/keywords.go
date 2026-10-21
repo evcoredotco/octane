@@ -19,8 +19,6 @@ const ocppVersionAny api.OCPPVersion = 0
 
 // newKeywordsCmd constructs and returns the "octane keywords" subcommand
 // group, including "list" and "resolve" subcommands.
-//
-//nolint:exhaustruct // cobra.Command has many optional fields
 func newKeywordsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "keywords",
@@ -34,8 +32,6 @@ func newKeywordsCmd() *cobra.Command {
 }
 
 // newKeywordsListCmd constructs the "octane keywords list" subcommand.
-//
-//nolint:exhaustruct // cobra.Command has many optional fields
 func newKeywordsListCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
@@ -50,8 +46,6 @@ Each line is formatted as:
 }
 
 // newKeywordsResolveCmd constructs the "octane keywords resolve" subcommand.
-//
-//nolint:exhaustruct // cobra.Command has many optional fields
 func newKeywordsResolveCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "resolve <step-text>",

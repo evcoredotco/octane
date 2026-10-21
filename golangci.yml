@@ -13,7 +13,9 @@ formatters:
         - prefix(github.com/evcoreco/octane)
       custom-order: true
     gofumpt:
-      extra-rules: true
+      extra:
+        group-params: true
+        clothe-returns: true
     golines:
       max-len: 120
 
@@ -29,10 +31,9 @@ linters:
     - bodyclose
     - contextcheck
     - errorlint
+    - exhaustive
     - nilerr
     - noctx
-    - rowserrcheck
-    - sqlclosecheck
     - durationcheck
     - makezero
     - reassign
@@ -40,10 +41,10 @@ linters:
     # --- Security ---
     - gosec
     # --- Complexity / size ---
+    # One linter per metric. revive's overlapping rules are not enabled.
     - cyclop
     - funlen
     - gocognit
-    - gocyclo
     - maintidx
     - nestif
     # --- Style / correctness-adjacent ---
@@ -63,19 +64,29 @@ linters:
     - depguard
     # --- Whitespace / layout ---
     - wsl_v5
+    # --- Lint hygiene ---
+    - nolintlint
 
   settings:
     cyclop:
-      max-complexity: 15
+      max-complexity: 10
     funlen:
-      lines: 80
+      lines: 75
       statements: 50
     gocognit:
-      min-complexity: 20
-    gocyclo:
       min-complexity: 15
     nestif:
       min-complexity: 5
+
+    exhaustive:
+      # A default branch does not count as handling every enum value.
+      check: [switch, mapliteral]
+      default-signifies-exhaustive: false
+
+    nolintlint:
+      allow-unused: false
+      require-specific: true
+      require-explanation: true
 
     wsl_v5:
       allow-first-in-block: true
@@ -83,13 +94,96 @@ linters:
       branch-max-lines: 2
 
     revive:
-      enable-all-rules: true
+      # Rules are listed explicitly so that a revive upgrade cannot add rules.
+      # Not enabled, because another linter owns the check:
+      #   - complexity and size: cyclomatic, cognitive-complexity,
+      #     function-length, max-control-nesting, argument-limit,
+      #     function-result-limit, max-public-structs, file-length-limit
+      #     (cyclop, gocognit, funlen, nestif); line-length-limit (golines)
+      #   - errcheck: unhandled-error; unparam: unused-parameter;
+      #     goconst: add-constant; predeclared: redefines-builtin-id
+      #   - govet: atomic, struct-tag, unreachable-code, waitgroup-by-value
+      #   - copyloopvar: range-val-address, range-val-in-closure
+      #   - staticcheck: dot-imports (ST1001), error-strings (ST1005),
+      #     error-return (ST1008), time-naming (ST1011), error-naming
+      #     (ST1012), duplicated-imports (ST1019), context-keys-type (SA1029),
+      #     unconditional-recursion (SA5007)
+      # Not enabled, because they do nothing without project-specific
+      # arguments: banned-characters, comments-density, file-header,
+      # imports-blocklist, string-format.
+      # Not enabled by choice: package-directory-mismatch.
       rules:
-        # Line length is enforced by the golines formatter (max-len: 120).
-        - name: line-length-limit
-          disabled: true
-        - name: package-directory-mismatch
-          disabled: true
+        - name: bare-return
+        - name: blank-imports
+        - name: bool-literal-in-expr
+        - name: call-to-gc
+        - name: comment-spacings
+        - name: confusing-naming
+        - name: confusing-results
+        - name: constant-logical-expr
+        - name: context-as-argument
+        - name: datarace
+        - name: deep-exit
+        - name: defer
+        - name: early-return
+        - name: empty-block
+        - name: empty-lines
+        - name: enforce-map-style
+        - name: enforce-repeated-arg-type-style
+        - name: enforce-slice-style
+        - name: enforce-switch-style
+        - name: epoch-naming
+        - name: errorf
+        - name: exported
+        - name: filename-format
+        - name: flag-parameter
+        - name: forbidden-call-in-wg-go
+        - name: get-return
+        - name: identical-branches
+        - name: identical-ifelseif-branches
+        - name: identical-ifelseif-conditions
+        - name: identical-switch-branches
+        - name: identical-switch-conditions
+        - name: if-return
+        - name: import-alias-naming
+        - name: import-shadowing
+        - name: increment-decrement
+        - name: indent-error-flow
+        - name: inefficient-map-lookup
+        - name: marshal-receiver
+        - name: modifies-parameter
+        - name: modifies-value-receiver
+        - name: multiline-if-init
+        - name: nested-structs
+        - name: optimize-operands-order
+        - name: package-comments
+        - name: package-naming
+        - name: range
+        - name: receiver-naming
+        - name: redundant-build-tag
+        - name: redundant-import-alias
+        - name: redundant-test-main-exit
+        - name: string-of-int
+        - name: superfluous-else
+        - name: time-date
+        - name: time-equal
+        - name: unchecked-type-assertion
+        - name: unexported-naming
+        - name: unexported-return
+        - name: unnecessary-format
+        - name: unnecessary-if
+        - name: unnecessary-stmt
+        - name: unsecure-url-scheme
+        - name: unused-receiver
+        - name: use-any
+        - name: use-errors-new
+        - name: use-fmt-print
+        - name: use-slices-concat
+        - name: use-slices-sort
+        - name: use-waitgroup-go
+        - name: useless-break
+        - name: useless-fallthrough
+        - name: var-declaration
         - name: var-naming
           arguments:
             - []  # allowlist  (empty = defaults)
@@ -123,14 +217,11 @@ linters:
           - cyclop
           - funlen
           - gocognit
-          - gocyclo
           - goconst
           - maintidx
 
-output:
-  formats:
-    text:
-      path: reports/golangci-lint.txt
-      print-linter-name: true
-      print-issued-lines: true
-      colors: false
+issues:
+  # Report every finding. The defaults (50 per linter, 3 per message)
+  # hide most of the work when a check fails.
+  max-issues-per-linter: 0
+  max-same-issues: 0

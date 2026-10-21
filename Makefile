@@ -23,6 +23,9 @@ GOLANGCI_LINT ?= golangci-lint
 GOFUMPT       ?= gofumpt
 GOLINES       ?= golines
 GCI           ?= gci
+# Keep in step with the versions pinned in .github/workflows/ci.yml.
+GOLANGCI_LINT_VERSION ?= v2.15.0
+STATICCHECK_VERSION   ?= 2026.2.2
 DOCS_HOST     ?= 127.0.0.1
 DOCS_PORT     ?= 3000
 
@@ -114,7 +117,8 @@ install-tools: ## Install development tooling.
 	$(GO) install mvdan.cc/gofumpt@latest
 	$(GO) install github.com/segmentio/golines@latest
 	$(GO) install github.com/daixiang0/gci@latest
-	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	$(GO) install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+	$(GO) install honnef.co/go/tools/cmd/staticcheck@$(STATICCHECK_VERSION)
 	$(GO) install github.com/goreleaser/goreleaser/v2@latest
 
 .PHONY: dev-setup

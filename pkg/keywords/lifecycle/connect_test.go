@@ -68,7 +68,6 @@ func newOCPP16Server(t *testing.T) (*httptest.Server, string) {
 
 	srv := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			//nolint:exhaustruct // only Subprotocols is relevant
 			_, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 				Subprotocols: []string{subprotocolOCPP16},
 			})

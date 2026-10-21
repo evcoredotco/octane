@@ -1,6 +1,6 @@
 // Package registry exercises collision detection in the global keyword
-// registry. Tests run in the same package (white-box) so that reset()
-// can be called to isolate each scenario.
+// registry. Tests run in the same package (white-box) so that
+// resetGlobalRegistry can be called to isolate each scenario.
 //
 // Task: T-003-23
 // AC2: Given two keyword registrations with the same (Layer, OCPPVersion,
@@ -78,11 +78,11 @@ func mustPanic(t *testing.T, callFunc func()) string {
 
 // Test_registry_Register_collisionPanics verifies that registering two
 // keywords with identical (Layer, OCPPVersion, Pattern) causes a panic.
-// Tests in this file mutate the global registry and must NOT call
-// t.Parallel() to prevent interference between test cases.
+// Tests in this file mutate the global registry, so they call
+// resetGlobalRegistry and do not run in parallel.
 func Test_registry_Register_collisionPanics(t *testing.T) {
 	// Invariant: second Register on same (Pattern, Layer, OCPPVersion) panics.
-	reset()
+	resetGlobalRegistry(t)
 
 	Register(api.Keyword{
 		Pattern:     patternCollision,
@@ -106,7 +106,7 @@ func Test_registry_Register_collisionPanics(t *testing.T) {
 // which corresponds to the first Register call site (the original registrant).
 func Test_registry_Register_collisionPanicNamesOriginalSite(t *testing.T) {
 	// Invariant: panic message references the original registrant's call site.
-	reset()
+	resetGlobalRegistry(t)
 
 	Register(api.Keyword{
 		Pattern:     patternCollision,
@@ -141,7 +141,7 @@ func Test_registry_Register_collisionPanicNamesOriginalSite(t *testing.T) {
 func Test_registry_Register_collisionPanicNamesNewSite(t *testing.T) {
 	// Invariant: panic message references the new (duplicate) registrant's
 	// call site.
-	reset()
+	resetGlobalRegistry(t)
 
 	Register(api.Keyword{
 		Pattern:     patternCollision,
@@ -178,7 +178,7 @@ func Test_registry_Register_collisionPanicMessageContainsBothSites(
 	t *testing.T,
 ) {
 	// Invariant: panic message carries both call-site strings simultaneously.
-	reset()
+	resetGlobalRegistry(t)
 
 	Register(api.Keyword{
 		Pattern:     patternCollision,
@@ -223,7 +223,7 @@ func Test_registry_Register_differentLayerSamePatternDoesNotPanic(
 ) {
 	// Invariant: (Pattern, Layer=Primitive, OCPPVersion) and
 	// (Pattern, Layer=Domain, OCPPVersion) are distinct keys — no panic.
-	reset()
+	resetGlobalRegistry(t)
 
 	// First registration: primitive layer.
 	Register(api.Keyword{

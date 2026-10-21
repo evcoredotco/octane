@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/spf13/cobra/doc"
 )
@@ -22,6 +23,10 @@ const (
 	// 0o644 is intentional: test fixtures are public.
 	goldenFilePerm = 0o644
 )
+
+// manGoldenDate is the fixed date stamped into generated man pages so the
+// golden comparison does not depend on the day the test runs.
+var manGoldenDate = time.Date(2026, time.June, 29, 0, 0, 0, 0, time.UTC)
 
 // updateGolden returns true when the UPDATE_GOLDEN environment variable
 // is set to "1" or "true", indicating that golden files should be
@@ -66,7 +71,6 @@ func copyManGolden(t *testing.T, tmpDir, goldenDir string, entry fs.DirEntry) {
 
 	generatedPath := filepath.Join(tmpDir, entry.Name())
 
-	//nolint:gosec // G304: path from t.TempDir() + DirEntry.Name()
 	data, readErr := os.ReadFile(generatedPath)
 	if readErr != nil {
 		t.Fatalf("read generated file %q: %v", entry.Name(), readErr)
@@ -111,7 +115,6 @@ func compareManGolden(
 
 	name := entry.Name()
 
-	//nolint:gosec // G304: path from t.TempDir() + DirEntry.Name()
 	generated, readErr := os.ReadFile(filepath.Join(tmpDir, name))
 	if readErr != nil {
 		t.Errorf("read generated %q: %v", name, readErr)
@@ -119,7 +122,6 @@ func compareManGolden(
 		return
 	}
 
-	//nolint:gosec // G304: path from "testdata/man" + DirEntry.Name()
 	golden, readGoldenErr := os.ReadFile(filepath.Join(goldenDir, name))
 	if readGoldenErr != nil {
 		t.Errorf(
@@ -158,6 +160,7 @@ func Test_octane_ManGolden(t *testing.T) {
 	header := new(doc.GenManHeader)
 	header.Title = "OCTANE"
 	header.Section = "1"
+	header.Date = &manGoldenDate
 
 	root := newRootCmd()
 

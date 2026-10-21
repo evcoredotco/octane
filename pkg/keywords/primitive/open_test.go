@@ -79,7 +79,6 @@ func newSubprotocolServer(
 			_, err := websocket.Accept(
 				w,
 				r,
-				//nolint:exhaustruct // only Subprotocols is relevant
 				&websocket.AcceptOptions{
 					Subprotocols: []string{subprotocol},
 				},

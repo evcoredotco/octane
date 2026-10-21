@@ -42,8 +42,6 @@ type exitPanic struct {
 // persistent flags and subcommands wired up. Every invocation returns
 // an independent command tree; there are no package-level command
 // globals.
-//
-//nolint:exhaustruct // cobra.Command has many optional fields
 func newRootCmd() *cobra.Command {
 	flags := &globalFlagsT{}
 

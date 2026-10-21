@@ -3,8 +3,12 @@ package rand
 import (
 	crand "crypto/rand"
 	"encoding/binary"
+	"math"
 	mrand "math/rand/v2"
 )
+
+// seedHalfLen is the byte length of each uint64 half of the PCG seed.
+const seedHalfLen = 8
 
 // RealRand wraps math/rand/v2 with a cryptographically seeded PCG source.
 type RealRand struct {
@@ -14,15 +18,15 @@ type RealRand struct {
 // Real returns a *RealRand backed by math/rand/v2 with a cryptographically
 // random seed.
 func Real() *RealRand {
-	var seed [16]byte
+	var seed [2 * seedHalfLen]byte
 
 	_, err := crand.Read(seed[:])
 	if err != nil {
 		panic("clock/rand: crypto/rand unavailable: " + err.Error())
 	}
 
-	seed1 := binary.LittleEndian.Uint64(seed[:8])
-	seed2 := binary.LittleEndian.Uint64(seed[8:])
+	seed1 := binary.LittleEndian.Uint64(seed[:seedHalfLen])
+	seed2 := binary.LittleEndian.Uint64(seed[seedHalfLen:])
 
 	return &RealRand{
 		//nolint:gosec // G404: math/rand/v2 is intended; seed is crypto/rand.
@@ -32,7 +36,7 @@ func Real() *RealRand {
 
 // Int63 returns a non-negative pseudo-random 63-bit integer.
 func (r *RealRand) Int63() int64 {
-	return r.rng.Int64N(1<<63 - 1)
+	return r.rng.Int64N(math.MaxInt64)
 }
 
 // Float64 returns a pseudo-random float64 in [0.0, 1.0).

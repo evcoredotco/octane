@@ -26,8 +26,6 @@ const (
 // newGenManPagesCmd constructs and returns the hidden "gen-manpages"
 // subcommand. root is the root cobra command passed to doc.GenManTree
 // so that man pages are generated for the full command tree.
-//
-//nolint:exhaustruct // cobra.Command has many optional fields
 func newGenManPagesCmd(root *cobra.Command) *cobra.Command {
 	var section int
 

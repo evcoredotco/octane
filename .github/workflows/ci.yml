@@ -21,15 +21,17 @@ jobs:
       - name: go vet
         run: go vet ./...
 
+      # Linter versions are pinned so a new release cannot turn CI red
+      # without a code change. Bump them deliberately.
       - name: staticcheck
         uses: dominikh/staticcheck-action@v1
         with:
-          version: latest
+          version: "2026.2.2"
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          version: latest
+          version: v2.15.0
           args: --config golangci.yml --timeout 5m
           skip-cache: true
 

@@ -84,8 +84,6 @@ const (
 
 // updateFlag controls whether the golden file is regenerated.
 // It must be package-level for flag.Bool registration.
-//
-//nolint:gochecknoglobals
 var updateFlag = flag.Bool("update", false, "update golden files")
 
 // goldenFilePath is the path to the golden XML file, relative to this test
@@ -209,7 +207,7 @@ func readOutput(t *testing.T, dir string) []byte {
 
 	path := filepath.Join(dir, outputFileName)
 
-	data, err := os.ReadFile(path) //nolint:gosec // G304: t.TempDir path
+	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("reading %s: %v", path, err)
 	}

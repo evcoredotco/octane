@@ -1,6 +1,7 @@
 package rand
 
 import (
+	"math"
 	mrand "math/rand/v2"
 )
 
@@ -29,7 +30,7 @@ func Deterministic(seed uint64) *DeterministicRand {
 
 // Int63 returns a non-negative pseudo-random 63-bit integer.
 func (r *DeterministicRand) Int63() int64 {
-	return r.rng.Int64N(1<<63 - 1)
+	return r.rng.Int64N(math.MaxInt64)
 }
 
 // Float64 returns a pseudo-random float64 in [0.0, 1.0).

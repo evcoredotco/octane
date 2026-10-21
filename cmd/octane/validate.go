@@ -17,8 +17,6 @@ const noStoryPaths = 0
 
 // newValidateCmd constructs and returns the "octane validate" subcommand
 // group, including the "octane validate stories" subcommand.
-//
-//nolint:exhaustruct // cobra.Command has many optional fields
 func newValidateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "validate",
@@ -32,8 +30,6 @@ func newValidateCmd() *cobra.Command {
 
 // newValidateStoriesCmd constructs and returns the "octane validate stories"
 // subcommand.
-//
-//nolint:exhaustruct // cobra.Command has many optional fields
 func newValidateStoriesCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "stories [paths...]",

@@ -73,8 +73,6 @@ const (
 // newRunCmd constructs and returns the "octane run" subcommand.
 // globalFlags is the parent global-flags struct populated by cobra before
 // RunE executes.
-//
-//nolint:exhaustruct // cobra.Command has many optional fields
 func newRunCmd(globalFlags *globalFlagsT) *cobra.Command {
 	flags := &runFlagsT{}
 
@@ -322,7 +320,7 @@ func writeReports(result *runner.RunResult, flags *runFlagsT) {
 	}
 
 	// RobotXMLOptions: SuiteName defaults to "OCTANE Conformance".
-	xmlOpts := reportpkg.RobotXMLOptions{} //nolint:exhaustruct
+	xmlOpts := reportpkg.RobotXMLOptions{}
 
 	xmlErr := robotxml.WriteRobotXML(result, reportPath, xmlOpts)
 	if xmlErr != nil {
@@ -381,6 +379,7 @@ func applyRunFlagOverrides(
 	if err != nil {
 		dieErrf(exitcode.ConfigError, "octane: invalid --param value: %v\n", err)
 	}
+
 	overrides.Parameters = params
 
 	return config.Resolve(cfg, overrides)

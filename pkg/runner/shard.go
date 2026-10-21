@@ -6,6 +6,10 @@ import "github.com/evcoreco/octane/pkg/story/ast"
 // indicate sharding is disabled.
 const minShardTotal = 0
 
+// shardKeyLen is the number of leading SHA-256 digest bytes used as the
+// shard key.
+const shardKeyLen = 8
+
 // applyShardFilter returns the subset of stories whose test_id
 // belongs to shardIndex (zero-based) out of shardTotal shards.
 //
