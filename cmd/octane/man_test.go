@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/spf13/cobra/doc"
 )
@@ -22,6 +23,10 @@ const (
 	// 0o644 is intentional: test fixtures are public.
 	goldenFilePerm = 0o644
 )
+
+// manGoldenDate is the fixed date stamped into generated man pages so the
+// golden comparison does not depend on the day the test runs.
+var manGoldenDate = time.Date(2026, time.June, 29, 0, 0, 0, 0, time.UTC)
 
 // updateGolden returns true when the UPDATE_GOLDEN environment variable
 // is set to "1" or "true", indicating that golden files should be
@@ -158,6 +163,7 @@ func Test_octane_ManGolden(t *testing.T) {
 	header := new(doc.GenManHeader)
 	header.Title = "OCTANE"
 	header.Section = "1"
+	header.Date = &manGoldenDate
 
 	root := newRootCmd()
 
