@@ -31,6 +31,7 @@ linters:
     - bodyclose
     - contextcheck
     - errorlint
+    - exhaustive
     - nilerr
     - noctx
     - durationcheck
@@ -76,6 +77,11 @@ linters:
       min-complexity: 15
     nestif:
       min-complexity: 5
+
+    exhaustive:
+      # A default branch does not count as handling every enum value.
+      check: [switch, mapliteral]
+      default-signifies-exhaustive: false
 
     nolintlint:
       allow-unused: false
