@@ -71,7 +71,6 @@ func copyManGolden(t *testing.T, tmpDir, goldenDir string, entry fs.DirEntry) {
 
 	generatedPath := filepath.Join(tmpDir, entry.Name())
 
-	//nolint:gosec // G304: path from t.TempDir() + DirEntry.Name()
 	data, readErr := os.ReadFile(generatedPath)
 	if readErr != nil {
 		t.Fatalf("read generated file %q: %v", entry.Name(), readErr)
@@ -116,7 +115,6 @@ func compareManGolden(
 
 	name := entry.Name()
 
-	//nolint:gosec // G304: path from t.TempDir() + DirEntry.Name()
 	generated, readErr := os.ReadFile(filepath.Join(tmpDir, name))
 	if readErr != nil {
 		t.Errorf("read generated %q: %v", name, readErr)
@@ -124,7 +122,6 @@ func compareManGolden(
 		return
 	}
 
-	//nolint:gosec // G304: path from "testdata/man" + DirEntry.Name()
 	golden, readGoldenErr := os.ReadFile(filepath.Join(goldenDir, name))
 	if readGoldenErr != nil {
 		t.Errorf(

@@ -111,13 +111,13 @@ func writeTestReport(goroutineIdx int, sharedDir string, errs chan<- error) {
 		StartedAt:  fixedTime,
 		FinishedAt: fixedTime.Add(5 * time.Second),
 		Stories:    []runner.StoryResult{},
-		Summary:    runner.Summary{}, //nolint:exhaustruct // zero-value fixture
+		Summary:    runner.Summary{},
 	}
 
 	outDir := filepath.Join(sharedDir, result.RunID)
 
 	// NoTraceOnPass zero value is correct for this fixture.
-	opts := report.JSONOptions{ //nolint:exhaustruct
+	opts := report.JSONOptions{
 		OctaneVersion: "test",
 	}
 

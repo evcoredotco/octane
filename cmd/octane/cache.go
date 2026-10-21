@@ -34,8 +34,6 @@ const cacheDirName = "cache"
 // newCacheCmd constructs and returns the "octane cache" subcommand group.
 // globalFlags is the parent global-flags struct used to resolve the
 // cache directory.
-//
-//nolint:exhaustruct // cobra.Command has many optional fields
 func newCacheCmd(globalFlags *globalFlagsT) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cache",
@@ -51,8 +49,6 @@ func newCacheCmd(globalFlags *globalFlagsT) *cobra.Command {
 }
 
 // newCacheInfoCmd constructs the "octane cache info" subcommand.
-//
-//nolint:exhaustruct // cobra.Command has many optional fields
 func newCacheInfoCmd(globalFlags *globalFlagsT) *cobra.Command {
 	return &cobra.Command{
 		Use:   "info",
@@ -64,8 +60,6 @@ func newCacheInfoCmd(globalFlags *globalFlagsT) *cobra.Command {
 }
 
 // newCachePruneCmd constructs the "octane cache prune" subcommand.
-//
-//nolint:exhaustruct // cobra.Command has many optional fields
 func newCachePruneCmd(globalFlags *globalFlagsT) *cobra.Command {
 	var maxAge time.Duration
 
@@ -92,8 +86,6 @@ Empty fanout directories are removed after pruning.`,
 }
 
 // newCacheClearCmd constructs the "octane cache clear" subcommand.
-//
-//nolint:exhaustruct // cobra.Command has many optional fields
 func newCacheClearCmd(globalFlags *globalFlagsT) *cobra.Command {
 	return &cobra.Command{
 		Use:   "clear",
@@ -110,8 +102,6 @@ preserved; only result entries are removed.`,
 }
 
 // newCacheKeyCmd constructs the "octane cache key" subcommand.
-//
-//nolint:exhaustruct // cobra.Command has many optional fields
 func newCacheKeyCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "key <story-id>",

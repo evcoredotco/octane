@@ -292,7 +292,7 @@ func (fc *FileCache) resultDir(hash string) string {
 // suppression is intentional: the caller guarantees the path is
 // cache-internal.
 func cacheReadFile(path string) ([]byte, error) {
-	data, err := os.ReadFile(path) //nolint:gosec // G304: cache path
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("cache: read file: %w", err)
 	}
@@ -313,7 +313,6 @@ func cacheReadFile(path string) ([]byte, error) {
 func atomicWriteFile(path string, data []byte) error {
 	tmp := path + ".tmp"
 
-	//nolint:gosec // G304: tmp path is from a cache path, not user input
 	file, err := os.OpenFile(
 		tmp,
 		os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
@@ -363,7 +362,6 @@ func atomicWriteFile(path string, data []byte) error {
 // the error from Sync is silently ignored to preserve
 // cross-platform compatibility.
 func fsyncDir(dir string) error {
-	//nolint:gosec // G304: dir is the cache root directory, not user input
 	dirHandle, err := os.Open(dir)
 	if err != nil {
 		return fmt.Errorf("open dir for fsync: %w", err)
