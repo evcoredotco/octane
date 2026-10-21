@@ -57,7 +57,7 @@ type registryKey struct {
 
 // global is the package-level registry state. It is never replaced;
 // only its fields are mutated under mu. Zero value is correct.
-var global = struct { //nolint:exhaustruct,gochecknoglobals
+var global = struct {
 	mu      sync.RWMutex
 	entries []entry
 	index   map[registryKey]string // maps key → formatted caller

@@ -28,7 +28,6 @@ const lockFileMode = 0o600
 //
 // This function is called by [Acquire] in acquire.go (T-005-32).
 func lockFile(path string) (*os.File, error) {
-	//nolint:gosec // G304: path from cache root + key hash, not user input
 	fileHandle, err := os.OpenFile(
 		path,
 		os.O_CREATE|os.O_RDWR,
@@ -38,7 +37,6 @@ func lockFile(path string) (*os.File, error) {
 		return nil, fmt.Errorf("lock: open lock file: %w", err)
 	}
 
-	//nolint:gosec // G115: uintptr→int is the accepted syscall.Flock idiom
 	flockErr := syscall.Flock(
 		int(fileHandle.Fd()),
 		syscall.LOCK_EX|syscall.LOCK_NB,
@@ -66,7 +64,6 @@ func lockFile(path string) (*os.File, error) {
 //
 // This function is called by [lockCloser.Close] in acquire.go (T-005-32).
 func unlockFile(fileHandle *os.File) error {
-	//nolint:gosec // G115: uintptr→int is the accepted syscall.Flock idiom
 	flockErr := syscall.Flock(int(fileHandle.Fd()), syscall.LOCK_UN)
 	closeErr := fileHandle.Close()
 

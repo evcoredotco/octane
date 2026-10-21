@@ -46,7 +46,6 @@ func connectToCSMS(
 
 	stationURL := strings.TrimRight(baseURL, "/") + "/" + handle
 
-	//nolint:exhaustruct // only Subprotocols is non-default
 	sta, err := transport.Dial(ctx, stationURL, transport.DialOptions{
 		Subprotocols: []string{"ocpp1.6"},
 	})

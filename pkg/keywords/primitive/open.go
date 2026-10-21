@@ -23,7 +23,6 @@ func openWebSocket(
 	rawURL := args.String("url")
 	handle := args.String("station")
 
-	//nolint:exhaustruct // zero values are correct defaults
 	return dial(ctx, state, rawURL, handle, transport.DialOptions{})
 }
 
@@ -44,7 +43,6 @@ func openWebSocketWithSubprotocol(
 	handle := args.String("station")
 	subprotocol := args.String("subprotocol")
 
-	//nolint:exhaustruct // only subprotocol is non-default
 	opts := transport.DialOptions{
 		Subprotocols: []string{subprotocol},
 	}

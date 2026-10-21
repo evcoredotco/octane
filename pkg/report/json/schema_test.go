@@ -119,7 +119,7 @@ func Test_json_Schema(t *testing.T) {
 
 	outPath := filepath.Join(dir, "octane.json")
 
-	data, err := os.ReadFile(outPath) //nolint:gosec // G304: t.TempDir path
+	data, err := os.ReadFile(outPath)
 	if err != nil {
 		t.Fatalf("reading output: %v", err)
 	}

@@ -18,8 +18,6 @@ import (
 // updateFlag controls whether the golden file is regenerated.
 //
 // registration
-//
-//nolint:gochecknoglobals // flag must be package-level for flag.Bool
 var updateFlag = flag.Bool("update", false, "update golden files")
 
 // goldenFilePath is the path to the golden JSON file, relative to this
@@ -199,7 +197,7 @@ func readReport(t *testing.T, dir string) []byte {
 
 	path := filepath.Join(dir, reportFileName)
 
-	data, err := os.ReadFile(path) //nolint:gosec // G304: t.TempDir path
+	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("reading %s: %v", path, err)
 	}

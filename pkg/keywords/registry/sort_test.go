@@ -66,7 +66,7 @@ func buildShuffledKeywords(rng rand.Rand) []api.Keyword {
 	vv := versionValues()
 
 	for idx := range keywords {
-		keywords[idx] = api.Keyword{ //nolint:exhaustruct // Func nil for sort
+		keywords[idx] = api.Keyword{
 			Layer:       lv[idx%len(lv)],
 			OCPPVersion: vv[idx%len(vv)],
 			Pattern:     fmt.Sprintf("step number %04d executes action", idx),

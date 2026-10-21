@@ -17,8 +17,6 @@ const (
 // root is the root cobra command used to generate the completion scripts;
 // it is captured via closure so the completion handler can call the
 // appropriate Gen*Completion method.
-//
-//nolint:exhaustruct // cobra.Command has many optional fields
 func newCompletionCmd(root *cobra.Command) *cobra.Command {
 	return &cobra.Command{
 		Use:   "completion [bash|zsh|fish|powershell]",
