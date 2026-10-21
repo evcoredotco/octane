@@ -393,51 +393,36 @@ func validateSpecRef(file string, meta ast.Meta, tracker *metaTracker) error {
 func (p *parser) parseMetaEntry() (metaEntry, error) {
 	keyTok := p.lex.Next()
 	if keyTok.Kind != lex.TokenMetaKey {
-		return metaEntry{
-				key:    emptyStr,
-				value:  emptyStr,
-				line:   keyTok.Line,
-				column: keyTok.Column,
-			}, fmt.Errorf(
-				"%s:%d:%d: %w, got %s",
-				p.file, keyTok.Line, keyTok.Column,
-				errExpectedMetaKey, keyTok.Kind,
-			)
+		return failedMetaEntry(keyTok), fmt.Errorf(
+			"%s:%d:%d: %w, got %s",
+			p.file, keyTok.Line, keyTok.Column,
+			errExpectedMetaKey, keyTok.Kind,
+		)
 	}
 
 	colonTok := p.lex.Next()
 	if colonTok.Kind != lex.TokenColon {
-		return metaEntry{
-				key:    emptyStr,
-				value:  emptyStr,
-				line:   colonTok.Line,
-				column: colonTok.Column,
-			}, fmt.Errorf(
-				"%s:%d:%d: %w %q, got %s",
-				p.file,
-				colonTok.Line,
-				colonTok.Column,
-				errExpectedColonAfterKey,
-				keyTok.Literal,
-				colonTok.Kind,
-			)
+		return failedMetaEntry(colonTok), fmt.Errorf(
+			"%s:%d:%d: %w %q, got %s",
+			p.file,
+			colonTok.Line,
+			colonTok.Column,
+			errExpectedColonAfterKey,
+			keyTok.Literal,
+			colonTok.Kind,
+		)
 	}
 
 	valTok := p.lex.Next()
 	if valTok.Kind != lex.TokenValue {
-		return metaEntry{
-				key:    emptyStr,
-				value:  emptyStr,
-				line:   valTok.Line,
-				column: valTok.Column,
-			}, fmt.Errorf(
-				"%s:%d:%d: %w, got %s",
-				p.file,
-				valTok.Line,
-				valTok.Column,
-				errExpectedValueAfterColon,
-				valTok.Kind,
-			)
+		return failedMetaEntry(valTok), fmt.Errorf(
+			"%s:%d:%d: %w, got %s",
+			p.file,
+			valTok.Line,
+			valTok.Column,
+			errExpectedValueAfterColon,
+			valTok.Kind,
+		)
 	}
 
 	return metaEntry{
@@ -446,6 +431,17 @@ func (p *parser) parseMetaEntry() (metaEntry, error) {
 		line:   valTok.Line,
 		column: valTok.Column,
 	}, nil
+}
+
+// failedMetaEntry returns the empty metaEntry reported alongside a parse
+// error at tok.
+func failedMetaEntry(tok lex.Token) metaEntry {
+	return metaEntry{
+		key:    emptyStr,
+		value:  emptyStr,
+		line:   tok.Line,
+		column: tok.Column,
+	}
 }
 
 // splitTrimmed splits s by sep and trims whitespace from each element.

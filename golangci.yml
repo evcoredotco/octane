@@ -13,7 +13,9 @@ formatters:
         - prefix(github.com/evcoreco/octane)
       custom-order: true
     gofumpt:
-      extra-rules: true
+      extra:
+        group-params: true
+        clothe-returns: true
     golines:
       max-len: 120
 
@@ -90,6 +92,13 @@ linters:
           disabled: true
         - name: package-directory-mismatch
           disabled: true
+        # The rule's built-in allowlist is empty, so it would flag every 0 and 1.
+        - name: add-constant
+          arguments:
+            - maxLitCount: "3"
+              allowStrs: '""'
+              allowInts: "0,1,2"
+              allowFloats: "0.0,0.,1.0,1.,2.0,2."
         - name: var-naming
           arguments:
             - []  # allowlist  (empty = defaults)
@@ -126,6 +135,10 @@ linters:
           - gocyclo
           - goconst
           - maintidx
+      - path: '(.+)_test\.go'
+        linters:
+          - revive
+        text: '^add-constant:'
 
 output:
   formats:

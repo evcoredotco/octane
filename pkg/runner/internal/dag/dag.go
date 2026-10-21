@@ -210,20 +210,12 @@ func (e *CycleError) Error() string {
 		return "dag: cycle detected (no edge details available)"
 	}
 
-	msg := "dag: cycle detected: "
-
-	var msgSb strings.Builder
-
+	froms := make([]string, len(e.Edges), len(e.Edges)+1)
 	for i, edge := range e.Edges {
-		if i > zeroInDegree {
-			msgSb.WriteString(" -> ")
-		}
-
-		msgSb.WriteString(edge.From)
+		froms[i] = edge.From
 	}
 
-	msg += msgSb.String()
-	msg += " -> " + e.Edges[firstEdgeIdx].From
+	froms = append(froms, e.Edges[firstEdgeIdx].From)
 
-	return msg
+	return "dag: cycle detected: " + strings.Join(froms, " -> ")
 }

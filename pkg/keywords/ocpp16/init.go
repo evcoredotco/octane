@@ -5,6 +5,10 @@ import (
 	"github.com/evcoreco/octane/pkg/keywords/registry"
 )
 
+// csmsSendsSuffix is the target-and-deadline tail shared by CSMS-initiated
+// request patterns.
+const csmsSendsSuffix = " to station {station:string} within {timeout:duration}"
+
 // Register adds every OCPP 1.6 domain keyword to the global registry.
 // Call this once from the CLI entry point (Execute) before running any stories.
 func Register() {
@@ -265,7 +269,7 @@ func registerRemoteStartKeywords() {
 func registerRemoteStopKeywords() {
 	registry.Register(api.Keyword{
 		Pattern: "the CSMS sends RemoteStopTransaction with transactionId {transactionId:int}" +
-			" to station {station:string} within {timeout:duration}",
+			csmsSendsSuffix,
 		Layer:       api.LayerDomain,
 		OCPPVersion: api.OCPP16,
 		Func:        csmsEnqueuesRemoteStop,
@@ -282,7 +286,7 @@ func registerRemoteStopKeywords() {
 func registerResetKeywords() {
 	registry.Register(api.Keyword{
 		Pattern: "the CSMS sends Reset with type {resetType:string}" +
-			" to station {station:string} within {timeout:duration}",
+			csmsSendsSuffix,
 		Layer:       api.LayerDomain,
 		OCPPVersion: api.OCPP16,
 		Func:        csmsEnqueuesReset,
@@ -299,7 +303,7 @@ func registerResetKeywords() {
 func registerUnlockKeywords() {
 	registry.Register(api.Keyword{
 		Pattern: "the CSMS sends UnlockConnector with connectorId {connectorId:int}" +
-			" to station {station:string} within {timeout:duration}",
+			csmsSendsSuffix,
 		Layer:       api.LayerDomain,
 		OCPPVersion: api.OCPP16,
 		Func:        csmsEnqueuesUnlockConnector,
@@ -383,7 +387,7 @@ func registerClearCacheKeywords() {
 func registerCancelReservationKeywords() {
 	registry.Register(api.Keyword{
 		Pattern: "the CSMS sends CancelReservation with reservationId {reservationId:int}" +
-			" to station {station:string} within {timeout:duration}",
+			csmsSendsSuffix,
 		Layer:       api.LayerDomain,
 		OCPPVersion: api.OCPP16,
 		Func:        csmsEnqueuesCancelReservation,
