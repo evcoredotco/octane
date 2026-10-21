@@ -436,7 +436,7 @@ func inShardFilter(testID string, shardIndex, shardTotal int) bool {
 	}
 
 	digest := sha256Sum(testID)
-	shardNum := binary.BigEndian.Uint64(digest[:8])
+	shardNum := binary.BigEndian.Uint64(digest[:shardKeyLen])
 
 	// Compare in uint64 space to avoid int overflow on 32-bit systems.
 	// shardTotal and shardIndex are validated non-negative ints by the caller.

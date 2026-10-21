@@ -381,6 +381,7 @@ func applyRunFlagOverrides(
 	if err != nil {
 		dieErrf(exitcode.ConfigError, "octane: invalid --param value: %v\n", err)
 	}
+
 	overrides.Parameters = params
 
 	return config.Resolve(cfg, overrides)

@@ -846,98 +846,70 @@ func executeAllSections(
 ) StoryResult {
 	// Run prerequisite stories' non-teardown steps inline so that dependent
 	// stories inherit runtime state (e.g., open WebSocket connections).
-	if prereqFailed := runPrereqSections(
-		ctx,
-		storyAST,
-		storyIdx,
-		state,
-		ocppVer,
-		parameters,
-		findings,
-	); prereqFailed {
+	if runPrereqSections(ctx, storyAST, storyIdx, state, ocppVer, parameters, findings) {
 		// Teardown always runs.
-		_ = runSteps(
-			ctx,
-			storyAST.Teardown,
-			storyAST.Meta.Parameters,
-			parameters,
-			state,
-			ocppVer,
-			findings,
-		)
+		runTeardown(ctx, storyAST, parameters, state, ocppVer, findings)
 
-		return StoryResult{
-			Order:       emptyLen,
-			TestID:      emptyTestID,
-			ScopeKey:    emptyString,
-			OCPPVersion: ocppVersionEmpty,
-			Status:      StatusFailed,
-			CacheStatus: CacheMiss,
-			StartedAt:   time.Time{},
-			FinishedAt:  time.Time{},
-			Findings:    nil,
-			Trace:       nil,
-			Cause:       emptyCause,
-			CauseChain:  nil,
-		}
+		return sectionsResult(StatusFailed)
 	}
 
-	failed := false
-
-	failed = runSteps(
-		ctx,
-		storyAST.Background,
-		storyAST.Meta.Parameters,
-		parameters,
-		state,
-		ocppVer,
-		findings,
-	) ||
-		failed
-	failed = runSteps(
-		ctx,
-		storyAST.Setup,
-		storyAST.Meta.Parameters,
-		parameters,
-		state,
-		ocppVer,
-		findings,
-	) || failed
-
-	for _, scenario := range storyAST.Scenarios {
-		failed = runSteps(
-			ctx,
-			scenario.Steps,
-			storyAST.Meta.Parameters,
-			parameters,
-			state,
-			ocppVer,
-			findings,
-		) || failed
-	}
+	failed := runMainSections(ctx, storyAST, parameters, state, ocppVer, findings)
 
 	// Teardown always runs (best-effort).
-	_ = runSteps(
-		ctx,
-		storyAST.Teardown,
-		storyAST.Meta.Parameters,
-		parameters,
-		state,
-		ocppVer,
-		findings,
-	)
+	runTeardown(ctx, storyAST, parameters, state, ocppVer, findings)
 
-	resultStatus := StatusPassed
 	if failed {
-		resultStatus = StatusFailed
+		return sectionsResult(StatusFailed)
 	}
 
+	return sectionsResult(StatusPassed)
+}
+
+// runMainSections runs the Background, Setup, and Scenario steps of
+// storyAST. Every section runs even when an earlier one fails. It returns
+// true when any step fails.
+func runMainSections(
+	ctx context.Context,
+	storyAST *ast.Story,
+	parameters map[string]string,
+	state api.State,
+	ocppVer string,
+	findings *[]Finding,
+) bool {
+	declared := storyAST.Meta.Parameters
+
+	failed := runSteps(ctx, storyAST.Background, declared, parameters, state, ocppVer, findings)
+	failed = runSteps(ctx, storyAST.Setup, declared, parameters, state, ocppVer, findings) || failed
+
+	for _, scenario := range storyAST.Scenarios {
+		failed = runSteps(ctx, scenario.Steps, declared, parameters, state, ocppVer, findings) || failed
+	}
+
+	return failed
+}
+
+// runTeardown runs the Teardown steps of storyAST. Failures are recorded
+// in findings but do not change the story status (best-effort cleanup).
+func runTeardown(
+	ctx context.Context,
+	storyAST *ast.Story,
+	parameters map[string]string,
+	state api.State,
+	ocppVer string,
+	findings *[]Finding,
+) {
+	_ = runSteps(ctx, storyAST.Teardown, storyAST.Meta.Parameters, parameters, state, ocppVer, findings)
+}
+
+// sectionsResult returns the StoryResult produced by executeAllSections
+// for the given status. The caller fills in identity and timing fields.
+func sectionsResult(status Status) StoryResult {
 	return StoryResult{
 		Order:       emptyLen,
 		TestID:      emptyTestID,
 		ScopeKey:    emptyString,
 		OCPPVersion: ocppVersionEmpty,
-		Status:      resultStatus,
+		Status:      status,
 		CacheStatus: CacheMiss,
 		StartedAt:   time.Time{},
 		FinishedAt:  time.Time{},
@@ -969,15 +941,7 @@ func runPrereqSections(
 	findings *[]Finding,
 ) bool {
 	for _, dep := range storyAST.Meta.Depends {
-		if failed := runPrereqSection(
-			ctx,
-			dep.ID,
-			storyIdx,
-			state,
-			ocppVer,
-			parameters,
-			findings,
-		); failed {
+		if runPrereqSection(ctx, dep.ID, storyIdx, state, ocppVer, parameters, findings) {
 			return true
 		}
 	}
@@ -999,39 +963,17 @@ func runPrereqSection(
 		return false
 	}
 
-	if failed := runPrereqSections(
-		ctx,
-		prereqStory,
-		storyIdx,
-		state,
-		ocppVer,
-		parameters,
-		findings,
-	); failed {
+	if runPrereqSections(ctx, prereqStory, storyIdx, state, ocppVer, parameters, findings) {
 		return true
 	}
 
-	if failed := runSteps(
-		ctx,
-		prereqStory.Background,
-		prereqStory.Meta.Parameters,
-		parameters,
-		state,
-		ocppVer,
-		findings,
-	); failed {
+	declared := prereqStory.Meta.Parameters
+
+	if runSteps(ctx, prereqStory.Background, declared, parameters, state, ocppVer, findings) {
 		return true
 	}
 
-	if failed := runSteps(
-		ctx,
-		prereqStory.Setup,
-		prereqStory.Meta.Parameters,
-		parameters,
-		state,
-		ocppVer,
-		findings,
-	); failed {
+	if runSteps(ctx, prereqStory.Setup, declared, parameters, state, ocppVer, findings) {
 		return true
 	}
 
@@ -1047,15 +989,7 @@ func runPrereqScenarios(
 	findings *[]Finding,
 ) bool {
 	for _, scenario := range prereqStory.Scenarios {
-		if failed := runSteps(
-			ctx,
-			scenario.Steps,
-			prereqStory.Meta.Parameters,
-			parameters,
-			state,
-			ocppVer,
-			findings,
-		); failed {
+		if runSteps(ctx, scenario.Steps, prereqStory.Meta.Parameters, parameters, state, ocppVer, findings) {
 			return true
 		}
 	}
@@ -1105,37 +1039,37 @@ func runStep(
 	findings *[]Finding,
 ) error {
 	ver := parseOCPPVersion(ocppVer)
+
 	stepText, bindErr := bindStepParameters(step.Text, declaredParams, parameters)
 	if bindErr != nil {
-		*findings = append(*findings, Finding{
-			Message:  fmt.Sprintf("step %q: %v", step.Text, bindErr),
-			Severity: "error",
-		})
+		recordStepFailure(findings, step.Text, bindErr)
 
 		return fmt.Errorf("runner: bind parameters: %w", bindErr)
 	}
 
 	match, err := registry.Resolve(stepText, ver)
 	if err != nil {
-		*findings = append(*findings, Finding{
-			Message:  fmt.Sprintf("step %q: %v", stepText, err),
-			Severity: "error",
-		})
+		recordStepFailure(findings, stepText, err)
 
 		return fmt.Errorf("runner: resolve keyword: %w", err)
 	}
 
 	err = match.Keyword.Func(ctx, state, match.Args)
 	if err != nil {
-		*findings = append(*findings, Finding{
-			Message:  fmt.Sprintf("step %q: %v", stepText, err),
-			Severity: "error",
-		})
+		recordStepFailure(findings, stepText, err)
 
 		return fmt.Errorf("runner: execute keyword: %w", err)
 	}
 
 	return nil
+}
+
+// recordStepFailure appends an error finding for stepText to findings.
+func recordStepFailure(findings *[]Finding, stepText string, err error) {
+	*findings = append(*findings, Finding{
+		Message:  fmt.Sprintf("step %q: %v", stepText, err),
+		Severity: severityError,
+	})
 }
 
 func bindStepParameters(
