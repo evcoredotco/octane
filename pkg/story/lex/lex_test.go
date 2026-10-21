@@ -5,7 +5,7 @@ package lex_test
 import (
 	"testing"
 
-	"github.com/evcoreco/octane/pkg/story/lex"
+	"github.com/evcoredotco/octane/pkg/story/lex"
 )
 
 // Package-level sentinel constants shared across all test functions.

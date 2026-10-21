@@ -11,7 +11,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/evcoreco/octane/pkg/runner/internal/dag"
+	"github.com/evcoredotco/octane/pkg/runner/internal/dag"
 )
 
 // propertyIterations is the number of random graph iterations run in

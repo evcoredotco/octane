@@ -13,7 +13,7 @@ import (
 
 	"github.com/coder/websocket"
 
-	"github.com/evcoreco/octane/pkg/transport"
+	"github.com/evcoredotco/octane/pkg/transport"
 )
 
 // TestTLSValidationError asserts that dialling a wss:// endpoint whose

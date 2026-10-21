@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/evcoreco/octane/pkg/story"
-	"github.com/evcoreco/octane/pkg/story/internal/serialize"
+	"github.com/evcoredotco/octane/pkg/story"
+	"github.com/evcoredotco/octane/pkg/story/internal/serialize"
 )
 
 const (

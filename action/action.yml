@@ -8,6 +8,9 @@ branding:
   color: green
 
 inputs:
+  csms-endpoint:
+    description: "Base WebSocket URL of the CSMS under test (e.g. 'wss://csms.example.org/ocpp')."
+    required: true
   stories:
     description: "Path or glob of .story files to run (e.g. 'scenarios/' or 'scenarios/boot*.story')."
     required: true
@@ -15,7 +18,7 @@ inputs:
   fail-on:
     description: >
       Severity threshold that causes the action to exit non-zero:
-      'any', 'major', 'minor', 'info', or 'never'.
+      'any' or 'major'.
     required: false
     default: "major"
   config:
@@ -62,6 +65,7 @@ runs:
   # Reference the pre-built GHCR image so GitHub's runner does not
   # attempt to build the Dockerfile (which requires repo-root context
   # that is unavailable when action.yml is the build context root).
-  # The image is published by release.yml on every vX.Y.Z tag push.
+  # release.yml publishes the image on every vX.Y.Z tag push; the v0 tag
+  # follows the latest stable v0.x release.
   image: "docker://ghcr.io/evcoredotco/octane:v0"
   entrypoint: "/entrypoint.sh"

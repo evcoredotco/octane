@@ -39,6 +39,10 @@ jobs:
 
     env:
       OCTANE_CACHE_DIR: ${{ github.workspace }}/.octane-cache
+      # The action runs in its own container, where localhost is the
+      # container itself. 172.17.0.1 is the runner host's Docker bridge
+      # address, where the CSMS started below publishes its port.
+      CSMS_ENDPOINT: ws://172.17.0.1:9210
 
     steps:
       - name: Checkout
@@ -74,8 +78,9 @@ jobs:
       # use either this or `octane run` directly via the CLI step
       # below.
       - name: Run OCTANE
-        uses: evcoreco/octane-action@v0
+        uses: evcoredotco/octane/action@v0
         with:
+          csms-endpoint: ${{ env.CSMS_ENDPOINT }}
           stories: scenarios/v${{ matrix.ocpp-version }}/
           fail-on: major
           report-dir: reports/

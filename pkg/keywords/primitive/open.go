@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/evcoreco/octane/pkg/keywords/api"
-	"github.com/evcoreco/octane/pkg/transport"
+	"github.com/evcoredotco/octane/pkg/keywords/api"
+	"github.com/evcoredotco/octane/pkg/transport"
 )
 
 // openWebSocket implements the primitive keyword:

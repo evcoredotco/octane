@@ -124,8 +124,8 @@ report:
 *OCTANE_CONFIG*
 	Path to the configuration file, overriding all default search paths.
 
-*OCTANE_*BASIC_USER*, *OCTANE_BASIC_PASS*, *OCTANE_BEARER_TOKEN*
-	Common credential variables referenced from *auth.basic.\*_env* and
+*OCTANE_BASIC_USER*, *OCTANE_BASIC_PASS*, *OCTANE_BEARER_TOKEN*
+	Common credential variables referenced from *auth.basic.\*\_env* and
 	*auth.bearer.token_env*.
 
 # SEE ALSO

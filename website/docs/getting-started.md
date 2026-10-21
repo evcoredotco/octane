@@ -25,7 +25,7 @@ and man-page details.
 ## 1. Build the CLI
 
 ```bash
-git clone https://github.com/evcoreco/octane
+git clone https://github.com/evcoredotco/octane
 cd octane
 go build ./cmd/octane      # produces ./octane in the repo root
 ./octane --help

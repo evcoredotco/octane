@@ -83,8 +83,9 @@ The published action wraps the binary in a container:
 
 ```yaml
       - name: Run OCTANE
-        uses: evcoreco/octane-action@v0
+        uses: evcoredotco/octane/action@v0
         with:
+          csms-endpoint: wss://csms.example.org/ocpp
           stories: scenarios/v16/
           fail-on: major
           report-dir: reports/
@@ -94,8 +95,9 @@ The published action wraps the binary in a container:
 
 | Input | Default | Description |
 |---|---|---|
-| `stories` | `scenarios/` | Path or glob of `.story` files to run. |
-| `fail-on` | `major` | Severity threshold that fails the action. |
+| `csms-endpoint` | (required) | Base WebSocket URL of the CSMS under test. |
+| `stories` | `scenarios/` | Paths of `.story` files or directories, separated by spaces. |
+| `fail-on` | `major` | Threshold that fails the action: `any` or `major`. |
 | `config` | `octane.yml` | Path to the config file. |
 | `cache-dir` | `` | Cache directory override. |
 | `report-dir` | `reports/` | Output directory for reports. |
@@ -112,13 +114,17 @@ The published action wraps the binary in a container:
 | `report-path` | Directory containing the generated reports. |
 | `exit-code` | Numeric exit code from `octane run`. |
 
-The action runs the image `ghcr.io/evcoreco/octane:v0`.
+The action runs the image `ghcr.io/evcoredotco/octane:v0`, which follows the
+latest stable v0.x release. The action runs in its own container, so
+`localhost` refers to that container: to reach a CSMS started on the runner
+host, use the host's Docker bridge address (for example
+`ws://172.17.0.1:9210`).
 
 ## GitLab CI
 
 ```yaml
 ocpp-conformance:
-  image: ghcr.io/evcoreco/octane:v0
+  image: ghcr.io/evcoredotco/octane:v0
   services:
     - name: citrineos/citrineos:latest
       alias: csms

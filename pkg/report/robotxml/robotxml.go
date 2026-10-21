@@ -10,9 +10,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/evcoreco/octane/pkg/report"
-	"github.com/evcoreco/octane/pkg/report/model"
-	"github.com/evcoreco/octane/pkg/runner"
+	"github.com/evcoredotco/octane/pkg/report"
+	"github.com/evcoredotco/octane/pkg/report/model"
+	"github.com/evcoredotco/octane/pkg/runner"
 )
 
 // outputFileName is the name of the Robot XML file written into the output

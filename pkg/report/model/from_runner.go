@@ -9,8 +9,8 @@ import (
 	"cmp"
 	"slices"
 
-	"github.com/evcoreco/octane/pkg/report/internal/redact"
-	"github.com/evcoreco/octane/pkg/runner"
+	"github.com/evcoredotco/octane/pkg/report/internal/redact"
+	"github.com/evcoredotco/octane/pkg/runner"
 )
 
 // schemaVersion is the integer version of the report schema.

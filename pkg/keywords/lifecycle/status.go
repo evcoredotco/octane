@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/evcoreco/octane/pkg/keywords/api"
+	"github.com/evcoredotco/octane/pkg/keywords/api"
 )
 
 // errNotConnected is returned when the station exists but IsOpen() is false.

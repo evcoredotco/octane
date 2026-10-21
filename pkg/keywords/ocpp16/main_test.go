@@ -3,9 +3,9 @@ package ocpp16_test
 import (
 	"testing"
 
-	"github.com/evcoreco/octane/pkg/keywords/lifecycle"
-	"github.com/evcoreco/octane/pkg/keywords/ocpp16"
-	"github.com/evcoreco/octane/pkg/keywords/primitive"
+	"github.com/evcoredotco/octane/pkg/keywords/lifecycle"
+	"github.com/evcoredotco/octane/pkg/keywords/ocpp16"
+	"github.com/evcoredotco/octane/pkg/keywords/primitive"
 )
 
 // TestMain registers all keyword packages once before any test runs.

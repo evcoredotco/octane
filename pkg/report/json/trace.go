@@ -3,8 +3,8 @@ package reportjson
 import (
 	encodingjson "encoding/json"
 
-	"github.com/evcoreco/octane/pkg/report"
-	"github.com/evcoreco/octane/pkg/report/model"
+	"github.com/evcoredotco/octane/pkg/report"
+	"github.com/evcoredotco/octane/pkg/report/model"
 )
 
 // jsonTrace is the JSON serialization struct for a story's wire trace.

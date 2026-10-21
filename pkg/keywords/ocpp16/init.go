@@ -1,8 +1,8 @@
 package ocpp16
 
 import (
-	"github.com/evcoreco/octane/pkg/keywords/api"
-	"github.com/evcoreco/octane/pkg/keywords/registry"
+	"github.com/evcoredotco/octane/pkg/keywords/api"
+	"github.com/evcoredotco/octane/pkg/keywords/registry"
 )
 
 // csmsSendsSuffix is the target-and-deadline tail shared by CSMS-initiated

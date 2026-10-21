@@ -93,7 +93,7 @@ function Hero(): ReactNode {
             <Link className={styles.btnGhost} to="/docs/intro">
               How it works
             </Link>
-            <Link className={styles.btnGhost} href="https://github.com/evcoreco/octane">
+            <Link className={styles.btnGhost} href="https://github.com/evcoredotco/octane">
               ★ GitHub
             </Link>
           </div>

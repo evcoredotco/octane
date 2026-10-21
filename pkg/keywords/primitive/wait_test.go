@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/evcoreco/octane/pkg/engine/clock"
-	"github.com/evcoreco/octane/pkg/keywords/api"
-	"github.com/evcoreco/octane/pkg/keywords/api/mock"
+	"github.com/evcoredotco/octane/pkg/engine/clock"
+	"github.com/evcoredotco/octane/pkg/keywords/api"
+	"github.com/evcoredotco/octane/pkg/keywords/api/mock"
 )
 
 // ── Named constants ──────────────────────────────────────────────────────────

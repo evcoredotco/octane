@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/evcoreco/octane/pkg/wire"
+	"github.com/evcoredotco/octane/pkg/wire"
 )
 
 // testUniqueID is the correlation identifier used in happy-path test frames.

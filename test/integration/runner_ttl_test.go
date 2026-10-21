@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/evcoreco/octane/pkg/cache"
-	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
-	"github.com/evcoreco/octane/pkg/runner"
+	"github.com/evcoredotco/octane/pkg/cache"
+	_ "github.com/evcoredotco/octane/pkg/keywords/primitive"
+	"github.com/evcoredotco/octane/pkg/runner"
 )
 
 const (

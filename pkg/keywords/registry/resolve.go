@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/evcoreco/octane/pkg/keywords/api"
-	"github.com/evcoreco/octane/pkg/keywords/registry/internal/levenshtein"
-	"github.com/evcoreco/octane/pkg/keywords/registry/internal/pattern"
+	"github.com/evcoredotco/octane/pkg/keywords/api"
+	"github.com/evcoredotco/octane/pkg/keywords/registry/internal/levenshtein"
+	"github.com/evcoredotco/octane/pkg/keywords/registry/internal/pattern"
 )
 
 const (

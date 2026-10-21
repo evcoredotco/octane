@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/evcoreco/octane/cmd/octane/internal/config"
+	"github.com/evcoredotco/octane/cmd/octane/internal/config"
 )
 
 const (

@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
-	"github.com/evcoreco/octane/pkg/runner"
+	_ "github.com/evcoredotco/octane/pkg/keywords/primitive"
+	"github.com/evcoredotco/octane/pkg/runner"
 )
 
 // storyAlwaysFails uses an unrecognised step so the runner

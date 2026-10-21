@@ -25,7 +25,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/evcoreco/octane/pkg/keywords/api"
+	"github.com/evcoredotco/octane/pkg/keywords/api"
 )
 
 // entry pairs a keyword with the formatted call site at which it

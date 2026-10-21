@@ -9,8 +9,8 @@ import (
 	"context"
 	"testing"
 
-	_ "github.com/evcoreco/octane/pkg/keywords/primitive"
-	"github.com/evcoreco/octane/pkg/runner"
+	_ "github.com/evcoredotco/octane/pkg/keywords/primitive"
+	"github.com/evcoredotco/octane/pkg/runner"
 )
 
 // storyPrereq is a simple passing story with no dependencies.

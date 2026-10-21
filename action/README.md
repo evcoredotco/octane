@@ -4,64 +4,71 @@ GitHub Action wrapper for the [OCTANE](../README.md) OCPP conformance
 harness. Runs the same engine as the `octane` CLI; outputs are byte-identical
 for identical inputs (constitutional principle IV).
 
+The action lives in the `action/` directory of the OCTANE repository and runs
+the `ghcr.io/evcoredotco/octane` container image.
+
 ## Usage
 
+The stories and `octane.yml` come from your repository's workspace.
+
 ```yaml
+- uses: actions/checkout@v4
+
 - name: OCPP conformance
-  uses: evcoreco/octane-action@v0
+  uses: evcoredotco/octane/action@v0
   with:
-    csms: wss://csms.example.org/ocpp/CP01
-    ocpp-version: "1.6"
-    scenario: all
-    seed: "42"
+    csms-endpoint: wss://csms.example.org/ocpp
+    stories: scenarios/v16/
     fail-on: major
-  env:
-    OCTANE_BASIC_AUTH_USER: ${{ secrets.OCTANE_BASIC_AUTH_USER }}
-    OCTANE_BASIC_AUTH_PASS: ${{ secrets.OCTANE_BASIC_AUTH_PASS }}
+
+- name: Upload reports
+  if: always()
+  uses: actions/upload-artifact@v4
+  with:
+    name: octane-reports
+    path: reports/
 ```
 
 ## Inputs
 
-| Input          | Required | Default       | Description                                             |
-|----------------|----------|---------------|---------------------------------------------------------|
-| `csms`         | yes      | —             | Target CSMS WSS endpoint.                               |
-| `ocpp-version` | yes      | `1.6`         | One of `1.6`, `1.6`, `2.1`.                             |
-| `scenario`     | yes      | `all`         | Scenario id, comma-list, or `all`.                      |
-| `config`       | no       | `""`          | Path to a YAML config file in the workspace.            |
-| `seed`         | no       | `0`           | Deterministic seed for reproducible runs.               |
-| `insecure`     | no       | `false`       | Disable TLS verification (banner added to report).      |
-| `report-path`  | no       | `report.json` | Output path inside `$GITHUB_WORKSPACE`.                 |
-| `fail-on`      | no       | `major`       | Severity threshold: `block`, `major`, `minor`, `never`. |
+| Input                  | Required | Default      | Description                                                    |
+|------------------------|----------|--------------|----------------------------------------------------------------|
+| `csms-endpoint`        | yes      | —            | Base WebSocket URL of the CSMS under test.                     |
+| `stories`              | yes      | `scenarios/` | Paths of `.story` files or directories, separated by spaces.   |
+| `fail-on`              | no       | `major`      | Threshold that fails the step: `any` or `major`.               |
+| `config`               | no       | `octane.yml` | Path to the configuration file in the workspace.               |
+| `cache-dir`            | no       | `""`         | Cache directory override.                                      |
+| `report-dir`           | no       | `reports/`   | Directory for the generated reports.                           |
+| `ocpp-version`         | no       | `""`         | Restrict the run to stories declaring this OCPP version.       |
+| `shard`                | no       | `""`         | Shard in `N/M` format, to split stories across parallel jobs.  |
+| `max-parallel`         | no       | `1`          | Maximum number of stories run concurrently.                    |
+| `no-cache`             | no       | `false`      | Set to `true` to bypass the result cache.                      |
+| `insecure-skip-verify` | no       | `false`      | Set to `true` to disable TLS verification (never in production). |
+
+Story parameters come from the `parameters` map in `octane.yml`.
 
 ## Outputs
 
-| Output        | Description                                           |
-|---------------|-------------------------------------------------------|
-| `report-path` | Path to the produced JSON report.                     |
-| `passed`      | `true` if findings did not exceed `fail-on`.          |
-| `summary`     | One-line summary suitable for `$GITHUB_STEP_SUMMARY`. |
+| Output        | Description                                  |
+|---------------|----------------------------------------------|
+| `report-path` | Directory containing the generated reports.  |
+| `exit-code`   | Numeric exit code returned by `octane run`.  |
 
 ## Pinning
 
-This Action follows the GitHub convention of a movable major-version tag:
+The action follows the GitHub convention of a movable major-version tag:
 
-- `evcoreco/octane-action@v0` — latest in the v0.x line (recommended)
-- `evcoreco/octane-action@v0.1.0` — exact version (most reproducible)
+- `evcoredotco/octane/action@v0` — latest in the v0.x line (recommended)
+- `evcoredotco/octane/action@v0.1.0` — pins the action definition
 
-Both forms are signed and attested via SLSA provenance.
+Both forms run the `v0` tag of the container image, which follows the
+latest stable v0.x release. For a fully pinned run, use the CLI image
+directly at an exact version (see `docs/distribution.md`).
 
-## Secrets and credentials
+## Credentials
 
-Credentials are sourced exclusively from environment variables. Never
-embed them in the workflow inputs. Supported variables:
-
-| Env var                                             | Purpose                    |
-|-----------------------------------------------------|----------------------------|
-| `OCTANE_BASIC_AUTH_USER` / `OCTANE_BASIC_AUTH_PASS` | OCPP-J Basic auth          |
-| `OCTANE_MTLS_CERT` / `OCTANE_MTLS_KEY`              | mTLS client cert/key (PEM) |
-| `OCTANE_BEARER_TOKEN`                               | OAuth2 / JWT bearer token  |
-
-All credential material is redacted from the report.
+CSMS authentication (HTTP Basic auth, client certificates, bearer tokens) is
+not supported yet. It is planned with connection profiles (ADR 0010).
 
 ## License
 

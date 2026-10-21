@@ -5,7 +5,7 @@ package redact_test
 import (
 	"testing"
 
-	"github.com/evcoreco/octane/pkg/report/internal/redact"
+	"github.com/evcoredotco/octane/pkg/report/internal/redact"
 )
 
 const (

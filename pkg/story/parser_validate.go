@@ -1,8 +1,8 @@
 package story
 
 import (
-	"github.com/evcoreco/octane/pkg/story/ast"
-	"github.com/evcoreco/octane/pkg/story/diag"
+	"github.com/evcoredotco/octane/pkg/story/ast"
+	"github.com/evcoredotco/octane/pkg/story/diag"
 )
 
 // validateParameters implements T-001-25.

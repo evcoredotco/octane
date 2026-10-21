@@ -9,7 +9,7 @@ const config: Config = {
   url: 'https://octane.dev',
   baseUrl: '/octane/',
 
-  organizationName: 'evcoreco',
+  organizationName: 'evcoredotco',
   projectName: 'octane',
 
   onBrokenLinks: 'throw',
@@ -50,7 +50,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          editUrl: 'https://github.com/evcoreco/octane/tree/master/website/',
+          editUrl: 'https://github.com/evcoredotco/octane/tree/master/website/',
           // Versioning per ADR 0013; enabled once the first release is tagged.
         },
         blog: false,
@@ -114,7 +114,7 @@ const config: Config = {
           position: 'left',
         },
         {
-          href: 'https://github.com/evcoreco/octane',
+          href: 'https://github.com/evcoredotco/octane',
           label: 'GitHub',
           position: 'right',
         },
@@ -147,7 +147,7 @@ const config: Config = {
         {
           title: 'Project',
           items: [
-            { label: 'GitHub', href: 'https://github.com/evcoreco/octane' },
+            { label: 'GitHub', href: 'https://github.com/evcoredotco/octane' },
             {
               label: 'OCPP 1.6 (Open Charge Alliance)',
               href: 'https://www.openchargealliance.org/protocols/ocpp-16/',

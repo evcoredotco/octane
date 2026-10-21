@@ -10,7 +10,7 @@ formatters:
       sections:
         - standard
         - default
-        - prefix(github.com/evcoreco/octane)
+        - prefix(github.com/evcoredotco/octane)
       custom-order: true
     gofumpt:
       extra:
@@ -196,7 +196,7 @@ linters:
           allow:
             - $gostd
             # This module.
-            - github.com/evcoreco/octane
+            - github.com/evcoredotco/octane
             # Approved direct third-party dependencies (see go.mod). Add new
             # direct deps here, otherwise depguard will reject their imports.
             - github.com/coder/websocket

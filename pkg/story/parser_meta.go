@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/evcoreco/octane/pkg/story/ast"
-	"github.com/evcoreco/octane/pkg/story/diag"
-	"github.com/evcoreco/octane/pkg/story/lex"
+	"github.com/evcoredotco/octane/pkg/story/ast"
+	"github.com/evcoredotco/octane/pkg/story/diag"
+	"github.com/evcoredotco/octane/pkg/story/lex"
 )
 
 // fmtPosExpected is the shared positional error format string used across

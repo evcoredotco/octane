@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/evcoreco/octane/cmd/octane/internal/exitcode"
+	"github.com/evcoredotco/octane/cmd/octane/internal/exitcode"
 )
 
 const (

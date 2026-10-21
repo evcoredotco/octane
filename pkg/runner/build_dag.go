@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/evcoreco/octane/pkg/runner/internal/dag"
-	"github.com/evcoreco/octane/pkg/story/ast"
+	"github.com/evcoredotco/octane/pkg/runner/internal/dag"
+	"github.com/evcoredotco/octane/pkg/story/ast"
 )
 
 // minStationCount is the minimum number of stations enforced by

@@ -3,7 +3,9 @@ name: Release
 on:
   push:
     tags:
-      - 'v[0-9]*'
+      # Full versions only (v0.1.0, v1.2.3-rc.1). The floating major tag
+      # (v0) that GitHub Action users reference must not start a release.
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
 
 permissions:
   contents: write      # publish GitHub release and upload assets
@@ -54,11 +56,12 @@ jobs:
         uses: goreleaser/goreleaser-action@v7.2.2
         with:
           distribution: goreleaser
-          version: '~> v2'
+          version: v2.18.3
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Required when brews: is active and the homebrew tap is a separate
-          # repository. Create a fine-grained PAT with Contents: write on
-          # evcoreco/homebrew-octane and add it as HOMEBREW_TAP_GITHUB_TOKEN.
+          # Optional. When set, goreleaser updates the Homebrew tap; when unset,
+          # it skips the tap. Create the evcoredotco/homebrew-octane repository
+          # and a fine-grained PAT with Contents: write on it, then add the PAT
+          # as the HOMEBREW_TAP_GITHUB_TOKEN secret.
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}

@@ -1,6 +1,6 @@
 package runner
 
-import "github.com/evcoreco/octane/pkg/story/ast"
+import "github.com/evcoredotco/octane/pkg/story/ast"
 
 // minShardTotal is the minimum valid shard total; values at or below this
 // indicate sharding is disabled.

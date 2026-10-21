@@ -4,10 +4,38 @@ sidebar_position: 3
 
 # Installation
 
-OCTANE is **pre-alpha**. No packages are published yet — the supported
-installation method today is **building from source** with the standard
-Go toolchain. The release machinery for binaries and OS packages is in
-place and will be enabled once the first version is tagged.
+OCTANE is **pre-alpha**. Releases are published on
+[GitHub Releases](https://github.com/evcoredotco/octane/releases) from
+`v0.1.0` onwards, as binaries, `.deb` and `.rpm` packages, and a container
+image. You can also install with `go install` or build from source.
+
+## Install a release
+
+```bash
+# Go toolchain (Go 1.26 or newer)
+go install github.com/evcoredotco/octane/cmd/octane@latest
+
+# Container image (linux/amd64 and linux/arm64)
+docker pull ghcr.io/evcoredotco/octane:v0
+docker run --rm ghcr.io/evcoredotco/octane:v0 octane --version
+```
+
+For Debian/Ubuntu and Fedora/RHEL, download the `.deb` or `.rpm` file from
+the release page and install it with `sudo apt install ./octane_*.deb` or
+`sudo dnf install ./octane-*.rpm`. For other platforms, download the
+archive for your operating system and architecture; it contains the binary,
+man pages, and shell completions.
+
+Verify a download against the signed checksums:
+
+```bash
+cosign verify-blob \
+  --bundle checksums.txt.sigstore.json \
+  --certificate-identity-regexp '^https://github.com/evcoredotco/octane/' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  checksums.txt
+sha256sum --ignore-missing -c checksums.txt
+```
 
 ## Requirements
 
@@ -18,7 +46,7 @@ place and will be enabled once the first version is tagged.
 ## Build from source
 
 ```bash
-git clone https://github.com/evcoreco/octane
+git clone https://github.com/evcoredotco/octane
 cd octane
 go build ./cmd/octane          # produces ./octane in the repo root
 ```
@@ -81,27 +109,13 @@ man 5 octane.story    # story DSL reference
 man 7 octane          # concepts overview
 ```
 
-## Planned distribution channels
+## Not yet available
 
-These channels are wired into the release pipeline (`goreleaser` plus
-`packaging/nfpm.yaml`) but are **not yet published**. They will become
-available with the first tagged release.
-
-| Channel | Planned command |
-|---|---|
-| Debian / Ubuntu | `apt install octane` |
-| Fedora / RHEL | `dnf install octane` |
-| macOS (Homebrew) | `brew install evcoreco/octane/octane` |
-| Windows (Scoop) | `scoop install octane` |
-| Docker | `docker pull ghcr.io/evcoreco/octane` |
-| Direct download | static binaries, signed with cosign, SBOM-attested |
-
-:::note
-Until then, build from source as shown above. The
-[GitHub Action](./operations/ci-integration.md) references the container
-image `ghcr.io/evcoreco/octane:v0`, which is published by the release
-workflow on each version tag.
-:::
+- **Homebrew:** the release can update a tap at
+  `evcoredotco/homebrew-octane`, but the tap does not exist yet.
+- **APT and DNF repositories:** packages are attached to each release; there
+  is no package repository to add.
+- **Scoop:** not configured.
 
 ## Next steps
 

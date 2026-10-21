@@ -14,8 +14,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/evcoreco/octane/pkg/keywords/api"
-	"github.com/evcoreco/octane/pkg/keywords/api/mock"
+	"github.com/evcoredotco/octane/pkg/keywords/api"
+	"github.com/evcoredotco/octane/pkg/keywords/api/mock"
 )
 
 // ── Package-level sentinel errors ────────────────────────────────────────────

@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/evcoreco/octane/pkg/cache"
+	"github.com/evcoredotco/octane/pkg/cache"
 )
 
 // fmtOpen is the Fatalf format for Open failures in tests.
