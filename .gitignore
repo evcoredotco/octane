@@ -1,5 +1,7 @@
 # Build artifacts
 /bin/
+# Binary written by `go build ./cmd/octane` at the repository root
+/octane
 /build/
 /dist/
 *.exe
