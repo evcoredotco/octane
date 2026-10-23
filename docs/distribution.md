@@ -6,13 +6,13 @@ Container Registry (GHCR).
 ## Image coordinates
 
 ```
-ghcr.io/evcoredotco/octane:<version>    # exact release, e.g. v0.1.0
+ghcr.io/evcoredotco/octane:<version>    # exact release, e.g. v0.1.1
 ghcr.io/evcoredotco/octane:v<major>     # latest stable release in a major series, e.g. v0
 ghcr.io/evcoredotco/octane:v<major>.<minor>
 ghcr.io/evcoredotco/octane:latest
 ```
 
-Use an exact version (e.g. `v0.1.0`) in any automated pipeline. The `v0`
+Use an exact version (e.g. `v0.1.1`) in any automated pipeline. The `v0`
 tag is what the GitHub Action runs. The `latest` tag tracks the most recent
 stable release and is suitable only for ad-hoc exploration on a developer
 workstation.
@@ -50,7 +50,7 @@ silently change the binary your pipeline runs:
 
 ```yaml
 variables:
-  OCTANE_IMAGE: "ghcr.io/evcoredotco/octane:v0.1.0"
+  OCTANE_IMAGE: "ghcr.io/evcoredotco/octane:v0.1.1"
   OCTANE_CACHE_DIR: "${CI_PROJECT_DIR}/.octane-cache"
 
 conformance:
@@ -75,7 +75,7 @@ Mount the directory that holds your stories and `octane.yml`, then run
 ```
 docker run --rm -v "$(pwd)":/work -w /work \
   --add-host=host.docker.internal:host-gateway \
-  ghcr.io/evcoredotco/octane:v0.1.0 \
+  ghcr.io/evcoredotco/octane:v0.1.1 \
   octane run scenarios/ --csms-endpoint ws://host.docker.internal:9210
 ```
 
@@ -90,7 +90,7 @@ workflow, which:
 3. tags the image with the full version (`vX.Y.Z`), the major series
    (`vX`), the minor series (`vX.Y`), and updates `latest`.
 
-Pre-release tags (`v0.1.0-rc.1`) publish a versioned image but do not move
+Pre-release tags (`v0.1.1-rc.1`) publish a versioned image but do not move
 the `vX`, `vX.Y`, or `latest` tags.
 
 ## Pulling a pinned digest
