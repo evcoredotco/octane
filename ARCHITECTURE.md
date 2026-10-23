@@ -683,7 +683,7 @@ artefacts:
 | Direct           | archives with SBOMs and cosign-signed checksums           |
 | Go               | `go install github.com/evcoredotco/octane/cmd/octane@latest` |
 
-Releases are published from `vX.Y.Z` tags, starting with `v0.1.0`.
+Releases are published from `vX.Y.Z` tags, starting with `v0.1.1`.
 Release artefacts include man pages, shell completions, and the
 LICENSE.
 
@@ -852,7 +852,7 @@ Decisions that are implemented but not yet recorded as ADRs:
 | Man pages and bash/zsh completion                                      | Done                                           |
 | OCPP 1.6 stories in `scenarios/v16/`                                   | 23 stories                                     |
 | CI: lint, tests, CodeQL, website deployment                            | Done                                           |
-| Releases (`.goreleaser.yaml`, `packaging/nfpm.yaml`)                   | Published from `v0.1.0`; no Homebrew tap yet   |
+| Releases (`.goreleaser.yaml`, `packaging/nfpm.yaml`)                   | Published from `v0.1.1`; no Homebrew tap yet   |
 | GitHub Action (`action/`)                                              | `evcoredotco/octane/action@v0`                 |
 | Docusaurus website                                                     | Deployed to GitHub Pages                       |
 | Connection profiles (ADR 0010)                                         | Sample profile only; the CLI does not load it |

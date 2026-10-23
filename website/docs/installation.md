@@ -6,7 +6,7 @@ sidebar_position: 3
 
 OCTANE is **pre-alpha**. Releases are published on
 [GitHub Releases](https://github.com/evcoredotco/octane/releases) from
-`v0.1.0` onwards, as binaries, `.deb` and `.rpm` packages, and a container
+`v0.1.1` onwards, as binaries, `.deb` and `.rpm` packages, and a container
 image. You can also install with `go install` or build from source.
 
 ## Install a release

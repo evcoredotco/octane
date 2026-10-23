@@ -59,7 +59,7 @@ Story parameters come from the `parameters` map in `octane.yml`.
 The action follows the GitHub convention of a movable major-version tag:
 
 - `evcoredotco/octane/action@v0` — latest in the v0.x line (recommended)
-- `evcoredotco/octane/action@v0.1.0` — pins the action definition
+- `evcoredotco/octane/action@v0.1.1` — pins the action definition
 
 Both forms run the `v0` tag of the container image, which follows the
 latest stable v0.x release. For a fully pinned run, use the CLI image

@@ -32,6 +32,10 @@ jobs:
       - name: Install cosign
         uses: sigstore/cosign-installer@v4.1.2
 
+      # goreleaser's sboms step runs syft on every archive.
+      - name: Install syft
+        uses: anchore/sbom-action/download-syft@v0.24.3
+
       # gen-manpages.sh and gen-completions.sh (run by goreleaser before.hooks)
       # both need a working binary at bin/octane. Build it here without ldflags
       # so the hooks can generate artifacts; goreleaser then builds the real

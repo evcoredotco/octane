@@ -9,9 +9,21 @@ This project adheres to [Keep a Changelog 1.1.0][kac] and
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-23
+
+First release with published artefacts.
+
+### Fixed
+
+- Release workflow: install `syft`, which goreleaser needs to generate
+  SBOMs. The `v0.1.0` release run failed at that step, so `v0.1.0` has a
+  tag but no binaries, packages, or container image.
+- `LICENSE` held a placeholder; it now holds the full Apache License 2.0
+  text, which every release archive and package includes.
+
 ## [0.1.0] - 2026-10-21
 
-First release.
+Tagged; the release run failed before publishing (see 0.1.1).
 
 ### Added
 
